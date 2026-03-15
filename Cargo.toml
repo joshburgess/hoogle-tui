@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["crates/hoogle-core", "crates/hoogle-syntax", "crates/hoogle-tui"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/joshburgess/hoogle-tui"
+keywords = ["haskell", "hoogle", "tui", "terminal"]
+categories = ["command-line-utilities", "development-tools"]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

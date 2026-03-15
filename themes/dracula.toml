@@ -1,0 +1,26 @@
+name = "dracula"
+
+[styles]
+type_constructor = { fg = "#bd93f9", modifiers = ["bold"] }
+type_variable = { fg = "#f8f8f2", modifiers = ["italic"] }
+keyword = { fg = "#ff79c6", modifiers = ["bold"] }
+operator = { fg = "#ff5555" }
+punctuation = { fg = "#f8f8f2" }
+qualified_name = { fg = "#8be9fd" }
+string_literal = { fg = "#f1fa8c" }
+numeric_literal = { fg = "#bd93f9" }
+comment = { fg = "#6272a4" }
+pragma = { fg = "#6272a4", modifiers = ["bold"] }
+module_name = { fg = "#8be9fd" }
+package_name = { fg = "#6272a4", modifiers = ["italic"] }
+doc_text = { fg = "#f8f8f2" }
+doc_code = { fg = "#f1fa8c" }
+doc_heading = { fg = "#bd93f9", modifiers = ["bold"] }
+doc_link = { fg = "#8be9fd", modifiers = ["underline"] }
+search_input = { fg = "#f8f8f2" }
+status_bar = { fg = "#f8f8f2", bg = "#44475a" }
+selected = { bg = "#44475a" }
+cursor = { bg = "#6272a4" }
+border = { fg = "#6272a4" }
+error = { fg = "#ff5555" }
+spinner = { fg = "#bd93f9" }

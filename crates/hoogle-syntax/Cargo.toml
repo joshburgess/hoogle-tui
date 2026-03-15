@@ -1,0 +1,12 @@
+[package]
+name = "hoogle-syntax"
+version = "0.1.0"
+edition = "2021"
+description = "Haskell syntax highlighting and tokenization for hoogle-tui"
+license = "MIT"
+
+[dependencies]
+serde = { workspace = true }
+unicode-width = "0.2"
+ratatui = "0.29"
+toml = "0.8"

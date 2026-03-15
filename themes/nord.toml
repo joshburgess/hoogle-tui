@@ -1,0 +1,26 @@
+name = "nord"
+
+[styles]
+type_constructor = { fg = "#81a1c1", modifiers = ["bold"] }
+type_variable = { fg = "#d8dee9", modifiers = ["italic"] }
+keyword = { fg = "#81a1c1", modifiers = ["bold"] }
+operator = { fg = "#81a1c1" }
+punctuation = { fg = "#eceff4" }
+qualified_name = { fg = "#88c0d0" }
+string_literal = { fg = "#a3be8c" }
+numeric_literal = { fg = "#b48ead" }
+comment = { fg = "#616e88" }
+pragma = { fg = "#616e88", modifiers = ["bold"] }
+module_name = { fg = "#88c0d0" }
+package_name = { fg = "#616e88", modifiers = ["italic"] }
+doc_text = { fg = "#d8dee9" }
+doc_code = { fg = "#a3be8c" }
+doc_heading = { fg = "#88c0d0", modifiers = ["bold"] }
+doc_link = { fg = "#5e81ac", modifiers = ["underline"] }
+search_input = { fg = "#eceff4" }
+status_bar = { fg = "#d8dee9", bg = "#3b4252" }
+selected = { bg = "#3b4252" }
+cursor = { bg = "#434c5e" }
+border = { fg = "#616e88" }
+error = { fg = "#bf616a" }
+spinner = { fg = "#b48ead" }

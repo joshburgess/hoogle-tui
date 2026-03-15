@@ -1,0 +1,57 @@
+# hoogle-tui default configuration
+# Copy to ~/.config/hoogle-tui/config.toml to customize.
+
+# Color theme: dracula, catppuccin_mocha, gruvbox_dark, solarized_dark, monokai, nord
+theme = "dracula"
+
+[backend]
+# Backend mode: "auto" (try local, fall back to web), "local", "web"
+mode = "auto"
+
+# Path to hoogle binary (auto-detected if not set)
+# hoogle_path = "/usr/local/bin/hoogle"
+
+# Path to hoogle database (uses hoogle default if not set)
+# database_path = "/home/user/.hoogle/default.hoo"
+
+# Base URL for web API
+web_url = "https://hoogle.haskell.org"
+
+# HTTP timeout in seconds
+timeout_secs = 5
+
+[ui]
+# Maximum number of search results to fetch
+max_results = 50
+
+# Show preview pane alongside results
+preview_enabled = true
+
+# Layout mode: "auto", "vertical" (side-by-side), "horizontal" (stacked)
+layout = "auto"
+
+# Enable mouse support
+mouse_enabled = true
+
+# Debounce delay for live search (milliseconds)
+debounce_ms = 150
+
+[cache]
+# Enable disk caching of Haddock pages
+enabled = true
+
+# Cache directory (defaults to ~/.cache/hoogle-tui/)
+# dir = "/path/to/cache"
+
+# Cache time-to-live in hours (default: 7 days)
+ttl_hours = 168
+
+# Maximum cache size in megabytes
+max_size_mb = 500
+
+[keybinds]
+# Override default keybindings. Map action names to key strings.
+# Example:
+# [keybinds.overrides]
+# scroll_down = "ctrl-n"
+# scroll_up = "ctrl-p"

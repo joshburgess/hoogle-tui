@@ -1,0 +1,26 @@
+name = "gruvbox_dark"
+
+[styles]
+type_constructor = { fg = "#d3869b", modifiers = ["bold"] }
+type_variable = { fg = "#ebdbb2", modifiers = ["italic"] }
+keyword = { fg = "#fb4934", modifiers = ["bold"] }
+operator = { fg = "#fe8019" }
+punctuation = { fg = "#ebdbb2" }
+qualified_name = { fg = "#83a598" }
+string_literal = { fg = "#b8bb26" }
+numeric_literal = { fg = "#d3869b" }
+comment = { fg = "#928374" }
+pragma = { fg = "#928374", modifiers = ["bold"] }
+module_name = { fg = "#83a598" }
+package_name = { fg = "#928374", modifiers = ["italic"] }
+doc_text = { fg = "#ebdbb2" }
+doc_code = { fg = "#b8bb26" }
+doc_heading = { fg = "#fabd2f", modifiers = ["bold"] }
+doc_link = { fg = "#83a598", modifiers = ["underline"] }
+search_input = { fg = "#ebdbb2" }
+status_bar = { fg = "#ebdbb2", bg = "#3c3836" }
+selected = { bg = "#3c3836" }
+cursor = { bg = "#504945" }
+border = { fg = "#928374" }
+error = { fg = "#fb4934" }
+spinner = { fg = "#fabd2f" }

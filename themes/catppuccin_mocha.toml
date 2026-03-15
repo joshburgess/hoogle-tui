@@ -1,0 +1,26 @@
+name = "catppuccin_mocha"
+
+[styles]
+type_constructor = { fg = "#cba6f7", modifiers = ["bold"] }
+type_variable = { fg = "#cdd6f4", modifiers = ["italic"] }
+keyword = { fg = "#f38ba8", modifiers = ["bold"] }
+operator = { fg = "#fab387" }
+punctuation = { fg = "#cdd6f4" }
+qualified_name = { fg = "#89dceb" }
+string_literal = { fg = "#a6e3a1" }
+numeric_literal = { fg = "#fab387" }
+comment = { fg = "#6c7086" }
+pragma = { fg = "#6c7086", modifiers = ["bold"] }
+module_name = { fg = "#89dceb" }
+package_name = { fg = "#6c7086", modifiers = ["italic"] }
+doc_text = { fg = "#cdd6f4" }
+doc_code = { fg = "#a6e3a1" }
+doc_heading = { fg = "#cba6f7", modifiers = ["bold"] }
+doc_link = { fg = "#89b4fa", modifiers = ["underline"] }
+search_input = { fg = "#cdd6f4" }
+status_bar = { fg = "#cdd6f4", bg = "#313244" }
+selected = { bg = "#313244" }
+cursor = { bg = "#45475a" }
+border = { fg = "#6c7086" }
+error = { fg = "#f38ba8" }
+spinner = { fg = "#cba6f7" }

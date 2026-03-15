@@ -1,0 +1,33 @@
+[package]
+name = "hoogle-tui"
+version = "0.1.0"
+edition = "2021"
+description = "Terminal user interface for Haskell's Hoogle search engine"
+license = "MIT"
+
+[[bin]]
+name = "hoogle-tui"
+path = "src/main.rs"
+
+[dependencies]
+hoogle-core = { path = "../hoogle-core" }
+hoogle-syntax = { path = "../hoogle-syntax" }
+tokio = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+ratatui = "0.29"
+crossterm = { version = "0.28", features = ["event-stream"] }
+clap = { version = "4", features = ["derive"] }
+nucleo = "0.5"
+arboard = "3"
+tui-textarea = "0.7"
+dirs = "6"
+url = "2"
+chrono = { version = "0.4", features = ["serde"] }
+serde_json = { workspace = true }
+clap_complete = "4"
+
+[dev-dependencies]
+tempfile = "3"

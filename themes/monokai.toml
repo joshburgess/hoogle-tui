@@ -1,0 +1,26 @@
+name = "monokai"
+
+[styles]
+type_constructor = { fg = "#66d9ef", modifiers = ["bold"] }
+type_variable = { fg = "#f8f8f2", modifiers = ["italic"] }
+keyword = { fg = "#f92672", modifiers = ["bold"] }
+operator = { fg = "#f92672" }
+punctuation = { fg = "#f8f8f2" }
+qualified_name = { fg = "#66d9ef" }
+string_literal = { fg = "#e6db74" }
+numeric_literal = { fg = "#ae81ff" }
+comment = { fg = "#75715e" }
+pragma = { fg = "#75715e", modifiers = ["bold"] }
+module_name = { fg = "#a6e22e" }
+package_name = { fg = "#75715e", modifiers = ["italic"] }
+doc_text = { fg = "#f8f8f2" }
+doc_code = { fg = "#e6db74" }
+doc_heading = { fg = "#a6e22e", modifiers = ["bold"] }
+doc_link = { fg = "#66d9ef", modifiers = ["underline"] }
+search_input = { fg = "#f8f8f2" }
+status_bar = { fg = "#f8f8f2", bg = "#3e3d32" }
+selected = { bg = "#3e3d32" }
+cursor = { bg = "#49483e" }
+border = { fg = "#75715e" }
+error = { fg = "#f92672" }
+spinner = { fg = "#ae81ff" }

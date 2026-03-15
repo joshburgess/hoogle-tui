@@ -1,0 +1,26 @@
+name = "solarized_dark"
+
+[styles]
+type_constructor = { fg = "#6c71c4", modifiers = ["bold"] }
+type_variable = { fg = "#839496", modifiers = ["italic"] }
+keyword = { fg = "#859900", modifiers = ["bold"] }
+operator = { fg = "#cb4b16" }
+punctuation = { fg = "#839496" }
+qualified_name = { fg = "#268bd2" }
+string_literal = { fg = "#2aa198" }
+numeric_literal = { fg = "#d33682" }
+comment = { fg = "#586e75" }
+pragma = { fg = "#586e75", modifiers = ["bold"] }
+module_name = { fg = "#268bd2" }
+package_name = { fg = "#586e75", modifiers = ["italic"] }
+doc_text = { fg = "#839496" }
+doc_code = { fg = "#2aa198" }
+doc_heading = { fg = "#b58900", modifiers = ["bold"] }
+doc_link = { fg = "#268bd2", modifiers = ["underline"] }
+search_input = { fg = "#839496" }
+status_bar = { fg = "#839496", bg = "#073642" }
+selected = { bg = "#073642" }
+cursor = { bg = "#586e75" }
+border = { fg = "#586e75" }
+error = { fg = "#dc322f" }
+spinner = { fg = "#b58900" }
