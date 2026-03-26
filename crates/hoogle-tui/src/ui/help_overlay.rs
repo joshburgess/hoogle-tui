@@ -208,7 +208,7 @@ const SECTIONS: &[HelpSection] = &[
                 desc: "Group results by module",
             },
             HelpEntry {
-                key: "Ctrl-m",
+                key: "M",
                 desc: "Browse module tree",
             },
             HelpEntry {

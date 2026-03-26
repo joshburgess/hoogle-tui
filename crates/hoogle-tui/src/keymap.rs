@@ -39,12 +39,13 @@ impl Keymap {
     fn load_defaults(&mut self) {
         use Action::*;
         use KeyCode::*;
-        // Global
+        // Global — these work in every mode
         for mode in AppMode::ALL {
             self.bind(mode, Char('c'), KeyModifiers::CONTROL, Quit);
             self.bind(mode, Char('l'), KeyModifiers::CONTROL, Redraw);
             self.bind_key(mode, F(1), ToggleHelp);
             self.bind(mode, Char('/'), KeyModifiers::CONTROL, ToggleHelp);
+            self.bind(mode, Char('t'), KeyModifiers::CONTROL, OpenThemeSwitcher);
         }
 
         // Search mode
@@ -87,18 +88,25 @@ impl Keymap {
             KeyModifiers::CONTROL,
             DeleteEntry,
         );
-        self.bind_key(AppMode::Results, Char('d'), DeleteEntry);
+        // d in Results is unbound (DeleteEntry only makes sense in History/Bookmarks popups)
+        self.bind(
+            AppMode::Results,
+            Char('d'),
+            KeyModifiers::CONTROL,
+            DeleteEntry,
+        );
         self.bind_key(AppMode::Results, Char('q'), Quit);
         self.bind_key(AppMode::Results, Esc, Back);
         self.bind_key(AppMode::Results, Char('?'), ToggleHelp);
-        // New: yank menu, package scope, theme, compact, browser, export
+        // Yank menu, package scope, theme, compact, browser, export
         self.bind_key(AppMode::Results, Char('c'), OpenYankMenu);
         self.bind(AppMode::Results, Char('p'), KeyModifiers::CONTROL, OpenPackageScope);
-        self.bind(AppMode::Results, Char('t'), KeyModifiers::CONTROL, OpenThemeSwitcher);
+        // Ctrl-t for theme is now global (bound above)
         self.bind_key(AppMode::Results, Char('v'), ToggleCompact);
         self.bind(AppMode::Results, Char('o'), KeyModifiers::CONTROL, OpenInBrowser);
         self.bind(AppMode::Results, Char('e'), KeyModifiers::CONTROL, ExportSession);
-        self.bind(AppMode::Results, Char('m'), KeyModifiers::CONTROL, OpenModuleBrowser);
+        // Module browser: use M (capital) since Ctrl-m == Enter on most terminals
+        self.bind_key(AppMode::Results, Char('M'), OpenModuleBrowser);
         self.bind_key(AppMode::Results, Char('P'), PinResult);
         self.bind(AppMode::Results, Char('x'), KeyModifiers::CONTROL, UnpinAll);
         self.bind_key(AppMode::Results, Char('x'), ToggleMultiSelect);
@@ -154,7 +162,7 @@ impl Keymap {
         self.bind_key(AppMode::DocView, Char('q'), Quit);
         self.bind_key(AppMode::DocView, Char('?'), ToggleHelp);
         self.bind(AppMode::DocView, Char('o'), KeyModifiers::CONTROL, OpenInBrowser);
-        self.bind(AppMode::DocView, Char('t'), KeyModifiers::CONTROL, OpenThemeSwitcher);
+        // Ctrl-t for theme is now global (bound above)
         self.bind(AppMode::DocView, Char('e'), KeyModifiers::CONTROL, ExportSession);
         self.bind_key(AppMode::DocView, Char('y'), YankDeclLink);
         self.bind_key(AppMode::DocView, Char('T'), YankGhciType);
@@ -168,12 +176,14 @@ impl Keymap {
         self.bind_key(AppMode::SourceView, Char('g'), MoveToTop);
         self.bind_key(AppMode::SourceView, Char('G'), MoveToBottom);
         self.bind_key(AppMode::SourceView, Esc, Back);
+        self.bind_key(AppMode::SourceView, Char('q'), Quit);
+        self.bind_key(AppMode::SourceView, Char('?'), ToggleHelp);
         self.bind_key(AppMode::SourceView, Char('y'), YankSignature);
 
-        // Help mode
+        // Help mode — q closes help (not quit app)
         self.bind_key(AppMode::Help, Esc, Back);
         self.bind_key(AppMode::Help, Char('?'), Back);
-        self.bind_key(AppMode::Help, Char('q'), Quit);
+        self.bind_key(AppMode::Help, Char('q'), Back);
         self.bind_key(AppMode::Help, Char('j'), ScrollDown);
         self.bind_key(AppMode::Help, Down, ScrollDown);
         self.bind_key(AppMode::Help, Char('k'), ScrollUp);
@@ -437,6 +447,109 @@ mod tests {
     #[test]
     fn parse_action_name_invalid() {
         assert!(parse_action_name("nonexistent").is_none());
+    }
+
+    // --- Tests for fixes to keybinding bugs ---
+
+    #[test]
+    fn ctrl_t_opens_theme_in_all_modes() {
+        let km = default_keymap();
+        for mode in AppMode::ALL {
+            let action = km.resolve(
+                mode,
+                KeyEvent::new(KeyCode::Char('t'), KeyModifiers::CONTROL),
+            );
+            assert_eq!(
+                action,
+                Action::OpenThemeSwitcher,
+                "Ctrl-t should open theme switcher in {mode:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn q_in_help_goes_back_not_quit() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::Help,
+            KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
+        );
+        assert_eq!(action, Action::Back);
+    }
+
+    #[test]
+    fn q_in_source_view_quits() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::SourceView,
+            KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
+        );
+        assert_eq!(action, Action::Quit);
+    }
+
+    #[test]
+    fn help_available_in_source_view() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::SourceView,
+            KeyEvent::new(KeyCode::Char('?'), KeyModifiers::NONE),
+        );
+        assert_eq!(action, Action::ToggleHelp);
+    }
+
+    #[test]
+    fn d_in_results_is_not_delete_entry() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::Results,
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::NONE),
+        );
+        // 'd' should be unbound in Results (Action::None), not DeleteEntry
+        assert_eq!(action, Action::None);
+    }
+
+    #[test]
+    fn ctrl_d_in_results_is_delete_entry() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::Results,
+            KeyEvent::new(KeyCode::Char('d'), KeyModifiers::CONTROL),
+        );
+        assert_eq!(action, Action::DeleteEntry);
+    }
+
+    #[test]
+    fn capital_m_opens_module_browser() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::Results,
+            KeyEvent::new(KeyCode::Char('M'), KeyModifiers::NONE),
+        );
+        assert_eq!(action, Action::OpenModuleBrowser);
+    }
+
+    #[test]
+    fn docview_arrows_are_scroll_not_move() {
+        // This verifies the bug: in DocView, j/Down map to ScrollDown, not MoveDown.
+        // The popup router in main.rs must handle this by mapping keys directly,
+        // not relying on the mode-specific keymap.
+        let km = default_keymap();
+        assert_eq!(
+            km.resolve(
+                AppMode::DocView,
+                KeyEvent::new(KeyCode::Char('j'), KeyModifiers::NONE)
+            ),
+            Action::ScrollDown
+        );
+        assert_eq!(
+            km.resolve(
+                AppMode::DocView,
+                KeyEvent::new(KeyCode::Down, KeyModifiers::NONE)
+            ),
+            Action::ScrollDown
+        );
+        // This is why the popup router maps j/Down directly to MoveDown,
+        // bypassing the mode-specific keymap.
     }
 
     #[test]

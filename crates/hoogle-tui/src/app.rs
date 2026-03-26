@@ -486,7 +486,7 @@ impl App {
                         self.popup = None;
                         self.theme_popup = None;
                     }
-                    Action::Back | Action::Quit => {
+                    Action::Back | Action::Quit | Action::OpenThemeSwitcher => {
                         self.popup = None;
                         self.theme_popup = None;
                     }
@@ -780,8 +780,15 @@ impl App {
 
             // New: Theme switcher
             Action::OpenThemeSwitcher => {
-                self.theme_popup = Some(theme_popup::ThemePopupState::new(&self.theme.name));
-                self.popup = Some(PopupMode::ThemeSwitcher);
+                if self.popup == Some(PopupMode::ThemeSwitcher) {
+                    // Toggle off
+                    self.popup = None;
+                    self.theme_popup = None;
+                } else {
+                    self.theme_popup =
+                        Some(theme_popup::ThemePopupState::new(&self.theme.name));
+                    self.popup = Some(PopupMode::ThemeSwitcher);
+                }
             }
 
             // New: Compact toggle
@@ -922,25 +929,36 @@ impl App {
                 self.results.fuzzy_delete_char();
             }
             KeyCode::Enter => {
-                // Confirm filter, keep filtered view, or select result
+                // Confirm filter and open docs for selected result
                 if self.results.visible_count() > 0 {
                     self.open_doc_for_selected();
                 }
             }
             KeyCode::Char(c) => {
-                // Check if it's a navigation key (j/k) — pass through
                 let action = keymap.resolve(
                     AppMode::Results,
                     crossterm::event::KeyEvent::new(key.code, key.modifiers),
                 );
+                // Pass through navigation and important actions
                 match action {
                     crate::actions::Action::MoveDown
                     | crate::actions::Action::MoveUp
                     | crate::actions::Action::MoveToTop
-                    | crate::actions::Action::MoveToBottom => {
+                    | crate::actions::Action::MoveToBottom
+                    | crate::actions::Action::Quit
+                    | crate::actions::Action::ToggleHelp
+                    | crate::actions::Action::FocusSearch
+                    | crate::actions::Action::OpenFilter
+                    | crate::actions::Action::OpenSort
+                    | crate::actions::Action::Select
+                    | crate::actions::Action::TogglePreview
+                    | crate::actions::Action::YankSignature
+                    | crate::actions::Action::OpenYankMenu => {
+                        self.results.clear_fuzzy_filter();
                         self.handle_action(action);
                     }
                     _ => {
+                        // Only add printable chars to filter
                         if c.is_alphanumeric() || c == '_' || c == '.' || c == ' ' {
                             self.results.fuzzy_add_char(c);
                         }

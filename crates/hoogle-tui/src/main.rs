@@ -151,64 +151,125 @@ async fn main() -> io::Result<()> {
             if let AppEvent::Mouse(mouse) = &event {
                 app.handle_mouse(*mouse);
             }
+            // Standard popups: intercept keys for j/k/Enter/Esc navigation
+            // This must come before mode-specific routing so popups work
+            // regardless of the underlying app mode.
+            else if matches!(
+                app.popup,
+                Some(
+                    app::PopupMode::Filter
+                        | app::PopupMode::Sort
+                        | app::PopupMode::Toc
+                        | app::PopupMode::History
+                        | app::PopupMode::Bookmarks
+                        | app::PopupMode::YankMenu
+                        | app::PopupMode::ThemeSwitcher
+                )
+            ) {
+                match &event {
+                    AppEvent::Key(key) => {
+                        use crossterm::event::KeyCode;
+                        let action = match key.code {
+                            KeyCode::Char('j') | KeyCode::Down => actions::Action::MoveDown,
+                            KeyCode::Char('k') | KeyCode::Up => actions::Action::MoveUp,
+                            KeyCode::Enter => actions::Action::Select,
+                            KeyCode::Esc => actions::Action::Back,
+                            KeyCode::Char('q') => actions::Action::Back,
+                            KeyCode::Char('d')
+                                if key
+                                    .modifiers
+                                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
+                            {
+                                actions::Action::DeleteEntry
+                            }
+                            KeyCode::Char('t')
+                                if key
+                                    .modifiers
+                                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
+                            {
+                                actions::Action::OpenThemeSwitcher
+                            }
+                            _ => actions::Action::Tick, // ignore other keys but still tick
+                        };
+                        app.handle_action(action);
+                    }
+                    AppEvent::Tick => app.handle_action(actions::Action::Tick),
+                    _ => {
+                        let action = map_event_to_action(&event, app.mode, &keymap);
+                        app.handle_action(action);
+                    }
+                }
+            }
             // Module browser popup needs text input for filter
             else if app.popup == Some(app::PopupMode::ModuleBrowser) {
-                if let AppEvent::Key(key) = &event {
-                    use crossterm::event::KeyCode;
-                    match key.code {
-                        KeyCode::Enter => app.handle_action(actions::Action::Select),
-                        KeyCode::Esc => app.handle_action(actions::Action::Back),
-                        KeyCode::Char('j') => app.handle_action(actions::Action::MoveDown),
-                        KeyCode::Down => app.handle_action(actions::Action::MoveDown),
-                        KeyCode::Char('k') => app.handle_action(actions::Action::MoveUp),
-                        KeyCode::Up => app.handle_action(actions::Action::MoveUp),
-                        KeyCode::Char(' ') => app.handle_action(actions::Action::ScrollDown),
-                        KeyCode::Backspace => {
-                            if let Some(ref mut mb) = app.module_browser {
-                                mb.delete_filter_char();
+                match &event {
+                    AppEvent::Key(key) => {
+                        use crossterm::event::KeyCode;
+                        match key.code {
+                            KeyCode::Enter => app.handle_action(actions::Action::Select),
+                            KeyCode::Esc => app.handle_action(actions::Action::Back),
+                            KeyCode::Char('j') | KeyCode::Down => {
+                                app.handle_action(actions::Action::MoveDown);
                             }
-                        }
-                        KeyCode::Char(c) => {
-                            if let Some(ref mut mb) = app.module_browser {
-                                mb.add_filter_char(c);
+                            KeyCode::Char('k') | KeyCode::Up => {
+                                app.handle_action(actions::Action::MoveUp);
                             }
+                            KeyCode::Char(' ') => {
+                                app.handle_action(actions::Action::ScrollDown);
+                            }
+                            KeyCode::Backspace => {
+                                if let Some(ref mut mb) = app.module_browser {
+                                    mb.delete_filter_char();
+                                }
+                            }
+                            KeyCode::Char(c) => {
+                                if let Some(ref mut mb) = app.module_browser {
+                                    mb.add_filter_char(c);
+                                }
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
-                } else {
-                    let action = map_event_to_action(&event, app.mode, &keymap);
-                    app.handle_action(action);
+                    AppEvent::Tick => app.handle_action(actions::Action::Tick),
+                    _ => {
+                        let action = map_event_to_action(&event, app.mode, &keymap);
+                        app.handle_action(action);
+                    }
                 }
             }
             // Package scope popup needs text input
             else if app.popup == Some(app::PopupMode::PackageScope) {
-                if let AppEvent::Key(key) = &event {
-                    use crossterm::event::KeyCode;
-                    match key.code {
-                        KeyCode::Enter => app.handle_action(actions::Action::Select),
-                        KeyCode::Esc => app.handle_action(actions::Action::Back),
-                        KeyCode::Backspace => {
-                            if let Some(ref mut pp) = app.package_popup {
-                                pp.delete_char();
+                match &event {
+                    AppEvent::Key(key) => {
+                        use crossterm::event::KeyCode;
+                        match key.code {
+                            KeyCode::Enter => app.handle_action(actions::Action::Select),
+                            KeyCode::Esc => app.handle_action(actions::Action::Back),
+                            KeyCode::Backspace => {
+                                if let Some(ref mut pp) = app.package_popup {
+                                    pp.delete_char();
+                                }
                             }
-                        }
-                        KeyCode::Char('u')
-                            if key
-                                .modifiers
-                                .contains(crossterm::event::KeyModifiers::CONTROL) =>
-                        {
-                            app.handle_action(actions::Action::ClearSearch);
-                        }
-                        KeyCode::Char(c) => {
-                            if let Some(ref mut pp) = app.package_popup {
-                                pp.add_char(c);
+                            KeyCode::Char('u')
+                                if key
+                                    .modifiers
+                                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
+                            {
+                                app.handle_action(actions::Action::ClearSearch);
                             }
+                            KeyCode::Char(c) => {
+                                if let Some(ref mut pp) = app.package_popup {
+                                    pp.add_char(c);
+                                }
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
-                } else {
-                    let action = map_event_to_action(&event, app.mode, &keymap);
-                    app.handle_action(action);
+                    AppEvent::Tick => app.handle_action(actions::Action::Tick),
+                    _ => {
+                        let action = map_event_to_action(&event, app.mode, &keymap);
+                        app.handle_action(action);
+                    }
                 }
             }
             // In search mode, let the textarea handle key events first
@@ -228,8 +289,9 @@ async fn main() -> io::Result<()> {
                             | actions::Action::ClearSearch => {
                                 app.handle_action(action);
                             }
-                            // F1 and Ctrl-/ open help (bypass textarea)
-                            actions::Action::ToggleHelp => {
+                            // F1, Ctrl-/, Ctrl-t bypass textarea
+                            actions::Action::ToggleHelp
+                            | actions::Action::OpenThemeSwitcher => {
                                 app.handle_action(action);
                             }
                             _ => {
