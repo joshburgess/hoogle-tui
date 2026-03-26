@@ -1,6 +1,7 @@
 use hoogle_syntax::theme::{SemanticToken, Theme};
 use ratatui::{
     layout::Rect,
+    style::Modifier,
     text::{Line, Span},
     widgets::Paragraph,
     Frame,
@@ -18,6 +19,9 @@ pub struct StatusState {
     pub result_count: usize,
     pub message: Option<StatusMessage>,
     pub spinner_tick: usize,
+    pub search_by_type: bool,
+    pub offline: bool,
+    pub package_scope: Vec<String>,
 }
 
 pub enum StatusMessage {
@@ -33,6 +37,9 @@ impl StatusState {
             result_count: 0,
             message: None,
             spinner_tick: 0,
+            search_by_type: false,
+            offline: false,
+            package_scope: Vec::new(),
         }
     }
 
@@ -53,17 +60,57 @@ impl StatusState {
     }
 }
 
+fn mode_label(mode: AppMode) -> &'static str {
+    match mode {
+        AppMode::Search => "SEARCH",
+        AppMode::Results => "RESULTS",
+        AppMode::DocView => "DOCS",
+        AppMode::SourceView => "SOURCE",
+        AppMode::Help => "HELP",
+    }
+}
+
 pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode, theme: &Theme) {
     let status_style = theme.style(SemanticToken::StatusBar);
     let key_style = theme.style(SemanticToken::ModuleName);
+    let mode_style = theme
+        .style(SemanticToken::Keyword)
+        .add_modifier(Modifier::BOLD);
     let hint_style = status_style;
 
+    // Left side: mode indicator + backend + badges + message/count
     let mut left_spans = vec![
-        Span::styled(format!(" {} ", state.backend_name), status_style),
+        Span::styled(format!(" {} ", mode_label(mode)), mode_style),
         Span::styled("\u{2502} ", status_style),
+        Span::styled(format!("{} ", state.backend_name), status_style),
     ];
 
-    // Show message or result count
+    if state.offline {
+        left_spans.push(Span::styled(
+            "OFFLINE ",
+            theme
+                .style(SemanticToken::Error)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+
+    if state.search_by_type {
+        left_spans.push(Span::styled(
+            "[type] ",
+            theme.style(SemanticToken::Keyword),
+        ));
+    }
+
+    if !state.package_scope.is_empty() {
+        let scope = state.package_scope.join(",");
+        left_spans.push(Span::styled(
+            format!("[{scope}] "),
+            theme.style(SemanticToken::ModuleName),
+        ));
+    }
+
+    left_spans.push(Span::styled("\u{2502} ", status_style));
+
     match &state.message {
         Some(StatusMessage::Loading(msg)) => {
             let spinner = SPINNER_FRAMES[state.spinner_tick];
@@ -74,45 +121,64 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
         }
         Some(StatusMessage::Error(msg)) => {
             left_spans.push(Span::styled(
-                format!(" {msg} "),
+                format!("{msg} "),
                 theme.style(SemanticToken::Error),
             ));
         }
         Some(StatusMessage::Info(msg)) => {
-            left_spans.push(Span::styled(format!(" {msg} "), status_style));
+            left_spans.push(Span::styled(format!("{msg} "), status_style));
         }
         None => {
-            left_spans.push(Span::styled(
-                format!("{} results ", state.result_count),
-                status_style,
-            ));
+            if state.result_count > 0 {
+                left_spans.push(Span::styled(
+                    format!("{} results ", state.result_count),
+                    status_style,
+                ));
+            }
         }
     }
 
-    // Right side: contextual key hints
-    let hints = match mode {
-        AppMode::Search => vec![("Enter", "results"), ("Esc", "quit")],
+    // Right side: contextual key hints (most important actions for this mode)
+    let hints: Vec<(&str, &str)> = match mode {
+        AppMode::Search => vec![
+            ("Enter", "focus results"),
+            ("Ctrl-r", "history"),
+            ("F1/Ctrl-/", "help"),
+            ("Esc", "clear/quit"),
+        ],
         AppMode::Results => vec![
-            ("j/k", "navigate"),
-            ("Enter", "open"),
+            ("\u{2191}\u{2193}/jk", "navigate"),
+            ("Enter", "open docs"),
+            ("Tab", "preview"),
             ("/", "search"),
-            ("?", "help"),
+            ("?", "all keys"),
             ("q", "quit"),
         ],
         AppMode::DocView => vec![
-            ("j/k", "scroll"),
-            ("n/p", "next/prev"),
+            ("\u{2191}\u{2193}/jk", "scroll"),
+            ("n/p", "decl"),
             ("o", "toc"),
+            ("/", "find"),
+            ("s", "source"),
+            ("?", "help"),
             ("Esc", "back"),
         ],
-        AppMode::SourceView => vec![("j/k", "scroll"), ("Esc", "back")],
-        AppMode::Help => vec![("j/k", "scroll"), ("Esc", "close")],
+        AppMode::SourceView => vec![
+            ("\u{2191}\u{2193}/jk", "scroll"),
+            ("g/G", "top/bottom"),
+            ("y", "copy"),
+            ("Esc", "back"),
+        ],
+        AppMode::Help => vec![("\u{2191}\u{2193}/jk", "scroll"), ("?/Esc", "close")],
     };
 
     let mut right_spans: Vec<Span> = Vec::new();
-    for (key, desc) in hints {
-        right_spans.push(Span::styled(format!(" {key}"), key_style));
-        right_spans.push(Span::styled(format!(":{desc}"), hint_style));
+    for (i, (key, desc)) in hints.iter().enumerate() {
+        if i > 0 {
+            right_spans.push(Span::styled(" \u{2502} ", status_style));
+        }
+        right_spans.push(Span::styled(*key, key_style));
+        right_spans.push(Span::styled(format!(" {desc}"), hint_style));
     }
     right_spans.push(Span::styled(" ", status_style));
 

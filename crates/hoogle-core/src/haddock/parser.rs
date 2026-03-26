@@ -319,12 +319,8 @@ fn parse_doc_blocks(el: ElementRef, base_url: &Url) -> Vec<DocBlock> {
                 }
             }
             "table" => {
-                // Flatten table to paragraph
-                let text = child_el.text().collect::<String>();
-                let trimmed = text.trim();
-                if !trimmed.is_empty() {
-                    blocks.push(DocBlock::Paragraph(vec![Inline::Text(trimmed.to_string())]));
-                }
+                let table = parse_table(child_el, base_url);
+                blocks.push(table);
             }
             "dl" => {
                 // Definition list — convert to unordered list
@@ -332,6 +328,27 @@ fn parse_doc_blocks(el: ElementRef, base_url: &Url) -> Vec<DocBlock> {
                 if !items.is_empty() {
                     blocks.push(DocBlock::UnorderedList(items));
                 }
+            }
+            "blockquote" => {
+                // Treat blockquote as an indented note
+                let inlines = parse_inlines(child_el, base_url);
+                if !inlines.is_empty() {
+                    blocks.push(DocBlock::Note(inlines));
+                }
+            }
+            "details" => {
+                // Expand <details> content (ignore <summary> as a header)
+                let summary_sel = sel("summary");
+                if let Some(summary) = child_el.select(&summary_sel).next() {
+                    let content = parse_inlines(summary, base_url);
+                    if !content.is_empty() {
+                        blocks.push(DocBlock::Header {
+                            level: 4,
+                            content,
+                        });
+                    }
+                }
+                blocks.extend(parse_doc_blocks(child_el, base_url));
             }
             _ => {
                 // Try to extract content
@@ -374,6 +391,65 @@ fn parse_dl_items(el: ElementRef, base_url: &Url) -> Vec<Vec<Inline>> {
     }
 
     items
+}
+
+fn parse_table(el: ElementRef, base_url: &Url) -> DocBlock {
+    let thead_sel = sel("thead tr");
+    let tbody_sel = sel("tbody tr");
+    let tr_sel = sel("tr");
+    let th_sel = sel("th");
+    let td_sel = sel("td");
+
+    // Extract headers from <thead> or first row with <th>
+    let mut headers: Vec<Vec<Inline>> = Vec::new();
+    if let Some(header_row) = el.select(&thead_sel).next() {
+        headers = header_row
+            .select(&th_sel)
+            .map(|cell| parse_inlines(cell, base_url))
+            .collect();
+    }
+
+    // Extract body rows
+    let mut rows: Vec<Vec<Vec<Inline>>> = Vec::new();
+    let body_rows = el.select(&tbody_sel);
+    let all_rows_iter: Box<dyn Iterator<Item = ElementRef>> = if body_rows.clone().next().is_some()
+    {
+        Box::new(body_rows)
+    } else {
+        // No <tbody>, use all <tr> directly
+        Box::new(el.select(&tr_sel))
+    };
+
+    for row_el in all_rows_iter {
+        // If this row has <th> and we have no headers yet, use it as headers
+        let ths: Vec<_> = row_el.select(&th_sel).collect();
+        if !ths.is_empty() && headers.is_empty() {
+            headers = ths
+                .into_iter()
+                .map(|cell| parse_inlines(cell, base_url))
+                .collect();
+            continue;
+        }
+
+        let cells: Vec<Vec<Inline>> = row_el
+            .select(&td_sel)
+            .map(|cell| parse_inlines(cell, base_url))
+            .collect();
+        if !cells.is_empty() {
+            rows.push(cells);
+        }
+    }
+
+    // If we got nothing useful, fall back to text
+    if headers.is_empty() && rows.is_empty() {
+        let text = el.text().collect::<String>();
+        let trimmed = text.trim();
+        if !trimmed.is_empty() {
+            return DocBlock::Paragraph(vec![Inline::Text(trimmed.to_string())]);
+        }
+    }
+
+    DocBlock::Table { headers, rows }
 }
 
 // --- Inline parsing ---
@@ -431,12 +507,27 @@ fn parse_inlines(el: ElementRef, base_url: &Url) -> Vec<Inline> {
                         inlines.extend(parse_inlines(child_el, base_url));
                     }
                 }
-                "pre" => {
+                "pre" | "kbd" | "samp" | "var" => {
                     let text = child_el.text().collect::<String>();
                     inlines.push(Inline::Code(text));
                 }
+                "sub" => {
+                    let text = child_el.text().collect::<String>();
+                    inlines.push(Inline::Text(format!("_{text}")));
+                }
+                "sup" => {
+                    let text = child_el.text().collect::<String>();
+                    inlines.push(Inline::Text(format!("^{text}")));
+                }
+                "br" => {
+                    inlines.push(Inline::Text("\n".to_string()));
+                }
+                "img" => {
+                    let alt = child_el.value().attr("alt").unwrap_or("[image]");
+                    inlines.push(Inline::Text(format!("[{alt}]")));
+                }
                 _ => {
-                    // Recurse for unknown elements
+                    // Recurse for unknown elements (details, summary, div, etc.)
                     inlines.extend(parse_inlines(child_el, base_url));
                 }
             }
@@ -699,5 +790,137 @@ fromJust Nothing = error "fromJust"
             .description
             .iter()
             .any(|b| matches!(b, DocBlock::Header { level: 2, .. })));
+    }
+
+    #[test]
+    fn parse_table() {
+        let html = r#"<html><body>
+            <div class="top">
+                <p class="src"><a id="v:tab" class="def">tab</a> :: Int</p>
+                <div class="doc">
+                    <table>
+                        <thead><tr><th>Name</th><th>Type</th></tr></thead>
+                        <tbody>
+                            <tr><td>foo</td><td>Int</td></tr>
+                            <tr><td>bar</td><td>Bool</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        let decl = &result.declarations[0];
+        let table = decl
+            .doc
+            .iter()
+            .find(|b| matches!(b, DocBlock::Table { .. }));
+        assert!(table.is_some(), "expected a Table block");
+        if let Some(DocBlock::Table { headers, rows }) = table {
+            assert_eq!(headers.len(), 2);
+            assert_eq!(rows.len(), 2);
+        }
+    }
+
+    #[test]
+    fn parse_table_no_thead() {
+        let html = r#"<html><body>
+            <div class="top">
+                <p class="src"><a id="v:t2" class="def">t2</a> :: Int</p>
+                <div class="doc">
+                    <table>
+                        <tr><th>A</th><th>B</th></tr>
+                        <tr><td>1</td><td>2</td></tr>
+                    </table>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        let decl = &result.declarations[0];
+        let table = decl
+            .doc
+            .iter()
+            .find(|b| matches!(b, DocBlock::Table { .. }));
+        assert!(table.is_some());
+        if let Some(DocBlock::Table { headers, rows }) = table {
+            assert_eq!(headers.len(), 2);
+            assert_eq!(rows.len(), 1);
+        }
+    }
+
+    #[test]
+    fn parse_blockquote_as_note() {
+        let html = r#"<html><body>
+            <div id="description">
+                <div class="doc">
+                    <blockquote>This is a quoted note.</blockquote>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        assert!(result
+            .description
+            .iter()
+            .any(|b| matches!(b, DocBlock::Note(_))));
+    }
+
+    #[test]
+    fn parse_details_summary() {
+        let html = r#"<html><body>
+            <div id="description">
+                <div class="doc">
+                    <details>
+                        <summary>Click to expand</summary>
+                        <p>Hidden content here.</p>
+                    </details>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        // Should have a header from summary + paragraph from content
+        assert!(result.description.len() >= 2);
+    }
+
+    #[test]
+    fn parse_definition_list() {
+        let html = r#"<html><body>
+            <div id="description">
+                <div class="doc">
+                    <dl>
+                        <dt>Term 1</dt><dd>Definition 1</dd>
+                        <dt>Term 2</dt><dd>Definition 2</dd>
+                    </dl>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        assert!(result
+            .description
+            .iter()
+            .any(|b| matches!(b, DocBlock::UnorderedList(items) if items.len() == 2)));
+    }
+
+    #[test]
+    fn parse_inline_img_alt() {
+        let html = r#"<html><body>
+            <div class="top">
+                <p class="src"><a id="v:img" class="def">img</a> :: Int</p>
+                <div class="doc">
+                    <p>See <img alt="diagram" src="foo.png"/> for details.</p>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        let decl = &result.declarations[0];
+        if let Some(DocBlock::Paragraph(inlines)) = decl.doc.first() {
+            assert!(inlines
+                .iter()
+                .any(|i| matches!(i, Inline::Text(s) if s.contains("[diagram]"))));
+        }
     }
 }

@@ -707,8 +707,136 @@ fn render_blocks(
                 }
                 lines.push(Line::from(""));
             }
+
+            DocBlock::Table { headers, rows } => {
+                render_table(headers, rows, theme, width, lines, links);
+                lines.push(Line::from(""));
+            }
         }
     }
+}
+
+fn render_table(
+    headers: &[Vec<Inline>],
+    rows: &[Vec<Vec<Inline>>],
+    theme: &Theme,
+    width: usize,
+    lines: &mut Vec<Line<'static>>,
+    _links: &mut Vec<(usize, Url)>,
+) {
+    let border_style = theme.style(SemanticToken::Border);
+    let header_style = theme
+        .style(SemanticToken::DocHeading)
+        .add_modifier(Modifier::BOLD);
+    let cell_style = theme.style(SemanticToken::DocText);
+
+    // Compute column count
+    let num_cols = headers
+        .len()
+        .max(rows.iter().map(|r| r.len()).max().unwrap_or(0));
+    if num_cols == 0 {
+        return;
+    }
+
+    // Helper: flatten inlines to plain text for width calculation
+    let to_text = |inlines: &[Inline]| -> String {
+        inlines
+            .iter()
+            .map(|i| match i {
+                Inline::Text(t)
+                | Inline::Code(t)
+                | Inline::Emphasis(t)
+                | Inline::Bold(t)
+                | Inline::Math(t)
+                | Inline::ModuleLink(t) => t.as_str(),
+                Inline::Link { text, .. } => text.as_str(),
+            })
+            .collect()
+    };
+
+    // Compute column widths
+    let mut col_widths: Vec<usize> = vec![0; num_cols];
+    for (i, h) in headers.iter().enumerate() {
+        col_widths[i] = col_widths[i].max(to_text(h).len());
+    }
+    for row in rows {
+        for (i, cell) in row.iter().enumerate() {
+            if i < num_cols {
+                col_widths[i] = col_widths[i].max(to_text(cell).len());
+            }
+        }
+    }
+
+    // Cap column widths to fit terminal
+    let total: usize = col_widths.iter().sum::<usize>() + (num_cols + 1) * 3;
+    if total > width {
+        let available = width.saturating_sub((num_cols + 1) * 3);
+        let per_col = available / num_cols.max(1);
+        for w in &mut col_widths {
+            *w = (*w).min(per_col.max(4));
+        }
+    }
+
+    // Build separator line
+    let sep: String = col_widths
+        .iter()
+        .map(|w| "\u{2500}".repeat(w + 2))
+        .collect::<Vec<_>>()
+        .join("\u{253c}");
+    let sep_line = format!("\u{251c}{sep}\u{2524}");
+
+    // Build top border
+    let top: String = col_widths
+        .iter()
+        .map(|w| "\u{2500}".repeat(w + 2))
+        .collect::<Vec<_>>()
+        .join("\u{252c}");
+    lines.push(Line::from(Span::styled(
+        format!("\u{250c}{top}\u{2510}"),
+        border_style,
+    )));
+
+    // Render header row
+    if !headers.is_empty() {
+        let mut spans = vec![Span::styled("\u{2502} ", border_style)];
+        for (i, h) in headers.iter().enumerate() {
+            let text = to_text(h);
+            let w = col_widths.get(i).copied().unwrap_or(10);
+            let padded = format!("{:<width$}", text, width = w);
+            spans.push(Span::styled(padded, header_style));
+            spans.push(Span::styled(" \u{2502} ", border_style));
+        }
+        lines.push(Line::from(spans));
+        lines.push(Line::from(Span::styled(sep_line.clone(), border_style)));
+    }
+
+    // Render data rows
+    for row in rows {
+        let mut spans = vec![Span::styled("\u{2502} ", border_style)];
+        for i in 0..num_cols {
+            let text = row.get(i).map(|c| to_text(c)).unwrap_or_default();
+            let w = col_widths.get(i).copied().unwrap_or(10);
+            let truncated = if text.len() > w {
+                format!("{}\u{2026}", &text[..w.saturating_sub(1)])
+            } else {
+                format!("{:<width$}", text, width = w)
+            };
+            spans.push(Span::styled(truncated, cell_style));
+            spans.push(Span::styled(" \u{2502} ", border_style));
+        }
+        lines.push(Line::from(spans));
+    }
+
+    // Bottom border
+    let bottom: String = col_widths
+        .iter()
+        .map(|w| "\u{2500}".repeat(w + 2))
+        .collect::<Vec<_>>()
+        .join("\u{2534}");
+    lines.push(Line::from(Span::styled(
+        format!("\u{2514}{bottom}\u{2518}"),
+        border_style,
+    )));
 }
 
 fn wrap_inlines(

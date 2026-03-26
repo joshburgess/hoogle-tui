@@ -1,3 +1,4 @@
+/// A lexical token produced by the Haskell tokenizer.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Token {
     Keyword(String),

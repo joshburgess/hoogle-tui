@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 description = "Haskell syntax highlighting and tokenization for hoogle-tui"
 license = "MIT"
+repository = "https://github.com/joshburgess/hoogle-tui"
+keywords = ["haskell", "syntax-highlighting"]
+categories = ["text-processing"]
 
 [dependencies]
 serde = { workspace = true }

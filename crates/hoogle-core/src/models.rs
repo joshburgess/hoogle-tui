@@ -2,18 +2,27 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 use url::Url;
 
+/// A single result returned from a Hoogle search query.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
+    /// The name of the function, type, class, or module.
     pub name: String,
+    /// The module this result belongs to, if any.
     pub module: Option<ModulePath>,
+    /// The package this result belongs to, if any.
     pub package: Option<PackageInfo>,
+    /// The Haskell type signature, if applicable.
     pub signature: Option<String>,
+    /// URL to the Haddock documentation page.
     pub doc_url: Option<Url>,
+    /// A brief excerpt from the documentation.
     pub short_doc: Option<String>,
+    /// The kind of Haskell entity this result represents.
     pub result_kind: ResultKind,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// A Haskell module path represented as a list of components (e.g., `["Data", "Map", "Strict"]`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ModulePath(pub Vec<String>);
 
 impl ModulePath {
@@ -28,6 +37,7 @@ impl fmt::Display for ModulePath {
     }
 }
 
+/// Metadata about a Hackage package, including its name and optional version.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PackageInfo {
     pub name: String,
@@ -43,6 +53,7 @@ impl fmt::Display for PackageInfo {
     }
 }
 
+/// The kind of Haskell entity a search result represents.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ResultKind {
     Function,

@@ -1,3 +1,7 @@
+//! Haskell syntax highlighting for type signatures and code blocks.
+//!
+//! Provides tokenization and theme-aware rendering into styled ratatui `Line` values.
+
 pub mod haskell;
 pub mod theme;
 pub mod tokenizer;

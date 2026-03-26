@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+/// Top-level application configuration, loaded from TOML file with fallback to defaults.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -24,6 +25,7 @@ impl Default for Config {
     }
 }
 
+/// Configuration for the Hoogle search backend (local CLI or web API).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct BackendConfig {
@@ -46,6 +48,7 @@ impl Default for BackendConfig {
     }
 }
 
+/// Configuration for the terminal UI layout and behavior.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UiConfig {
@@ -68,6 +71,7 @@ impl Default for UiConfig {
     }
 }
 
+/// Configuration for the on-disk Haddock documentation cache.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CacheConfig {
@@ -88,6 +92,7 @@ impl Default for CacheConfig {
     }
 }
 
+/// Which Hoogle backend to use for searches.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum BackendMode {
@@ -96,6 +101,7 @@ pub enum BackendMode {
     Web,
 }
 
+/// How to arrange the result list and preview pane.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LayoutMode {
@@ -104,6 +110,7 @@ pub enum LayoutMode {
     Horizontal,
 }
 
+/// User-defined keybinding overrides, mapping action names to key strings.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct KeybindOverrides {
     #[serde(default)]

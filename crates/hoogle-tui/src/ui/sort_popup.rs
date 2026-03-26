@@ -106,6 +106,115 @@ pub fn render(frame: &mut Frame, state: &SortState, theme: &Theme) {
     frame.render_widget(paragraph, inner);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_defaults() {
+        let state = SortState::new();
+        assert_eq!(state.selected, 0);
+        assert_eq!(state.active_sort, SortMode::Relevance);
+    }
+
+    #[test]
+    fn move_down_increments() {
+        let mut state = SortState::new();
+        state.move_down();
+        assert_eq!(state.selected, 1);
+    }
+
+    #[test]
+    fn move_down_clamps_at_end() {
+        let mut state = SortState::new();
+        for _ in 0..20 {
+            state.move_down();
+        }
+        assert_eq!(state.selected, SORT_OPTIONS.len() - 1);
+    }
+
+    #[test]
+    fn move_up_decrements() {
+        let mut state = SortState::new();
+        state.move_down();
+        state.move_down();
+        state.move_up();
+        assert_eq!(state.selected, 1);
+    }
+
+    #[test]
+    fn move_up_clamps_at_zero() {
+        let mut state = SortState::new();
+        state.move_up();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn confirm_returns_relevance_by_default() {
+        let mut state = SortState::new();
+        let mode = state.confirm();
+        assert_eq!(mode, SortMode::Relevance);
+        assert_eq!(state.active_sort, SortMode::Relevance);
+    }
+
+    #[test]
+    fn confirm_package() {
+        let mut state = SortState::new();
+        state.move_down(); // Package
+        let mode = state.confirm();
+        assert_eq!(mode, SortMode::Package);
+        assert_eq!(state.active_sort, SortMode::Package);
+    }
+
+    #[test]
+    fn confirm_module() {
+        let mut state = SortState::new();
+        state.move_down();
+        state.move_down(); // Module
+        let mode = state.confirm();
+        assert_eq!(mode, SortMode::Module);
+    }
+
+    #[test]
+    fn confirm_name() {
+        let mut state = SortState::new();
+        for _ in 0..3 {
+            state.move_down();
+        }
+        let mode = state.confirm();
+        assert_eq!(mode, SortMode::Name);
+    }
+
+    #[test]
+    fn sync_selection_matches_active_sort() {
+        let mut state = SortState::new();
+        state.active_sort = SortMode::Module;
+        state.sync_selection();
+        assert_eq!(state.selected, 2);
+    }
+
+    #[test]
+    fn sync_selection_relevance() {
+        let mut state = SortState::new();
+        state.selected = 3;
+        state.active_sort = SortMode::Relevance;
+        state.sync_selection();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn confirm_then_sync_roundtrip() {
+        let mut state = SortState::new();
+        state.move_down(); // Package
+        state.confirm();
+        assert_eq!(state.active_sort, SortMode::Package);
+
+        state.selected = 0;
+        state.sync_selection();
+        assert_eq!(state.selected, 1);
+    }
+}
+
 fn centered_popup(area: Rect, width: u16, height: u16) -> Rect {
     let vertical = Layout::vertical([
         Constraint::Length((area.height.saturating_sub(height)) / 2),

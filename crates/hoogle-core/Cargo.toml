@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2021"
 description = "Core library for hoogle-tui: backends, Haddock parsing, caching, and configuration"
 license = "MIT"
+repository = "https://github.com/joshburgess/hoogle-tui"
+keywords = ["haskell", "hoogle"]
+categories = ["development-tools"]
 
 [dependencies]
 tokio = { workspace = true }

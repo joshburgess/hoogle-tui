@@ -8,7 +8,8 @@ use ratatui::{
     Frame,
 };
 
-const LINES_PER_RESULT: usize = 3;
+const LINES_PER_RESULT_EXPANDED: usize = 3;
+const LINES_PER_RESULT_COMPACT: usize = 1;
 const SCROLL_CONTEXT: usize = 2;
 
 /// Pre-computed display strings for a search result (avoids per-frame formatting).
@@ -24,6 +25,12 @@ pub struct ResultListState {
     pub selected: usize,
     pub scroll_offset: usize,
     pub loading: bool,
+    pub compact: bool,
+    /// Multi-select: indices of selected items (for batch yank).
+    pub multi_selected: std::collections::HashSet<usize>,
+    pub multi_select_mode: bool,
+    /// Group by module: when true, insert module headers in the display.
+    pub group_by_module: bool,
     // Fuzzy filter within results
     pub fuzzy_filter: Option<String>,
     pub filtered_indices: Option<Vec<usize>>,
@@ -37,8 +44,20 @@ impl ResultListState {
             selected: 0,
             scroll_offset: 0,
             loading: false,
+            compact: false,
+            multi_selected: std::collections::HashSet::new(),
+            multi_select_mode: false,
+            group_by_module: false,
             fuzzy_filter: None,
             filtered_indices: None,
+        }
+    }
+
+    pub fn lines_per_result(&self) -> usize {
+        if self.compact {
+            LINES_PER_RESULT_COMPACT
+        } else {
+            LINES_PER_RESULT_EXPANDED
         }
     }
 
@@ -104,6 +123,24 @@ impl ResultListState {
     pub fn selected_result(&self) -> Option<&SearchResult> {
         let idx = self.visible_index(self.selected);
         self.items.get(idx)
+    }
+
+    /// Toggle multi-select on the current item.
+    pub fn toggle_select_current(&mut self) {
+        let idx = self.visible_index(self.selected);
+        if self.multi_selected.contains(&idx) {
+            self.multi_selected.remove(&idx);
+        } else {
+            self.multi_selected.insert(idx);
+        }
+    }
+
+    /// Get all multi-selected results.
+    pub fn selected_results(&self) -> Vec<&SearchResult> {
+        self.multi_selected
+            .iter()
+            .filter_map(|&idx| self.items.get(idx))
+            .collect()
     }
 
     // --- Fuzzy filter ---
@@ -227,21 +264,51 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
     }
 
     if visible_count == 0 {
-        let msg = if state.fuzzy_filter.is_some() {
-            "  No matches. Press Esc to clear filter."
+        let comment_style = theme.style(SemanticToken::Comment);
+        let key_style = theme.style(SemanticToken::ModuleName);
+
+        let lines: Vec<Line> = if state.fuzzy_filter.is_some() {
+            vec![Line::from(Span::styled(
+                "  No matches. Press Esc to clear filter.",
+                comment_style,
+            ))]
+        } else if state.items.is_empty() {
+            vec![
+                Line::from(""),
+                Line::from(Span::styled(
+                    "  Start typing to search Hoogle",
+                    comment_style,
+                )),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("  Try: ", comment_style),
+                    Span::styled("map", key_style),
+                    Span::styled("  ", comment_style),
+                    Span::styled("Maybe a -> a", key_style),
+                    Span::styled("  ", comment_style),
+                    Span::styled("[a] -> Int", key_style),
+                ]),
+                Line::from(""),
+                Line::from(vec![
+                    Span::styled("  Press ", comment_style),
+                    Span::styled("?", key_style),
+                    Span::styled(" for all keybindings", comment_style),
+                ]),
+            ]
         } else {
-            "  No results. Type a query to search Hoogle."
+            vec![Line::from(Span::styled(
+                "  No results found.",
+                comment_style,
+            ))]
         };
-        let empty = Paragraph::new(Line::from(vec![Span::styled(
-            msg,
-            theme.style(SemanticToken::Comment),
-        )]));
+        let empty = Paragraph::new(lines);
         frame.render_widget(empty, inner);
         return;
     }
 
     let viewport_height = inner.height as usize;
-    let viewport_results = viewport_height / LINES_PER_RESULT;
+    let lpr = state.lines_per_result();
+    let viewport_results = viewport_height / lpr.max(1);
     state.adjust_scroll(viewport_results);
 
     let mut lines: Vec<Line> = Vec::new();
@@ -251,12 +318,44 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
     let module_style = theme.style(SemanticToken::ModuleName);
     let pkg_style = theme.style(SemanticToken::PackageName);
 
+    let mut last_module: Option<String> = None;
+
     let visible_end = (state.scroll_offset + viewport_results).min(visible_count);
     for vi in state.scroll_offset..visible_end {
         let idx = state.visible_index(vi);
         let result = &state.items[idx];
         let cached = &state.display_cache[idx];
         let is_selected = vi == state.selected;
+        let is_multi = state.multi_selected.contains(&idx);
+
+        // Module group header
+        if state.group_by_module && !state.compact {
+            let current_module = &cached.module_str;
+            let show_header = match &last_module {
+                Some(prev) => prev != current_module,
+                None => true,
+            };
+            if show_header && !current_module.is_empty() {
+                last_module = Some(current_module.clone());
+                // Don't emit header if it would exceed viewport
+                if lines.len() + 2 < viewport_height {
+                    lines.push(Line::from(vec![
+                        Span::styled(
+                            format!("\u{2500}\u{2500} {current_module} "),
+                            theme
+                                .style(SemanticToken::ModuleName)
+                                .add_modifier(Modifier::BOLD),
+                        ),
+                        Span::styled(
+                            "\u{2500}".repeat(
+                                available_width.saturating_sub(current_module.len() + 4),
+                            ),
+                            theme.style(SemanticToken::Border),
+                        ),
+                    ]));
+                }
+            }
+        }
 
         let base_style = if is_selected {
             selected_style
@@ -264,67 +363,118 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
             Style::default()
         };
 
-        // Line 1: module + package (right-aligned package)
-        let padding =
-            available_width.saturating_sub(cached.module_str.len() + cached.pkg_str.len() + 4);
+        let marker = if state.multi_select_mode {
+            if is_multi { "[x] " } else { "[ ] " }
+        } else if is_selected {
+            "> "
+        } else {
+            "  "
+        };
 
-        let marker = if is_selected { "> " } else { "  " };
-
-        lines.push(Line::from(vec![
-            Span::styled(
+        if state.compact {
+            // Compact: single line: "> name :: sig  (module)"
+            let mut spans = vec![Span::styled(
                 marker,
                 if is_selected {
                     module_style.add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 },
-            ),
-            Span::styled(
-                cached.module_str.as_str(),
-                module_style.patch(base_style),
-            ),
-            Span::styled(" ".repeat(padding), base_style),
-            Span::styled(cached.pkg_str.as_str(), pkg_style.patch(base_style)),
-        ]));
-
-        // Line 2: syntax-highlighted signature
-        let sig_line = if let Some(ref sig) = result.signature {
-            let mut spans = vec![Span::styled("    ", base_style)];
-            let highlighted = hoogle_syntax::highlight_signature(sig, theme);
-            for span in highlighted.spans {
+            )];
+            if let Some(ref sig) = result.signature {
+                let sig_text = format!("{} :: {sig}", result.name);
+                let max = available_width.saturating_sub(cached.module_str.len() + 6);
+                let truncated = if sig_text.len() > max {
+                    format!("{}\u{2026}", &sig_text[..max.saturating_sub(1)])
+                } else {
+                    sig_text
+                };
+                let highlighted = hoogle_syntax::highlight_signature(&truncated, theme);
+                for span in highlighted.spans {
+                    spans.push(Span::styled(
+                        span.content.to_string(),
+                        span.style.patch(base_style),
+                    ));
+                }
+            } else {
                 spans.push(Span::styled(
-                    span.content.to_string(),
-                    span.style.patch(base_style),
+                    result.name.as_str(),
+                    theme
+                        .style(SemanticToken::TypeConstructor)
+                        .patch(base_style),
                 ));
             }
-            Line::from(spans)
+            // Right-align module name
+            let used: usize = spans.iter().map(|s| s.content.len()).sum();
+            let pad = available_width.saturating_sub(used + cached.module_str.len() + 1);
+            spans.push(Span::styled(" ".repeat(pad), base_style));
+            spans.push(Span::styled(
+                cached.module_str.as_str(),
+                theme.style(SemanticToken::Comment).patch(base_style),
+            ));
+            lines.push(Line::from(spans));
         } else {
-            Line::from(vec![Span::styled(
-                format!("    {}", result.name),
-                theme
-                    .style(SemanticToken::TypeConstructor)
-                    .patch(base_style),
-            )])
-        };
-        lines.push(sig_line);
+            // Expanded: 3 lines
+            // Line 1: module + package (right-aligned package)
+            let padding = available_width
+                .saturating_sub(cached.module_str.len() + cached.pkg_str.len() + 4);
 
-        // Line 3: short doc (truncated)
-        let doc_str = result
-            .short_doc
-            .as_ref()
-            .map(|d| {
-                let max_len = available_width.saturating_sub(6);
-                if d.len() > max_len {
-                    format!("    {}...", &d[..max_len.saturating_sub(3)])
-                } else {
-                    format!("    {d}")
+            lines.push(Line::from(vec![
+                Span::styled(
+                    marker,
+                    if is_selected {
+                        module_style.add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default()
+                    },
+                ),
+                Span::styled(
+                    cached.module_str.as_str(),
+                    module_style.patch(base_style),
+                ),
+                Span::styled(" ".repeat(padding), base_style),
+                Span::styled(cached.pkg_str.as_str(), pkg_style.patch(base_style)),
+            ]));
+
+            // Line 2: syntax-highlighted signature
+            let sig_line = if let Some(ref sig) = result.signature {
+                let mut spans = vec![Span::styled("    ", base_style)];
+                let highlighted = hoogle_syntax::highlight_signature(sig, theme);
+                for span in highlighted.spans {
+                    spans.push(Span::styled(
+                        span.content.to_string(),
+                        span.style.patch(base_style),
+                    ));
                 }
-            })
-            .unwrap_or_else(|| "    ".to_string());
-        lines.push(Line::from(vec![Span::styled(
-            doc_str,
-            theme.style(SemanticToken::Comment).patch(base_style),
-        )]));
+                Line::from(spans)
+            } else {
+                Line::from(vec![Span::styled(
+                    format!("    {}", result.name),
+                    theme
+                        .style(SemanticToken::TypeConstructor)
+                        .patch(base_style),
+                )])
+            };
+            lines.push(sig_line);
+
+            // Line 3: short doc (truncated)
+            let doc_str = result
+                .short_doc
+                .as_ref()
+                .map(|d| {
+                    let max_len = available_width.saturating_sub(6);
+                    if d.len() > max_len {
+                        format!("    {}...", &d[..max_len.saturating_sub(3)])
+                    } else {
+                        format!("    {d}")
+                    }
+                })
+                .unwrap_or_else(|| "    ".to_string());
+            lines.push(Line::from(vec![Span::styled(
+                doc_str,
+                theme.style(SemanticToken::Comment).patch(base_style),
+            )]));
+        }
     }
 
     // Pad remaining space

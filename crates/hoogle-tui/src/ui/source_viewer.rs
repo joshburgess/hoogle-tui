@@ -96,6 +96,140 @@ impl SourceViewState {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hoogle_syntax::theme::Theme;
+
+    #[test]
+    fn new_defaults() {
+        let state = SourceViewState::new();
+        assert!(state.source.is_none());
+        assert!(state.rendered_lines.is_empty());
+        assert_eq!(state.scroll_offset, 0);
+        assert_eq!(state.viewport_height, 0);
+        assert!(!state.loading);
+        assert!(state.error.is_none());
+        assert!(state.title.is_empty());
+    }
+
+    #[test]
+    fn scroll_down_basic() {
+        let mut state = SourceViewState::new();
+        // Simulate having 20 rendered lines and viewport of 10
+        state.rendered_lines = (0..20).map(|_| Line::from("x")).collect();
+        state.viewport_height = 10;
+
+        state.scroll_down(3);
+        assert_eq!(state.scroll_offset, 3);
+    }
+
+    #[test]
+    fn scroll_down_clamps_to_max() {
+        let mut state = SourceViewState::new();
+        state.rendered_lines = (0..20).map(|_| Line::from("x")).collect();
+        state.viewport_height = 10;
+
+        state.scroll_down(100);
+        assert_eq!(state.scroll_offset, 10); // 20 - 10
+    }
+
+    #[test]
+    fn scroll_down_when_no_lines() {
+        let mut state = SourceViewState::new();
+        state.viewport_height = 10;
+        state.scroll_down(5);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn scroll_up_basic() {
+        let mut state = SourceViewState::new();
+        state.scroll_offset = 5;
+        state.scroll_up(3);
+        assert_eq!(state.scroll_offset, 2);
+    }
+
+    #[test]
+    fn scroll_up_clamps_to_zero() {
+        let mut state = SourceViewState::new();
+        state.scroll_offset = 2;
+        state.scroll_up(10);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn scroll_to_top() {
+        let mut state = SourceViewState::new();
+        state.scroll_offset = 50;
+        state.scroll_to_top();
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn scroll_to_bottom() {
+        let mut state = SourceViewState::new();
+        state.rendered_lines = (0..30).map(|_| Line::from("x")).collect();
+        state.viewport_height = 10;
+        state.scroll_to_bottom();
+        assert_eq!(state.scroll_offset, 20); // 30 - 10
+    }
+
+    #[test]
+    fn scroll_to_bottom_empty() {
+        let mut state = SourceViewState::new();
+        state.viewport_height = 10;
+        state.scroll_to_bottom();
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn set_source_populates_rendered_lines() {
+        let mut state = SourceViewState::new();
+        let theme = Theme::dracula();
+        let source = "module Main where\n\nmain :: IO ()\nmain = putStrLn \"hello\"\n".to_string();
+        state.set_source(source.clone(), "main", &theme);
+
+        assert!(state.source.is_some());
+        assert_eq!(state.source.as_deref(), Some(source.as_str()));
+        assert!(!state.rendered_lines.is_empty());
+        // Source has 4 non-empty lines + 1 empty line = lines from highlight_code
+        assert!(state.rendered_lines.len() >= 4);
+        assert_eq!(state.title, "main");
+        assert_eq!(state.scroll_offset, 0);
+        assert!(!state.loading);
+        assert!(state.error.is_none());
+    }
+
+    #[test]
+    fn set_source_resets_scroll() {
+        let mut state = SourceViewState::new();
+        let theme = Theme::dracula();
+        state.scroll_offset = 50;
+        state.loading = true;
+        state.error = Some("old error".to_string());
+
+        state.set_source("x = 1".to_string(), "x", &theme);
+        assert_eq!(state.scroll_offset, 0);
+        assert!(!state.loading);
+        assert!(state.error.is_none());
+    }
+
+    #[test]
+    fn scroll_to_line_one_based() {
+        let mut state = SourceViewState::new();
+        state.scroll_to_line(5);
+        assert_eq!(state.scroll_offset, 4);
+    }
+
+    #[test]
+    fn scroll_to_line_zero_stays_zero() {
+        let mut state = SourceViewState::new();
+        state.scroll_to_line(0);
+        assert_eq!(state.scroll_offset, 0);
+    }
+}
+
 pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme: &Theme) {
     let title = if state.title.is_empty() {
         " Source ".to_string()

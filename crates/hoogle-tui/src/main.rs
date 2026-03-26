@@ -4,8 +4,10 @@ mod bookmarks;
 mod cli;
 mod clipboard;
 mod event;
+mod export;
 mod history;
 mod keymap;
+mod project;
 mod ui;
 
 use std::io;
@@ -98,6 +100,11 @@ async fn main() -> io::Result<()> {
         return Ok(());
     }
 
+    // Handle --generate and exit
+    if args.handle_generate() {
+        return Ok(());
+    }
+
     setup_logging(&args.log_level);
     install_panic_hook();
 
@@ -120,6 +127,14 @@ async fn main() -> io::Result<()> {
     let mut app = App::new(config, backend);
 
     // Handle initial query from CLI
+    // Auto-detect Haskell project for package scoping
+    if let Some(info) = project::detect_project() {
+        let count = info.dependencies.len();
+        app.package_scope = info.dependencies;
+        app.status.package_scope = app.package_scope.clone();
+        tracing::info!("detected {:?} project with {count} deps", info.project_type);
+    }
+
     if let Some(ref query) = args.query {
         app.set_initial_query(query);
     }
@@ -132,22 +147,95 @@ async fn main() -> io::Result<()> {
         terminal.draw(|frame| app.draw(frame))?;
 
         if let Some(event) = events.next().await {
-            // In search mode, let the textarea handle key events first
-            if app.mode == AppMode::Search {
+            // Mouse events are handled directly by the app
+            if let AppEvent::Mouse(mouse) = &event {
+                app.handle_mouse(*mouse);
+            }
+            // Module browser popup needs text input for filter
+            else if app.popup == Some(app::PopupMode::ModuleBrowser) {
                 if let AppEvent::Key(key) = &event {
-                    let action = map_event_to_action(&event, app.mode, &keymap);
-                    // Let certain actions bypass textarea
-                    match action {
-                        actions::Action::Back
-                        | actions::Action::FocusResults
-                        | actions::Action::Quit
-                        | actions::Action::SearchHistory
-                        | actions::Action::ClearSearch => {
-                            app.handle_action(action);
+                    use crossterm::event::KeyCode;
+                    match key.code {
+                        KeyCode::Enter => app.handle_action(actions::Action::Select),
+                        KeyCode::Esc => app.handle_action(actions::Action::Back),
+                        KeyCode::Char('j') => app.handle_action(actions::Action::MoveDown),
+                        KeyCode::Down => app.handle_action(actions::Action::MoveDown),
+                        KeyCode::Char('k') => app.handle_action(actions::Action::MoveUp),
+                        KeyCode::Up => app.handle_action(actions::Action::MoveUp),
+                        KeyCode::Char(' ') => app.handle_action(actions::Action::ScrollDown),
+                        KeyCode::Backspace => {
+                            if let Some(ref mut mb) = app.module_browser {
+                                mb.delete_filter_char();
+                            }
                         }
-                        _ => {
-                            // Let textarea consume the input
-                            app.handle_search_input(*key);
+                        KeyCode::Char(c) => {
+                            if let Some(ref mut mb) = app.module_browser {
+                                mb.add_filter_char(c);
+                            }
+                        }
+                        _ => {}
+                    }
+                } else {
+                    let action = map_event_to_action(&event, app.mode, &keymap);
+                    app.handle_action(action);
+                }
+            }
+            // Package scope popup needs text input
+            else if app.popup == Some(app::PopupMode::PackageScope) {
+                if let AppEvent::Key(key) = &event {
+                    use crossterm::event::KeyCode;
+                    match key.code {
+                        KeyCode::Enter => app.handle_action(actions::Action::Select),
+                        KeyCode::Esc => app.handle_action(actions::Action::Back),
+                        KeyCode::Backspace => {
+                            if let Some(ref mut pp) = app.package_popup {
+                                pp.delete_char();
+                            }
+                        }
+                        KeyCode::Char('u')
+                            if key
+                                .modifiers
+                                .contains(crossterm::event::KeyModifiers::CONTROL) =>
+                        {
+                            app.handle_action(actions::Action::ClearSearch);
+                        }
+                        KeyCode::Char(c) => {
+                            if let Some(ref mut pp) = app.package_popup {
+                                pp.add_char(c);
+                            }
+                        }
+                        _ => {}
+                    }
+                } else {
+                    let action = map_event_to_action(&event, app.mode, &keymap);
+                    app.handle_action(action);
+                }
+            }
+            // In search mode, let the textarea handle key events first
+            else if app.mode == AppMode::Search {
+                if let AppEvent::Key(key) = &event {
+                    // Tab triggers completion
+                    if key.code == crossterm::event::KeyCode::Tab {
+                        app.tab_complete();
+                    } else {
+                        let action = map_event_to_action(&event, app.mode, &keymap);
+                        // Let certain actions bypass textarea
+                        match action {
+                            actions::Action::Back
+                            | actions::Action::FocusResults
+                            | actions::Action::Quit
+                            | actions::Action::SearchHistory
+                            | actions::Action::ClearSearch => {
+                                app.handle_action(action);
+                            }
+                            // F1 and Ctrl-/ open help (bypass textarea)
+                            actions::Action::ToggleHelp => {
+                                app.handle_action(action);
+                            }
+                            _ => {
+                                // Let textarea consume the input
+                                app.handle_search_input(*key);
+                            }
                         }
                     }
                 } else {

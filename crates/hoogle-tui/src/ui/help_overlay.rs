@@ -42,8 +42,33 @@ struct HelpSection {
 
 const SECTIONS: &[HelpSection] = &[
     HelpSection {
+        title: "Navigation Flow",
+        entries: &[
+            HelpEntry {
+                key: "",
+                desc: "Search \u{2192} Results \u{2192} Docs \u{2192} Source",
+            },
+            HelpEntry {
+                key: "Enter",
+                desc: "Go forward (deeper)",
+            },
+            HelpEntry {
+                key: "Esc",
+                desc: "Go back (shallower)",
+            },
+            HelpEntry {
+                key: "/",
+                desc: "Jump to search bar from any mode",
+            },
+        ],
+    },
+    HelpSection {
         title: "Global",
         entries: &[
+            HelpEntry {
+                key: "F1 / Ctrl-/ / ?",
+                desc: "Toggle this help (? except in search)",
+            },
             HelpEntry {
                 key: "Ctrl-c",
                 desc: "Quit immediately",
@@ -51,10 +76,6 @@ const SECTIONS: &[HelpSection] = &[
             HelpEntry {
                 key: "Ctrl-l",
                 desc: "Force redraw",
-            },
-            HelpEntry {
-                key: "?",
-                desc: "Toggle help overlay",
             },
         ],
     },
@@ -76,6 +97,10 @@ const SECTIONS: &[HelpSection] = &[
             HelpEntry {
                 key: "Ctrl-u",
                 desc: "Clear search bar",
+            },
+            HelpEntry {
+                key: "Tab",
+                desc: "Complete from results",
             },
             HelpEntry {
                 key: "Esc",
@@ -133,6 +158,66 @@ const SECTIONS: &[HelpSection] = &[
             HelpEntry {
                 key: "Ctrl-y",
                 desc: "Yank Hackage URL",
+            },
+            HelpEntry {
+                key: "c",
+                desc: "Copy menu (sig/name/import/URL)",
+            },
+            HelpEntry {
+                key: "v",
+                desc: "Toggle compact/expanded view",
+            },
+            HelpEntry {
+                key: "Ctrl-o",
+                desc: "Open in browser",
+            },
+            HelpEntry {
+                key: "Ctrl-p",
+                desc: "Set package scope",
+            },
+            HelpEntry {
+                key: "Ctrl-t",
+                desc: "Switch color theme",
+            },
+            HelpEntry {
+                key: "Ctrl-e",
+                desc: "Export session to markdown",
+            },
+            HelpEntry {
+                key: "Space",
+                desc: "Scroll preview pane",
+            },
+            HelpEntry {
+                key: "P",
+                desc: "Pin result for comparison",
+            },
+            HelpEntry {
+                key: "Ctrl-x",
+                desc: "Clear all pins",
+            },
+            HelpEntry {
+                key: "x",
+                desc: "Multi-select (toggle)",
+            },
+            HelpEntry {
+                key: "I",
+                desc: "Yank all selected imports",
+            },
+            HelpEntry {
+                key: "w",
+                desc: "Group results by module",
+            },
+            HelpEntry {
+                key: "Ctrl-m",
+                desc: "Browse module tree",
+            },
+            HelpEntry {
+                key: "T",
+                desc: "Copy :type command (GHCi)",
+            },
+            HelpEntry {
+                key: "D",
+                desc: "Copy :info command (GHCi)",
             },
             HelpEntry {
                 key: "m",
@@ -198,6 +283,34 @@ const SECTIONS: &[HelpSection] = &[
             HelpEntry {
                 key: "s",
                 desc: "View source code",
+            },
+            HelpEntry {
+                key: "y",
+                desc: "Copy deep link to declaration",
+            },
+            HelpEntry {
+                key: "T",
+                desc: "Copy :type command (GHCi)",
+            },
+            HelpEntry {
+                key: "D",
+                desc: "Copy :info command (GHCi)",
+            },
+            HelpEntry {
+                key: "/",
+                desc: "Search within document",
+            },
+            HelpEntry {
+                key: "Tab",
+                desc: "Cycle through links",
+            },
+            HelpEntry {
+                key: "Enter",
+                desc: "Follow focused link",
+            },
+            HelpEntry {
+                key: "Backspace",
+                desc: "Navigate back",
             },
             HelpEntry {
                 key: "Esc",

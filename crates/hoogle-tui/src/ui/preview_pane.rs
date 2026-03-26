@@ -4,17 +4,59 @@ use ratatui::{
     layout::Rect,
     style::Modifier,
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Wrap},
+    widgets::{Block, Borders, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, Wrap},
     Frame,
 };
 
-pub fn render(frame: &mut Frame, area: Rect, result: Option<&SearchResult>, theme: &Theme) {
+pub struct PreviewState {
+    pub scroll_offset: usize,
+    pub total_lines: usize,
+    pub viewport_height: usize,
+    /// Track which result we last rendered to reset scroll on change.
+    last_result_name: String,
+}
+
+impl PreviewState {
+    pub fn new() -> Self {
+        Self {
+            scroll_offset: 0,
+            total_lines: 0,
+            viewport_height: 0,
+            last_result_name: String::new(),
+        }
+    }
+
+    pub fn scroll_down(&mut self, n: usize) {
+        let max = self.total_lines.saturating_sub(self.viewport_height);
+        self.scroll_offset = (self.scroll_offset + n).min(max);
+    }
+
+    pub fn scroll_up(&mut self, n: usize) {
+        self.scroll_offset = self.scroll_offset.saturating_sub(n);
+    }
+
+    fn reset_if_changed(&mut self, name: &str) {
+        if self.last_result_name != name {
+            self.scroll_offset = 0;
+            self.last_result_name = name.to_string();
+        }
+    }
+}
+
+pub fn render(
+    frame: &mut Frame,
+    area: Rect,
+    result: Option<&SearchResult>,
+    state: &mut PreviewState,
+    theme: &Theme,
+) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title(" Preview ")
         .border_style(theme.style(SemanticToken::Border));
 
     let Some(result) = result else {
+        state.last_result_name.clear();
         let empty = Paragraph::new(Line::from(Span::styled(
             "  Select a result to preview",
             theme.style(SemanticToken::Comment),
@@ -23,6 +65,11 @@ pub fn render(frame: &mut Frame, area: Rect, result: Option<&SearchResult>, them
         frame.render_widget(empty, area);
         return;
     };
+
+    state.reset_if_changed(&result.name);
+
+    let inner = block.inner(area);
+    state.viewport_height = inner.height as usize;
 
     let mut lines: Vec<Line> = Vec::new();
 
@@ -81,14 +128,40 @@ pub fn render(frame: &mut Frame, area: Rect, result: Option<&SearchResult>, them
     ]));
     lines.push(Line::from(""));
 
-    // Documentation
+    // Documentation (with syntax highlighting for code examples)
     if let Some(ref doc) = result.short_doc {
-        // Word-wrap manually by splitting into lines
         for line in wrap_text(doc, inner_width) {
-            lines.push(Line::from(Span::styled(
-                line,
-                theme.style(SemanticToken::DocText),
-            )));
+            let trimmed = line.trim();
+            if trimmed.starts_with(">>>") {
+                // GHCi prompt line — highlight the code
+                let prompt_end = 3;
+                let code = &trimmed[prompt_end..].trim_start();
+                let mut spans = vec![Span::styled(
+                    ">>> ",
+                    theme
+                        .style(SemanticToken::Comment)
+                        .add_modifier(Modifier::BOLD),
+                )];
+                let highlighted = hoogle_syntax::highlight_signature(code, theme);
+                spans.extend(highlighted.spans.into_iter().map(|s| {
+                    Span::styled(s.content.to_string(), s.style)
+                }));
+                lines.push(Line::from(spans));
+            } else if trimmed.starts_with("@") || (line.starts_with("    ") && !trimmed.is_empty())
+            {
+                // Indented code or @-block — syntax highlight
+                let highlighted = hoogle_syntax::highlight_signature(trimmed, theme);
+                let mut spans = vec![Span::styled("  ", theme.style(SemanticToken::DocCode))];
+                spans.extend(highlighted.spans.into_iter().map(|s| {
+                    Span::styled(s.content.to_string(), s.style)
+                }));
+                lines.push(Line::from(spans));
+            } else {
+                lines.push(Line::from(Span::styled(
+                    line,
+                    theme.style(SemanticToken::DocText),
+                )));
+            }
         }
     } else {
         lines.push(Line::from(Span::styled(
@@ -106,10 +179,29 @@ pub fn render(frame: &mut Frame, area: Rect, result: Option<&SearchResult>, them
         )));
     }
 
+    state.total_lines = lines.len();
+    // Clamp scroll
+    let max_scroll = state.total_lines.saturating_sub(state.viewport_height);
+    state.scroll_offset = state.scroll_offset.min(max_scroll);
+
     let paragraph = Paragraph::new(lines)
         .block(block)
-        .wrap(Wrap { trim: false });
+        .wrap(Wrap { trim: false })
+        .scroll((state.scroll_offset as u16, 0));
     frame.render_widget(paragraph, area);
+
+    // Scrollbar
+    if state.total_lines > state.viewport_height {
+        let mut sb_state =
+            ScrollbarState::new(max_scroll).position(state.scroll_offset);
+        frame.render_stateful_widget(
+            Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None),
+            area,
+            &mut sb_state,
+        );
+    }
 }
 
 fn wrap_text(text: &str, width: usize) -> Vec<String> {

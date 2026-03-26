@@ -43,6 +43,8 @@ impl Keymap {
         for mode in AppMode::ALL {
             self.bind(mode, Char('c'), KeyModifiers::CONTROL, Quit);
             self.bind(mode, Char('l'), KeyModifiers::CONTROL, Redraw);
+            self.bind_key(mode, F(1), ToggleHelp);
+            self.bind(mode, Char('/'), KeyModifiers::CONTROL, ToggleHelp);
         }
 
         // Search mode
@@ -89,6 +91,21 @@ impl Keymap {
         self.bind_key(AppMode::Results, Char('q'), Quit);
         self.bind_key(AppMode::Results, Esc, Back);
         self.bind_key(AppMode::Results, Char('?'), ToggleHelp);
+        // New: yank menu, package scope, theme, compact, browser, export
+        self.bind_key(AppMode::Results, Char('c'), OpenYankMenu);
+        self.bind(AppMode::Results, Char('p'), KeyModifiers::CONTROL, OpenPackageScope);
+        self.bind(AppMode::Results, Char('t'), KeyModifiers::CONTROL, OpenThemeSwitcher);
+        self.bind_key(AppMode::Results, Char('v'), ToggleCompact);
+        self.bind(AppMode::Results, Char('o'), KeyModifiers::CONTROL, OpenInBrowser);
+        self.bind(AppMode::Results, Char('e'), KeyModifiers::CONTROL, ExportSession);
+        self.bind(AppMode::Results, Char('m'), KeyModifiers::CONTROL, OpenModuleBrowser);
+        self.bind_key(AppMode::Results, Char('P'), PinResult);
+        self.bind(AppMode::Results, Char('x'), KeyModifiers::CONTROL, UnpinAll);
+        self.bind_key(AppMode::Results, Char('x'), ToggleMultiSelect);
+        self.bind_key(AppMode::Results, Char('I'), YankSelectedImports);
+        self.bind_key(AppMode::Results, Char('w'), ToggleGroupByModule);
+        self.bind_key(AppMode::Results, Char('T'), YankGhciType);
+        self.bind_key(AppMode::Results, Char('D'), YankGhciInfo);
 
         // DocView mode
         self.bind_key(AppMode::DocView, Char('j'), ScrollDown);
@@ -136,6 +153,12 @@ impl Keymap {
         self.bind_key(AppMode::DocView, Esc, Back);
         self.bind_key(AppMode::DocView, Char('q'), Quit);
         self.bind_key(AppMode::DocView, Char('?'), ToggleHelp);
+        self.bind(AppMode::DocView, Char('o'), KeyModifiers::CONTROL, OpenInBrowser);
+        self.bind(AppMode::DocView, Char('t'), KeyModifiers::CONTROL, OpenThemeSwitcher);
+        self.bind(AppMode::DocView, Char('e'), KeyModifiers::CONTROL, ExportSession);
+        self.bind_key(AppMode::DocView, Char('y'), YankDeclLink);
+        self.bind_key(AppMode::DocView, Char('T'), YankGhciType);
+        self.bind_key(AppMode::DocView, Char('D'), YankGhciInfo);
 
         // SourceView mode
         self.bind_key(AppMode::SourceView, Char('j'), ScrollDown);
@@ -211,6 +234,24 @@ fn parse_action_name(name: &str) -> Option<Action> {
         "clear_search" => Action::ClearSearch,
         "bookmark" => Action::Bookmark,
         "open_bookmarks" => Action::OpenBookmarks,
+        "open_yank_menu" => Action::OpenYankMenu,
+        "open_package_scope" => Action::OpenPackageScope,
+        "open_theme_switcher" => Action::OpenThemeSwitcher,
+        "toggle_compact" => Action::ToggleCompact,
+        "open_in_browser" => Action::OpenInBrowser,
+        "export_session" => Action::ExportSession,
+        "tab_complete" => Action::TabComplete,
+        "load_more" => Action::LoadMore,
+        "open_module_browser" => Action::OpenModuleBrowser,
+        "pin_result" => Action::PinResult,
+        "unpin_all" => Action::UnpinAll,
+        "toggle_multi_select" => Action::ToggleMultiSelect,
+        "yank_selected_imports" => Action::YankSelectedImports,
+        "toggle_group_by_module" => Action::ToggleGroupByModule,
+        "yank_ghci_type" => Action::YankGhciType,
+        "yank_ghci_info" => Action::YankGhciInfo,
+        "yank_decl_link" => Action::YankDeclLink,
+        "detect_project" => Action::DetectProject,
         _ => return None,
     })
 }

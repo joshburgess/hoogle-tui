@@ -105,6 +105,124 @@ pub fn render(frame: &mut Frame, state: &FilterState, theme: &Theme) {
     frame.render_widget(paragraph, inner);
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_defaults() {
+        let state = FilterState::new();
+        assert_eq!(state.selected, 0);
+        assert_eq!(state.active_filter, None);
+    }
+
+    #[test]
+    fn move_down_increments() {
+        let mut state = FilterState::new();
+        state.move_down();
+        assert_eq!(state.selected, 1);
+        state.move_down();
+        assert_eq!(state.selected, 2);
+    }
+
+    #[test]
+    fn move_down_clamps_at_end() {
+        let mut state = FilterState::new();
+        for _ in 0..20 {
+            state.move_down();
+        }
+        assert_eq!(state.selected, FILTER_OPTIONS.len() - 1);
+    }
+
+    #[test]
+    fn move_up_decrements() {
+        let mut state = FilterState::new();
+        state.move_down();
+        state.move_down();
+        state.move_up();
+        assert_eq!(state.selected, 1);
+    }
+
+    #[test]
+    fn move_up_clamps_at_zero() {
+        let mut state = FilterState::new();
+        state.move_up();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn confirm_sets_active_filter_none_for_all() {
+        let mut state = FilterState::new();
+        // selected=0 is "All" (None)
+        let result = state.confirm();
+        assert_eq!(result, None);
+        assert_eq!(state.active_filter, None);
+    }
+
+    #[test]
+    fn confirm_sets_active_filter_function() {
+        let mut state = FilterState::new();
+        state.move_down(); // now on Functions
+        let result = state.confirm();
+        assert_eq!(result, Some(ResultKind::Function));
+        assert_eq!(state.active_filter, Some(ResultKind::Function));
+    }
+
+    #[test]
+    fn confirm_sets_active_filter_class() {
+        let mut state = FilterState::new();
+        // Navigate to Classes (index 5)
+        for _ in 0..5 {
+            state.move_down();
+        }
+        let result = state.confirm();
+        assert_eq!(result, Some(ResultKind::Class));
+        assert_eq!(state.active_filter, Some(ResultKind::Class));
+    }
+
+    #[test]
+    fn sync_selection_matches_active_filter() {
+        let mut state = FilterState::new();
+        state.active_filter = Some(ResultKind::DataType);
+        state.sync_selection();
+        // DataType is at index 2
+        assert_eq!(state.selected, 2);
+    }
+
+    #[test]
+    fn sync_selection_none_goes_to_all() {
+        let mut state = FilterState::new();
+        state.selected = 5;
+        state.active_filter = None;
+        state.sync_selection();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn sync_selection_unknown_defaults_to_zero() {
+        let mut state = FilterState::new();
+        // active_filter is None (All), which is at index 0
+        state.selected = 3;
+        state.sync_selection();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn confirm_then_sync_roundtrip() {
+        let mut state = FilterState::new();
+        state.move_down();
+        state.move_down();
+        state.move_down(); // index 3 = TypeAlias
+        state.confirm();
+        assert_eq!(state.active_filter, Some(ResultKind::TypeAlias));
+
+        // Reset selected and sync
+        state.selected = 0;
+        state.sync_selection();
+        assert_eq!(state.selected, 3);
+    }
+}
+
 fn centered_popup(area: Rect, width: u16, height: u16) -> Rect {
     let vertical = Layout::vertical([
         Constraint::Length((area.height.saturating_sub(height)) / 2),

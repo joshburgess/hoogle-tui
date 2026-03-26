@@ -178,3 +178,154 @@ fn centered_popup(area: Rect, width: u16, height: u16) -> Rect {
     ])
     .split(vertical[1])[1]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_entries(names: &[&str]) -> Vec<TocEntry> {
+        names
+            .iter()
+            .enumerate()
+            .map(|(i, name)| TocEntry {
+                name: name.to_string(),
+                signature: Some(format!("Int -> Int")),
+                line_offset: i * 10,
+            })
+            .collect()
+    }
+
+    #[test]
+    fn new_empty() {
+        let state = TocState::new(vec![]);
+        assert_eq!(state.selected, 0);
+        assert!(state.filter.is_empty());
+        assert!(state.filtered_indices.is_empty());
+        assert_eq!(state.selected_offset(), None);
+    }
+
+    #[test]
+    fn new_with_items() {
+        let state = TocState::new(make_entries(&["lookup", "insert", "delete"]));
+        assert_eq!(state.items.len(), 3);
+        assert_eq!(state.filtered_indices, vec![0, 1, 2]);
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn move_down_increments() {
+        let mut state = TocState::new(make_entries(&["a", "b", "c"]));
+        state.move_down();
+        assert_eq!(state.selected, 1);
+        state.move_down();
+        assert_eq!(state.selected, 2);
+    }
+
+    #[test]
+    fn move_down_clamps_at_end() {
+        let mut state = TocState::new(make_entries(&["a", "b"]));
+        state.move_down();
+        state.move_down();
+        state.move_down();
+        assert_eq!(state.selected, 1);
+    }
+
+    #[test]
+    fn move_down_no_panic_empty() {
+        let mut state = TocState::new(vec![]);
+        state.move_down();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn move_up_decrements() {
+        let mut state = TocState::new(make_entries(&["a", "b", "c"]));
+        state.move_down();
+        state.move_down();
+        assert_eq!(state.selected, 2);
+        state.move_up();
+        assert_eq!(state.selected, 1);
+    }
+
+    #[test]
+    fn move_up_clamps_at_zero() {
+        let mut state = TocState::new(make_entries(&["a", "b"]));
+        state.move_up();
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn selected_offset_returns_correct_line() {
+        let state = TocState::new(make_entries(&["a", "b", "c"]));
+        assert_eq!(state.selected_offset(), Some(0));
+    }
+
+    #[test]
+    fn selected_offset_after_move() {
+        let mut state = TocState::new(make_entries(&["a", "b", "c"]));
+        state.move_down();
+        assert_eq!(state.selected_offset(), Some(10));
+        state.move_down();
+        assert_eq!(state.selected_offset(), Some(20));
+    }
+
+    #[test]
+    fn filter_narrows_results() {
+        let mut state = TocState::new(make_entries(&["lookup", "insert", "lookupGE"]));
+        state.add_filter_char('l');
+        state.add_filter_char('o');
+        assert_eq!(state.filtered_indices, vec![0, 2]);
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn filter_case_insensitive() {
+        let mut state = TocState::new(make_entries(&["Lookup", "insert"]));
+        state.add_filter_char('l');
+        assert_eq!(state.filtered_indices, vec![0]);
+    }
+
+    #[test]
+    fn filter_resets_selection() {
+        let mut state = TocState::new(make_entries(&["a", "b", "c"]));
+        state.move_down();
+        state.move_down();
+        assert_eq!(state.selected, 2);
+        state.add_filter_char('a');
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn delete_filter_char_widens_results() {
+        let mut state = TocState::new(make_entries(&["lookup", "insert", "lookupGE"]));
+        state.add_filter_char('l');
+        state.add_filter_char('o');
+        assert_eq!(state.filtered_indices.len(), 2);
+        state.delete_filter_char();
+        // filter is now "l"
+        assert_eq!(state.filtered_indices, vec![0, 2]);
+        state.delete_filter_char();
+        // filter is empty, all items shown
+        assert_eq!(state.filtered_indices, vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn filter_no_match() {
+        let mut state = TocState::new(make_entries(&["lookup", "insert"]));
+        state.add_filter_char('z');
+        assert!(state.filtered_indices.is_empty());
+        assert_eq!(state.selected_offset(), None);
+    }
+
+    #[test]
+    fn selected_offset_with_filter() {
+        let mut state = TocState::new(make_entries(&["lookup", "insert", "lookupGE"]));
+        state.add_filter_char('l');
+        state.add_filter_char('o');
+        // "lookup" (index 0) and "lookupGE" (index 2) match "lo"
+        assert_eq!(state.filtered_indices, vec![0, 2]);
+        state.move_down();
+        // selected=1, which maps to original index 2, line_offset=20
+        assert_eq!(state.selected_offset(), Some(20));
+    }
+}
