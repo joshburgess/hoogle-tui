@@ -780,18 +780,28 @@ impl App {
     }
 
     fn apply_filter_and_sort(&mut self) {
-        let mut items: Vec<SearchResult> = if let Some(kind) = self.filter_state.active_filter {
+        let needs_filter = self.filter_state.active_filter.is_some();
+        let needs_sort = self.sort_state.active_sort != sort_popup::SortMode::Relevance;
+
+        // Only clone when we actually need to filter or sort
+        let mut items: Vec<SearchResult> = if needs_filter {
+            let kind = self.filter_state.active_filter.unwrap();
             self.all_results
                 .iter()
                 .filter(|r| r.result_kind == kind)
                 .cloned()
                 .collect()
-        } else {
+        } else if needs_sort {
             self.all_results.clone()
+        } else {
+            // No filter, no sort — move directly to avoid cloning
+            self.status.result_count = self.all_results.len();
+            self.results.set_items(self.all_results.clone());
+            return;
         };
 
         match self.sort_state.active_sort {
-            sort_popup::SortMode::Relevance => {} // keep original order
+            sort_popup::SortMode::Relevance => {}
             sort_popup::SortMode::Package => {
                 items.sort_by(|a, b| {
                     let pa = a.package.as_ref().map(|p| &p.name);
@@ -801,8 +811,8 @@ impl App {
             }
             sort_popup::SortMode::Module => {
                 items.sort_by(|a, b| {
-                    let ma = a.module.as_ref().map(|m| m.to_string());
-                    let mb = b.module.as_ref().map(|m| m.to_string());
+                    let ma = a.module.as_ref().map(|m| m.as_dotted());
+                    let mb = b.module.as_ref().map(|m| m.as_dotted());
                     ma.cmp(&mb)
                 });
             }
@@ -1010,7 +1020,7 @@ impl App {
         } else {
             let ly = layout::compute_layout(area, self.preview_enabled);
 
-            search_bar::render(frame, ly.search_bar, &self.textarea, self.mode, &self.theme);
+            search_bar::render(frame, ly.search_bar, &mut self.textarea, self.mode, &self.theme);
             result_list::render(frame, ly.result_list, &mut self.results, &self.theme);
 
             if let Some(preview_area) = ly.preview_pane {

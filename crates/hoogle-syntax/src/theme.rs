@@ -5,8 +5,9 @@ use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[repr(u8)]
 pub enum SemanticToken {
-    TypeConstructor,
+    TypeConstructor = 0,
     TypeVariable,
     Keyword,
     Operator,
@@ -32,6 +33,8 @@ pub enum SemanticToken {
 }
 
 impl SemanticToken {
+    pub const COUNT: usize = 23;
+
     pub const ALL: &'static [SemanticToken] = &[
         Self::TypeConstructor,
         Self::TypeVariable,
@@ -62,12 +65,13 @@ impl SemanticToken {
 #[derive(Debug, Clone)]
 pub struct Theme {
     pub name: String,
-    pub styles: HashMap<SemanticToken, Style>,
+    styles: [Style; SemanticToken::COUNT],
 }
 
 impl Theme {
+    #[inline]
     pub fn style(&self, token: SemanticToken) -> Style {
-        self.styles.get(&token).copied().unwrap_or_default()
+        self.styles[token as usize]
     }
 
     pub fn by_name(name: &str) -> Self {
@@ -87,6 +91,22 @@ impl Theme {
         let raw: TomlTheme =
             toml::from_str(&contents).map_err(|e| format!("failed to parse theme: {e}"))?;
         Ok(raw.into_theme())
+    }
+
+    /// Check if a style is defined for the given token (used in tests).
+    pub fn has_style(&self, token: SemanticToken) -> bool {
+        self.styles[token as usize] != Style::default()
+    }
+
+    fn from_map(name: &str, map: HashMap<SemanticToken, Style>) -> Self {
+        let mut styles = [Style::default(); SemanticToken::COUNT];
+        for (token, s) in map {
+            styles[token as usize] = s;
+        }
+        Self {
+            name: name.to_string(),
+            styles,
+        }
     }
 
     pub fn dracula() -> Self {
@@ -129,10 +149,7 @@ impl Theme {
         s.insert(SemanticToken::Border, style_fg(0x6272a4));
         s.insert(SemanticToken::Error, style_fg(0xff5555));
         s.insert(SemanticToken::Spinner, style_fg(0xbd93f9));
-        Self {
-            name: "dracula".into(),
-            styles: s,
-        }
+        Self::from_map("dracula", s)
     }
 
     pub fn catppuccin_mocha() -> Self {
@@ -175,10 +192,7 @@ impl Theme {
         s.insert(SemanticToken::Border, style_fg(0x6c7086));
         s.insert(SemanticToken::Error, style_fg(0xf38ba8));
         s.insert(SemanticToken::Spinner, style_fg(0xcba6f7));
-        Self {
-            name: "catppuccin_mocha".into(),
-            styles: s,
-        }
+        Self::from_map("catppuccin_mocha", s)
     }
 
     pub fn gruvbox_dark() -> Self {
@@ -221,10 +235,7 @@ impl Theme {
         s.insert(SemanticToken::Border, style_fg(0x928374));
         s.insert(SemanticToken::Error, style_fg(0xfb4934));
         s.insert(SemanticToken::Spinner, style_fg(0xfabd2f));
-        Self {
-            name: "gruvbox_dark".into(),
-            styles: s,
-        }
+        Self::from_map("gruvbox_dark", s)
     }
 
     pub fn solarized_dark() -> Self {
@@ -267,10 +278,7 @@ impl Theme {
         s.insert(SemanticToken::Border, style_fg(0x586e75));
         s.insert(SemanticToken::Error, style_fg(0xdc322f));
         s.insert(SemanticToken::Spinner, style_fg(0xb58900));
-        Self {
-            name: "solarized_dark".into(),
-            styles: s,
-        }
+        Self::from_map("solarized_dark", s)
     }
 
     pub fn monokai() -> Self {
@@ -313,10 +321,7 @@ impl Theme {
         s.insert(SemanticToken::Border, style_fg(0x75715e));
         s.insert(SemanticToken::Error, style_fg(0xf92672));
         s.insert(SemanticToken::Spinner, style_fg(0xae81ff));
-        Self {
-            name: "monokai".into(),
-            styles: s,
-        }
+        Self::from_map("monokai", s)
     }
 
     pub fn nord() -> Self {
@@ -359,10 +364,7 @@ impl Theme {
         s.insert(SemanticToken::Border, style_fg(0x616e88));
         s.insert(SemanticToken::Error, style_fg(0xbf616a));
         s.insert(SemanticToken::Spinner, style_fg(0xb48ead));
-        Self {
-            name: "nord".into(),
-            styles: s,
-        }
+        Self::from_map("nord", s)
     }
 }
 
@@ -411,7 +413,7 @@ struct TomlStyle {
 
 impl TomlTheme {
     fn into_theme(self) -> Theme {
-        let mut styles = HashMap::new();
+        let mut map = HashMap::new();
         for (token, ts) in self.styles {
             let mut s = Style::default();
             if let Some(ref fg) = ts.fg {
@@ -434,12 +436,9 @@ impl TomlTheme {
                     _ => {}
                 }
             }
-            styles.insert(token, s);
+            map.insert(token, s);
         }
-        Theme {
-            name: self.name,
-            styles,
-        }
+        Theme::from_map(&self.name, map)
     }
 }
 
@@ -472,7 +471,7 @@ mod tests {
         for theme in &themes {
             for token in SemanticToken::ALL {
                 assert!(
-                    theme.styles.contains_key(token),
+                    theme.has_style(*token),
                     "theme '{}' missing style for {:?}",
                     theme.name,
                     token
@@ -520,8 +519,8 @@ mod tests {
         let raw: TomlTheme = toml::from_str(toml_str).unwrap();
         let theme = raw.into_theme();
         assert_eq!(theme.name, "test_theme");
-        assert!(theme.styles.contains_key(&SemanticToken::Keyword));
-        assert!(theme.styles.contains_key(&SemanticToken::TypeConstructor));
+        assert!(theme.has_style(SemanticToken::Keyword));
+        assert!(theme.has_style(SemanticToken::TypeConstructor));
     }
 
     #[test]
@@ -559,7 +558,7 @@ mod tests {
             // Verify it has all tokens
             for token in SemanticToken::ALL {
                 assert!(
-                    theme.styles.contains_key(token),
+                    theme.has_style(*token),
                     "theme file '{name}' missing style for {token:?}"
                 );
             }

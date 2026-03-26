@@ -12,6 +12,8 @@ use url::Url;
 pub struct DocViewState {
     pub doc: Option<HaddockDoc>,
     pub rendered_lines: Vec<Line<'static>>,
+    /// Pre-computed lowercased text for each rendered line (for fast search).
+    lowered_lines: Vec<String>,
     pub scroll_offset: usize,
     pub viewport_height: usize,
     pub declaration_offsets: Vec<(String, usize)>,
@@ -32,6 +34,7 @@ impl DocViewState {
         Self {
             doc: None,
             rendered_lines: Vec::new(),
+            lowered_lines: Vec::new(),
             scroll_offset: 0,
             viewport_height: 0,
             declaration_offsets: Vec::new(),
@@ -50,6 +53,14 @@ impl DocViewState {
     pub fn set_doc(&mut self, doc: HaddockDoc, theme: &Theme, width: u16) {
         let w = width.saturating_sub(4) as usize;
         let (lines, decl_offsets, links) = render_doc(&doc, theme, w);
+        // Pre-compute lowercased line text for search
+        self.lowered_lines = lines
+            .iter()
+            .map(|line| {
+                let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+                text.to_lowercase()
+            })
+            .collect();
         self.rendered_lines = lines;
         self.declaration_offsets = decl_offsets;
         self.links = links;
@@ -258,21 +269,18 @@ impl DocViewState {
         }
 
         let query_lower = self.search_query.to_lowercase();
-        for (i, line) in self.rendered_lines.iter().enumerate() {
-            let line_text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-            if line_text.to_lowercase().contains(&query_lower) {
+        for (i, lowered) in self.lowered_lines.iter().enumerate() {
+            if lowered.contains(&query_lower) {
                 self.search_matches.push(i);
             }
         }
 
-        // Jump to first match
+        // Jump to first match at or after current scroll
         if !self.search_matches.is_empty() {
-            // Find the first match at or after current scroll
             let first_visible = self
                 .search_matches
-                .iter()
-                .position(|&line| line >= self.scroll_offset)
-                .unwrap_or(0);
+                .binary_search(&self.scroll_offset)
+                .unwrap_or_else(|pos| pos.min(self.search_matches.len() - 1));
             self.current_match = Some(first_visible);
             self.scroll_offset = self.search_matches[first_visible].saturating_sub(3);
         }
@@ -358,16 +366,26 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &T
         .add_modifier(Modifier::REVERSED);
 
     let focused_line = state.focused_link_line();
+    let has_search = !state.search_query.is_empty() && !state.search_matches.is_empty();
 
     let visible: Vec<Line> = state.rendered_lines[start..end]
         .iter()
         .enumerate()
         .map(|(vi, line)| {
             let abs_line = start + vi;
+            let needs_link_highlight = Some(abs_line) == focused_line;
+            let is_search_match =
+                has_search && state.search_matches.binary_search(&abs_line).is_ok();
+
+            // Skip cloning lines that don't need modification
+            if !needs_link_highlight && !is_search_match {
+                return line.clone();
+            }
+
             let mut new_line = line.clone();
 
             // Highlight focused link line
-            if Some(abs_line) == focused_line {
+            if needs_link_highlight {
                 new_line = Line::from(
                     new_line
                         .spans
@@ -378,7 +396,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &T
             }
 
             // Highlight search matches
-            if !state.search_query.is_empty() && state.search_matches.contains(&abs_line) {
+            if is_search_match {
                 let is_current = state
                     .current_match
                     .map(|idx| state.search_matches.get(idx) == Some(&abs_line))
@@ -755,32 +773,48 @@ fn wrap_inlines(
 }
 
 fn inlines_to_plain_text(inlines: &[Inline]) -> String {
-    inlines
-        .iter()
-        .map(|i| match i {
+    let mut out = String::new();
+    for i in inlines {
+        match i {
             Inline::Text(t)
             | Inline::Code(t)
             | Inline::Emphasis(t)
             | Inline::Bold(t)
             | Inline::Math(t)
-            | Inline::ModuleLink(t) => t.clone(),
-            Inline::Link { text, .. } => text.clone(),
-        })
-        .collect()
+            | Inline::ModuleLink(t) => out.push_str(t),
+            Inline::Link { text, .. } => out.push_str(text),
+        }
+    }
+    out
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
+    /// Set rendered lines and pre-compute lowered lines for search tests.
+    fn set_test_lines(state: &mut DocViewState, lines: Vec<Line<'static>>) {
+        state.lowered_lines = lines
+            .iter()
+            .map(|line| {
+                let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+                text.to_lowercase()
+            })
+            .collect();
+        state.rendered_lines = lines;
+    }
+
     #[test]
     fn search_finds_matches() {
         let mut state = DocViewState::new();
-        state.rendered_lines = vec![
-            Line::from("hello world"),
-            Line::from("foo bar"),
-            Line::from("hello again"),
-        ];
+        set_test_lines(
+            &mut state,
+            vec![
+                Line::from("hello world"),
+                Line::from("foo bar"),
+                Line::from("hello again"),
+            ],
+        );
         state.viewport_height = 10;
         state.start_search();
         state.search_add_char('h');
@@ -794,12 +828,15 @@ mod tests {
     #[test]
     fn search_next_prev_cycles() {
         let mut state = DocViewState::new();
-        state.rendered_lines = vec![
-            Line::from("match a"),
-            Line::from("no"),
-            Line::from("match b"),
-            Line::from("match c"),
-        ];
+        set_test_lines(
+            &mut state,
+            vec![
+                Line::from("match a"),
+                Line::from("no"),
+                Line::from("match b"),
+                Line::from("match c"),
+            ],
+        );
         state.viewport_height = 10;
         state.start_search();
         state.search_add_char('m');
@@ -820,7 +857,7 @@ mod tests {
     #[test]
     fn search_clear_resets() {
         let mut state = DocViewState::new();
-        state.rendered_lines = vec![Line::from("hello")];
+        set_test_lines(&mut state, vec![Line::from("hello")]);
         state.viewport_height = 10;
         state.start_search();
         state.search_add_char('h');
@@ -833,7 +870,10 @@ mod tests {
     #[test]
     fn search_case_insensitive() {
         let mut state = DocViewState::new();
-        state.rendered_lines = vec![Line::from("Hello World"), Line::from("HELLO")];
+        set_test_lines(
+            &mut state,
+            vec![Line::from("Hello World"), Line::from("HELLO")],
+        );
         state.viewport_height = 10;
         state.start_search();
         state.search_add_char('h');

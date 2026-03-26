@@ -45,61 +45,61 @@ pub fn tokenize_haskell(input: &str) -> Vec<Vec<Token>> {
 
 fn tokenize_haskell_line(line: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
-    let chars: Vec<char> = line.chars().collect();
-    let len = chars.len();
+    let bytes = line.as_bytes();
+    let len = bytes.len();
     let mut i = 0;
 
     while i < len {
-        let c = chars[i];
+        let b = bytes[i];
 
         // Line comment
-        if c == '-' && i + 1 < len && chars[i + 1] == '-' {
-            let rest: String = chars[i..].iter().collect();
+        if b == b'-' && i + 1 < len && bytes[i + 1] == b'-' {
             // Make sure it's not an operator like --->
-            if i + 2 >= len || !is_symbol_char(chars[i + 2]) || chars[i + 2] == '-' {
-                tokens.push(Token::Comment(rest));
+            if i + 2 >= len || !is_symbol_byte(bytes[i + 2]) || bytes[i + 2] == b'-' {
+                tokens.push(Token::Comment(line[i..].to_string()));
                 return tokens;
             }
         }
 
         // Pragma
-        if c == '{' && i + 2 < len && chars[i + 1] == '-' && chars[i + 2] == '#' {
+        if b == b'{' && i + 2 < len && bytes[i + 1] == b'-' && bytes[i + 2] == b'#' {
             let start = i;
             while i < len {
-                if i + 2 < len && chars[i] == '#' && chars[i + 1] == '-' && chars[i + 2] == '}' {
+                if i + 2 < len && bytes[i] == b'#' && bytes[i + 1] == b'-' && bytes[i + 2] == b'}'
+                {
                     i += 3;
                     break;
                 }
                 i += 1;
             }
-            tokens.push(Token::Pragma(chars[start..i].iter().collect()));
+            tokens.push(Token::Pragma(line[start..i].to_string()));
             continue;
         }
 
         // Block comment start (on single line, consume what we can)
-        if c == '{' && i + 1 < len && chars[i + 1] == '-' {
+        if b == b'{' && i + 1 < len && bytes[i + 1] == b'-' {
             let start = i;
             i += 2;
             let mut depth = 1;
             while i < len && depth > 0 {
-                if i + 1 < len && chars[i] == '{' && chars[i + 1] == '-' {
+                if i + 1 < len && bytes[i] == b'{' && bytes[i + 1] == b'-' {
                     depth += 1;
                     i += 2;
-                } else if i + 1 < len && chars[i] == '-' && chars[i + 1] == '}' {
+                } else if i + 1 < len && bytes[i] == b'-' && bytes[i + 1] == b'}' {
                     depth -= 1;
                     i += 2;
                 } else {
                     i += 1;
                 }
             }
-            tokens.push(Token::Comment(chars[start..i].iter().collect()));
+            tokens.push(Token::Comment(line[start..i].to_string()));
             continue;
         }
 
         // Whitespace
-        if c.is_ascii_whitespace() {
+        if b.is_ascii_whitespace() {
             let start = i;
-            while i < len && chars[i].is_ascii_whitespace() {
+            while i < len && bytes[i].is_ascii_whitespace() {
                 i += 1;
             }
             tokens.push(Token::Whitespace(i - start));
@@ -107,93 +107,91 @@ fn tokenize_haskell_line(line: &str) -> Vec<Token> {
         }
 
         // String literal
-        if c == '"' {
-            let s = consume_string(&chars, &mut i);
+        if b == b'"' {
+            let s = consume_string(line, &mut i);
             tokens.push(Token::StringLiteral(s));
             continue;
         }
 
         // Char literal
-        if c == '\'' && i + 1 < len && chars[i + 1] != '\'' {
-            // Could be a char literal or a promoted type
-            if i + 2 < len && chars[i + 1] != ' ' {
-                // Try char literal: 'x', '\n', etc.
-                let saved = i;
+        if b == b'\'' && i + 1 < len && bytes[i + 1] != b'\''
+            && i + 2 < len && bytes[i + 1] != b' '
+        {
+            let saved = i;
+            i += 1;
+            if bytes[i] == b'\\' {
                 i += 1;
-                if chars[i] == '\\' {
-                    i += 1; // skip escape
-                    if i < len {
-                        i += 1;
-                    }
-                } else {
+                if i < len {
                     i += 1;
                 }
-                if i < len && chars[i] == '\'' {
-                    i += 1;
-                    tokens.push(Token::StringLiteral(chars[saved..i].iter().collect()));
-                    continue;
-                }
-                // Not a char literal, might be promoted constructor
-                i = saved;
-                if i + 1 < len && chars[i + 1].is_ascii_uppercase() {
-                    i += 1;
-                    let ident = consume_ident(&chars, &mut i);
-                    tokens.push(Token::TypeConstructor(format!("'{ident}")));
-                    continue;
-                }
-                // Just a tick
-                tokens.push(Token::Unknown("'".into()));
+            } else {
                 i += 1;
+            }
+            if i < len && bytes[i] == b'\'' {
+                i += 1;
+                tokens.push(Token::StringLiteral(line[saved..i].to_string()));
                 continue;
             }
+            // Not a char literal, might be promoted constructor
+            i = saved;
+            if i + 1 < len && bytes[i + 1].is_ascii_uppercase() {
+                i += 1;
+                let ident = consume_ident(line, &mut i);
+                tokens.push(Token::TypeConstructor(format!("'{ident}")));
+                continue;
+            }
+            // Just a tick
+            tokens.push(Token::Unknown("'".into()));
+            i += 1;
+            continue;
         }
 
         // Numeric literal
-        if c.is_ascii_digit() {
-            let num = consume_number(&chars, &mut i);
+        if b.is_ascii_digit() {
+            let num = consume_number(line, &mut i);
             tokens.push(Token::NumericLiteral(num));
             continue;
         }
 
         // Punctuation
-        if matches!(c, '(' | ')' | '[' | ']' | '{' | '}' | ',' | ';') {
-            tokens.push(Token::Punctuation(c));
+        if matches!(b, b'(' | b')' | b'[' | b']' | b'{' | b'}' | b',' | b';') {
+            tokens.push(Token::Punctuation(b as char));
             i += 1;
             continue;
         }
 
         // Operator / symbol
-        if is_symbol_char(c) {
+        if is_symbol_byte(b) {
             let start = i;
-            while i < len && is_symbol_char(chars[i]) {
+            while i < len && is_symbol_byte(bytes[i]) {
                 i += 1;
             }
-            tokens.push(Token::Operator(chars[start..i].iter().collect()));
+            tokens.push(Token::Operator(line[start..i].to_string()));
             continue;
         }
 
         // Backtick operator
-        if c == '`' {
+        if b == b'`' {
             let start = i;
             i += 1;
-            while i < len && chars[i] != '`' {
+            while i < len && bytes[i] != b'`' {
                 i += 1;
             }
             if i < len {
                 i += 1;
             }
-            tokens.push(Token::Operator(chars[start..i].iter().collect()));
+            tokens.push(Token::Operator(line[start..i].to_string()));
             continue;
         }
 
         // Identifier (possibly qualified)
-        if c.is_alphabetic() || c == '_' {
-            let ident = consume_qualified_ident(&chars, &mut i);
+        if b.is_ascii_alphabetic() || b == b'_' {
+            let ident = consume_qualified_ident(line, &mut i);
             if ident.contains('.') {
                 tokens.push(Token::QualifiedName(ident));
             } else if HASKELL_KEYWORDS.contains(&ident.as_str()) {
                 tokens.push(Token::Keyword(ident));
-            } else if ident.starts_with(|c: char| c.is_ascii_uppercase()) {
+            } else if ident.as_bytes()[0].is_ascii_uppercase() {
                 tokens.push(Token::TypeConstructor(ident));
             } else {
                 tokens.push(Token::TypeVariable(ident));
@@ -202,65 +200,72 @@ fn tokenize_haskell_line(line: &str) -> Vec<Token> {
         }
 
         // Hash
-        if c == '#' {
+        if b == b'#' {
             tokens.push(Token::Operator("#".into()));
             i += 1;
             continue;
         }
 
+        // Non-ASCII or unknown
+        let c = line[i..].chars().next().unwrap();
         tokens.push(Token::Unknown(c.to_string()));
-        i += 1;
+        i += c.len_utf8();
     }
 
     tokens
 }
 
-fn is_symbol_char(c: char) -> bool {
+fn is_symbol_byte(b: u8) -> bool {
     matches!(
-        c,
-        '!' | '#'
-            | '$'
-            | '%'
-            | '&'
-            | '*'
-            | '+'
-            | '.'
-            | '/'
-            | '<'
-            | '='
-            | '>'
-            | '?'
-            | '@'
-            | '\\'
-            | '^'
-            | '|'
-            | '-'
-            | '~'
-            | ':'
+        b,
+        b'!' | b'#'
+            | b'$'
+            | b'%'
+            | b'&'
+            | b'*'
+            | b'+'
+            | b'.'
+            | b'/'
+            | b'<'
+            | b'='
+            | b'>'
+            | b'?'
+            | b'@'
+            | b'\\'
+            | b'^'
+            | b'|'
+            | b'-'
+            | b'~'
+            | b':'
     )
 }
 
-fn consume_ident(chars: &[char], i: &mut usize) -> String {
+fn consume_ident(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
-    while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_' || chars[*i] == '\'') {
+    while *i < len && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')
+    {
         *i += 1;
     }
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
-fn consume_qualified_ident(chars: &[char], i: &mut usize) -> String {
+fn consume_qualified_ident(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
 
-    while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_' || chars[*i] == '\'') {
+    while *i < len && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')
+    {
         *i += 1;
     }
 
-    while *i < len && chars[*i] == '.' {
-        if *i + 1 < len && chars[*i + 1].is_alphabetic() {
+    while *i < len && bytes[*i] == b'.' {
+        if *i + 1 < len && bytes[*i + 1].is_ascii_alphabetic() {
             *i += 1;
-            while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_' || chars[*i] == '\'')
+            while *i < len
+                && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')
             {
                 *i += 1;
             }
@@ -269,15 +274,16 @@ fn consume_qualified_ident(chars: &[char], i: &mut usize) -> String {
         }
     }
 
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
-fn consume_string(chars: &[char], i: &mut usize) -> String {
+fn consume_string(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
     *i += 1;
-    while *i < len && chars[*i] != '"' {
-        if chars[*i] == '\\' && *i + 1 < len {
+    while *i < len && bytes[*i] != b'"' {
+        if bytes[*i] == b'\\' && *i + 1 < len {
             *i += 1;
         }
         *i += 1;
@@ -285,53 +291,54 @@ fn consume_string(chars: &[char], i: &mut usize) -> String {
     if *i < len {
         *i += 1;
     }
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
-fn consume_number(chars: &[char], i: &mut usize) -> String {
+fn consume_number(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
 
     // Hex
-    if *i + 1 < len && chars[*i] == '0' && (chars[*i + 1] == 'x' || chars[*i + 1] == 'X') {
+    if *i + 1 < len && bytes[*i] == b'0' && (bytes[*i + 1] == b'x' || bytes[*i + 1] == b'X') {
         *i += 2;
-        while *i < len && chars[*i].is_ascii_hexdigit() {
+        while *i < len && bytes[*i].is_ascii_hexdigit() {
             *i += 1;
         }
-        return chars[start..*i].iter().collect();
+        return input[start..*i].to_string();
     }
 
     // Octal
-    if *i + 1 < len && chars[*i] == '0' && (chars[*i + 1] == 'o' || chars[*i + 1] == 'O') {
+    if *i + 1 < len && bytes[*i] == b'0' && (bytes[*i + 1] == b'o' || bytes[*i + 1] == b'O') {
         *i += 2;
-        while *i < len && ('0'..='7').contains(&chars[*i]) {
+        while *i < len && (b'0'..=b'7').contains(&bytes[*i]) {
             *i += 1;
         }
-        return chars[start..*i].iter().collect();
+        return input[start..*i].to_string();
     }
 
     // Decimal / float
-    while *i < len && chars[*i].is_ascii_digit() {
+    while *i < len && bytes[*i].is_ascii_digit() {
         *i += 1;
     }
-    if *i < len && chars[*i] == '.' && *i + 1 < len && chars[*i + 1].is_ascii_digit() {
+    if *i < len && bytes[*i] == b'.' && *i + 1 < len && bytes[*i + 1].is_ascii_digit() {
         *i += 1;
-        while *i < len && chars[*i].is_ascii_digit() {
+        while *i < len && bytes[*i].is_ascii_digit() {
             *i += 1;
         }
     }
     // Exponent
-    if *i < len && (chars[*i] == 'e' || chars[*i] == 'E') {
+    if *i < len && (bytes[*i] == b'e' || bytes[*i] == b'E') {
         *i += 1;
-        if *i < len && (chars[*i] == '+' || chars[*i] == '-') {
+        if *i < len && (bytes[*i] == b'+' || bytes[*i] == b'-') {
             *i += 1;
         }
-        while *i < len && chars[*i].is_ascii_digit() {
+        while *i < len && bytes[*i].is_ascii_digit() {
             *i += 1;
         }
     }
 
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
 #[cfg(test)]
@@ -425,7 +432,6 @@ mod tests {
     #[test]
     fn empty_input() {
         let lines = tokenize_haskell("");
-        // "".lines() yields 0 items
         assert!(lines.is_empty());
     }
 }

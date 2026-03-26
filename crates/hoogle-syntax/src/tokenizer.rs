@@ -6,19 +6,21 @@ const KEYWORDS: &[&str] = &[
 ];
 
 /// Tokenize a Haskell type signature into a sequence of tokens.
+/// Works directly on the UTF-8 string using byte indexing for ASCII-dominated
+/// Haskell syntax, with char-boundary awareness for correctness.
 pub fn tokenize_signature(input: &str) -> Vec<Token> {
     let mut tokens = Vec::new();
-    let chars: Vec<char> = input.chars().collect();
-    let len = chars.len();
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let mut i = 0;
 
     while i < len {
-        let c = chars[i];
+        let b = bytes[i];
 
-        // Whitespace
-        if c.is_ascii_whitespace() {
+        // Whitespace (ASCII-only for Haskell)
+        if b.is_ascii_whitespace() {
             let start = i;
-            while i < len && chars[i].is_ascii_whitespace() {
+            while i < len && bytes[i].is_ascii_whitespace() {
                 i += 1;
             }
             tokens.push(Token::Whitespace(i - start));
@@ -26,62 +28,61 @@ pub fn tokenize_signature(input: &str) -> Vec<Token> {
         }
 
         // String literal (type-level)
-        if c == '"' {
-            let s = consume_string_literal(&chars, &mut i);
+        if b == b'"' {
+            let s = consume_string_literal(input, &mut i);
             tokens.push(Token::StringLiteral(s));
             continue;
         }
 
         // Promoted constructor: 'True, 'Just (but not ' for char literals in sigs)
-        if c == '\'' && i + 1 < len && chars[i + 1].is_ascii_uppercase() {
+        if b == b'\'' && i + 1 < len && bytes[i + 1].is_ascii_uppercase() {
             i += 1; // skip the tick
-            let ident = consume_ident(&chars, &mut i);
+            let ident = consume_ident(input, &mut i);
             tokens.push(Token::TypeConstructor(format!("'{ident}")));
             continue;
         }
 
         // Punctuation
-        if matches!(c, '(' | ')' | '[' | ']' | '{' | '}' | ',') {
-            // Check for unboxed tuple syntax (# inside parens)
-            tokens.push(Token::Punctuation(c));
+        if matches!(b, b'(' | b')' | b'[' | b']' | b'{' | b'}' | b',') {
+            tokens.push(Token::Punctuation(b as char));
             i += 1;
             continue;
         }
 
         // Hash — could be unboxed tuple or kind
-        if c == '#' {
+        if b == b'#' {
             tokens.push(Token::Operator("#".into()));
             i += 1;
             continue;
         }
 
         // Numeric literal (type-level nats)
-        if c.is_ascii_digit() {
+        if b.is_ascii_digit() {
             let start = i;
-            while i < len && (chars[i].is_ascii_digit() || chars[i] == '.') {
+            while i < len && (bytes[i].is_ascii_digit() || bytes[i] == b'.') {
                 i += 1;
             }
-            tokens.push(Token::NumericLiteral(chars[start..i].iter().collect()));
+            tokens.push(Token::NumericLiteral(input[start..i].to_string()));
             continue;
         }
 
         // Operator sequences
-        if is_operator_char(c) {
-            let op = consume_operator(&chars, &mut i);
+        if is_operator_byte(b) {
+            let op = consume_operator(input, &mut i);
             tokens.push(Token::Operator(op));
             continue;
         }
 
         // Identifiers (possibly qualified)
-        if c.is_alphabetic() || c == '_' {
-            let ident = consume_qualified_or_ident(&chars, &mut i);
+        if b.is_ascii_alphabetic() || b == b'_' {
+            let ident = consume_qualified_or_ident(input, &mut i);
 
-            // Check if it's qualified (contains dots between uppercase segments)
+            // Check if it's qualified (contains dots between segments)
             if ident.contains('.') {
                 tokens.push(Token::QualifiedName(ident));
             } else if KEYWORDS.contains(&ident.as_str()) {
                 tokens.push(Token::Keyword(ident));
-            } else if ident.starts_with(|c: char| c.is_ascii_uppercase()) {
+            } else if ident.as_bytes()[0].is_ascii_uppercase() {
                 tokens.push(Token::TypeConstructor(ident));
             } else {
                 tokens.push(Token::TypeVariable(ident));
@@ -90,13 +91,13 @@ pub fn tokenize_signature(input: &str) -> Vec<Token> {
         }
 
         // Backtick operator
-        if c == '`' {
+        if b == b'`' {
             i += 1;
             let start = i;
-            while i < len && chars[i] != '`' {
+            while i < len && bytes[i] != b'`' {
                 i += 1;
             }
-            let inner: String = chars[start..i].iter().collect();
+            let inner = &input[start..i];
             if i < len {
                 i += 1; // consume closing backtick
             }
@@ -104,108 +105,115 @@ pub fn tokenize_signature(input: &str) -> Vec<Token> {
             continue;
         }
 
-        // Unknown
+        // Non-ASCII or truly unknown character: consume one char
+        let c = input[i..].chars().next().unwrap();
         tokens.push(Token::Unknown(c.to_string()));
-        i += 1;
+        i += c.len_utf8();
     }
 
     tokens
 }
 
-fn is_operator_char(c: char) -> bool {
+fn is_operator_byte(b: u8) -> bool {
     matches!(
-        c,
-        '-' | '>'
-            | '='
-            | ':'
-            | '.'
-            | '~'
-            | '@'
-            | '!'
-            | '*'
-            | '+'
-            | '/'
-            | '\\'
-            | '|'
-            | '<'
-            | '&'
-            | '^'
-            | '%'
+        b,
+        b'-' | b'>'
+            | b'='
+            | b':'
+            | b'.'
+            | b'~'
+            | b'@'
+            | b'!'
+            | b'*'
+            | b'+'
+            | b'/'
+            | b'\\'
+            | b'|'
+            | b'<'
+            | b'&'
+            | b'^'
+            | b'%'
     )
 }
 
-fn consume_operator(chars: &[char], i: &mut usize) -> String {
+fn consume_operator(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
 
     // Special two-char operators
     if *i + 1 < len {
-        let two: String = chars[*i..*i + 2].iter().collect();
-        match two.as_str() {
+        let two = &input[*i..*i + 2];
+        match two {
             "->" | "=>" | "::" | ".." => {
                 *i += 2;
-                return two;
+                return two.to_string();
             }
             _ => {}
         }
     }
 
     // Percent for linear types: %1, %m
-    if chars[*i] == '%' {
+    if bytes[*i] == b'%' {
         *i += 1;
         // Consume the multiplicity annotation
-        while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_') {
+        while *i < len && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_') {
             *i += 1;
         }
         // Then consume optional whitespace + ->
         let saved = *i;
-        while *i < len && chars[*i].is_ascii_whitespace() {
+        while *i < len && bytes[*i].is_ascii_whitespace() {
             *i += 1;
         }
-        if *i + 1 < len && chars[*i] == '-' && chars[*i + 1] == '>' {
+        if *i + 1 < len && bytes[*i] == b'-' && bytes[*i + 1] == b'>' {
             *i += 2;
         } else {
             *i = saved; // revert if no ->
         }
-        return chars[start..*i].iter().collect();
+        return input[start..*i].to_string();
     }
 
     // General operator: consume consecutive operator chars
-    while *i < len && is_operator_char(chars[*i]) {
+    while *i < len && is_operator_byte(bytes[*i]) {
         *i += 1;
     }
 
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
-fn consume_ident(chars: &[char], i: &mut usize) -> String {
+fn consume_ident(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
-    while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_' || chars[*i] == '\'') {
+    while *i < len && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')
+    {
         *i += 1;
     }
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
 /// Consume a potentially qualified identifier like Data.Map.Map
-fn consume_qualified_or_ident(chars: &[char], i: &mut usize) -> String {
+fn consume_qualified_or_ident(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
 
     // Consume first segment
-    while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_' || chars[*i] == '\'') {
+    while *i < len && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')
+    {
         *i += 1;
     }
 
-    // Try to extend with dot-separated uppercase segments
-    while *i < len && chars[*i] == '.' {
+    // Try to extend with dot-separated segments
+    while *i < len && bytes[*i] == b'.' {
         // Peek ahead: must be followed by an alpha char to be a qualified name
-        if *i + 1 < len && chars[*i + 1].is_alphabetic() {
+        if *i + 1 < len && bytes[*i + 1].is_ascii_alphabetic() {
             let saved = *i;
             *i += 1; // consume dot
-                     // Consume next segment
+            // Consume next segment
             let seg_start = *i;
-            while *i < len && (chars[*i].is_alphanumeric() || chars[*i] == '_' || chars[*i] == '\'')
+            while *i < len
+                && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')
             {
                 *i += 1;
             }
@@ -214,23 +222,21 @@ fn consume_qualified_or_ident(chars: &[char], i: &mut usize) -> String {
                 *i = saved;
                 break;
             }
-            // If the segment after the dot started lowercase and we already
-            // have qualified parts, this is the final segment (e.g. Data.Map.lookup)
-            // Keep it as part of the qualified name
         } else {
             break;
         }
     }
 
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
-fn consume_string_literal(chars: &[char], i: &mut usize) -> String {
+fn consume_string_literal(input: &str, i: &mut usize) -> String {
+    let bytes = input.as_bytes();
+    let len = bytes.len();
     let start = *i;
-    let len = chars.len();
     *i += 1; // skip opening quote
-    while *i < len && chars[*i] != '"' {
-        if chars[*i] == '\\' && *i + 1 < len {
+    while *i < len && bytes[*i] != b'"' {
+        if bytes[*i] == b'\\' && *i + 1 < len {
             *i += 1; // skip escaped char
         }
         *i += 1;
@@ -238,7 +244,7 @@ fn consume_string_literal(chars: &[char], i: &mut usize) -> String {
     if *i < len {
         *i += 1; // skip closing quote
     }
-    chars[start..*i].iter().collect()
+    input[start..*i].to_string()
 }
 
 #[cfg(test)]

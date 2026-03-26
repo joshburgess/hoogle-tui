@@ -15,26 +15,35 @@ fn strip_html(html: &str) -> String {
         .replace("&#39;", "'")
 }
 
-/// Determine the ResultKind from the raw `item` HTML field.
-fn detect_result_kind(item_html: &str) -> ResultKind {
-    let stripped = strip_html(item_html);
-    let trimmed = stripped.trim();
-
-    if trimmed.starts_with("data ") {
+/// Determine the ResultKind from already-stripped item text.
+fn detect_result_kind(stripped_text: &str) -> ResultKind {
+    if stripped_text.starts_with("data ") {
         ResultKind::DataType
-    } else if trimmed.starts_with("newtype ") {
+    } else if stripped_text.starts_with("newtype ") {
         ResultKind::Newtype
-    } else if trimmed.starts_with("type ") {
+    } else if stripped_text.starts_with("type ") {
         ResultKind::TypeAlias
-    } else if trimmed.starts_with("class ") {
+    } else if stripped_text.starts_with("class ") {
         ResultKind::Class
-    } else if trimmed.starts_with("module ") {
+    } else if stripped_text.starts_with("module ") {
         ResultKind::Module
-    } else if trimmed.starts_with("package ") {
+    } else if stripped_text.starts_with("package ") {
         ResultKind::Package
     } else {
         ResultKind::Function
     }
+}
+
+/// Strip a keyword prefix from a trimmed string, if present.
+fn strip_keyword_prefix(trimmed: &str) -> Option<&str> {
+    for prefix in [
+        "data ", "newtype ", "type ", "class ", "module ", "package ",
+    ] {
+        if let Some(rest) = trimmed.strip_prefix(prefix) {
+            return Some(rest.trim());
+        }
+    }
+    None
 }
 
 /// Extract the name from the `item` HTML. The name is typically inside
@@ -47,15 +56,9 @@ fn extract_name(item_html: &str) -> String {
 
     if let Some(cap) = NAME_RE.captures(item_html) {
         let inner = strip_html(&cap[1]);
-        // For data/class/type, the name span may contain the keyword + name
-        // e.g. "data Map" -> we want "Map"
         let trimmed = inner.trim();
-        for prefix in [
-            "data ", "newtype ", "type ", "class ", "module ", "package ",
-        ] {
-            if let Some(rest) = trimmed.strip_prefix(prefix) {
-                return rest.trim().to_string();
-            }
+        if let Some(rest) = strip_keyword_prefix(trimmed) {
+            return rest.to_string();
         }
         return trimmed.to_string();
     }
@@ -63,12 +66,12 @@ fn extract_name(item_html: &str) -> String {
     // Fallback: strip all HTML tags and take the first word
     let stripped = strip_html(item_html);
     let trimmed = stripped.trim();
-    for prefix in [
-        "data ", "newtype ", "type ", "class ", "module ", "package ",
-    ] {
-        if let Some(rest) = trimmed.strip_prefix(prefix) {
-            return rest.split_whitespace().next().unwrap_or(rest).to_string();
-        }
+    if let Some(rest) = strip_keyword_prefix(trimmed) {
+        return rest
+            .split_whitespace()
+            .next()
+            .unwrap_or(rest)
+            .to_string();
     }
     trimmed
         .split(|c: char| c == ':' || c.is_whitespace())
@@ -77,21 +80,18 @@ fn extract_name(item_html: &str) -> String {
         .to_string()
 }
 
-/// Extract the type signature from the `item` HTML field.
+/// Extract the type signature from the already-stripped item text.
 /// For functions, the signature follows the name (after ` :: `).
 /// For types/classes, the full item text is the signature.
-fn extract_signature(item_html: &str, kind: ResultKind) -> Option<String> {
-    let stripped = strip_html(item_html);
-    let trimmed = stripped.trim();
-
+fn extract_signature(stripped_trimmed: &str, kind: ResultKind) -> Option<String> {
     match kind {
-        ResultKind::Function => trimmed
+        ResultKind::Function => stripped_trimmed
             .find(" :: ")
-            .map(|pos| trimmed[pos + 4..].trim().to_string()),
+            .map(|pos| stripped_trimmed[pos + 4..].trim().to_string()),
         ResultKind::Module | ResultKind::Package => None,
         _ => {
             // For data/newtype/type/class, the whole item is the signature
-            Some(trimmed.to_string())
+            Some(stripped_trimmed.to_string())
         }
     }
 }
@@ -123,11 +123,13 @@ fn extract_version_from_url(url_str: &str) -> Option<String> {
 
 /// Parse a single Hoogle JSON result into a SearchResult.
 pub fn parse_hoogle_json(value: &serde_json::Value) -> Result<SearchResult, String> {
-    let item_html = value["item"].as_str().unwrap_or("").to_string();
+    let item_html = value["item"].as_str().unwrap_or("");
+    let stripped_item = strip_html(item_html);
+    let stripped_trimmed = stripped_item.trim();
 
-    let kind = detect_result_kind(&item_html);
-    let name = extract_name(&item_html);
-    let signature = extract_signature(&item_html, kind);
+    let kind = detect_result_kind(stripped_trimmed);
+    let name = extract_name(item_html);
+    let signature = extract_signature(stripped_trimmed, kind);
 
     let doc_url = value["url"].as_str().and_then(|s| Url::parse(s).ok());
 
@@ -207,32 +209,37 @@ mod tests {
     #[test]
     fn detect_kind_function() {
         let item = r#"<span class=name><s0>lookup</s0></span> :: <a>Ord</a> k =&gt; k -&gt; <a>Map</a> k a -&gt; <a>Maybe</a> a"#;
-        assert_eq!(detect_result_kind(item), ResultKind::Function);
+        let stripped = strip_html(item);
+        assert_eq!(detect_result_kind(stripped.trim()), ResultKind::Function);
     }
 
     #[test]
     fn detect_kind_data() {
         let item = r#"<span class=name><s0>data</s0> <s0>Map</s0></span> k a"#;
-        assert_eq!(detect_result_kind(item), ResultKind::DataType);
+        let stripped = strip_html(item);
+        assert_eq!(detect_result_kind(stripped.trim()), ResultKind::DataType);
     }
 
     #[test]
     fn detect_kind_class() {
         let item =
             r#"<span class=name><s0>class</s0> <a>Applicative</a> m =&gt; <s0>Monad</s0></span> m"#;
-        assert_eq!(detect_result_kind(item), ResultKind::Class);
+        let stripped = strip_html(item);
+        assert_eq!(detect_result_kind(stripped.trim()), ResultKind::Class);
     }
 
     #[test]
     fn detect_kind_newtype() {
         let item = r#"<span class=name>newtype Identity</span> a"#;
-        assert_eq!(detect_result_kind(item), ResultKind::Newtype);
+        let stripped = strip_html(item);
+        assert_eq!(detect_result_kind(stripped.trim()), ResultKind::Newtype);
     }
 
     #[test]
     fn detect_kind_type_alias() {
         let item = r#"<span class=name>type String</span> = [Char]"#;
-        assert_eq!(detect_result_kind(item), ResultKind::TypeAlias);
+        let stripped = strip_html(item);
+        assert_eq!(detect_result_kind(stripped.trim()), ResultKind::TypeAlias);
     }
 
     #[test]
@@ -257,21 +264,24 @@ mod tests {
     #[test]
     fn extract_signature_function() {
         let item = r#"<span class=name><s0>lookup</s0></span> :: <a>Ord</a> k =&gt; k -&gt; <a>Map</a> k a -&gt; <a>Maybe</a> a"#;
-        let sig = extract_signature(item, ResultKind::Function);
+        let stripped = strip_html(item);
+        let sig = extract_signature(stripped.trim(), ResultKind::Function);
         assert_eq!(sig.unwrap(), "Ord k => k -> Map k a -> Maybe a");
     }
 
     #[test]
     fn extract_signature_data() {
         let item = r#"<span class=name><s0>data</s0> <s0>Map</s0></span> k a"#;
-        let sig = extract_signature(item, ResultKind::DataType);
+        let stripped = strip_html(item);
+        let sig = extract_signature(stripped.trim(), ResultKind::DataType);
         assert_eq!(sig.unwrap(), "data Map k a");
     }
 
     #[test]
     fn extract_signature_module() {
         let item = r#"module Data.Map"#;
-        assert_eq!(extract_signature(item, ResultKind::Module), None);
+        let stripped = strip_html(item);
+        assert_eq!(extract_signature(stripped.trim(), ResultKind::Module), None);
     }
 
     #[test]

@@ -8,7 +8,13 @@ use tui_textarea::TextArea;
 
 use crate::app::AppMode;
 
-pub fn render(frame: &mut Frame, area: Rect, textarea: &TextArea, mode: AppMode, theme: &Theme) {
+pub fn render(
+    frame: &mut Frame,
+    area: Rect,
+    textarea: &mut TextArea,
+    mode: AppMode,
+    theme: &Theme,
+) {
     let focused = mode == AppMode::Search;
 
     let border_style = if focused {
@@ -28,16 +34,14 @@ pub fn render(frame: &mut Frame, area: Rect, textarea: &TextArea, mode: AppMode,
         .title(title)
         .border_style(border_style);
 
-    // We render the textarea with its block
-    let mut ta = textarea.clone();
-    ta.set_block(block);
-    ta.set_cursor_line_style(ratatui::style::Style::default());
+    textarea.set_block(block);
+    textarea.set_cursor_line_style(ratatui::style::Style::default());
 
     if focused {
-        ta.set_style(theme.style(SemanticToken::SearchInput));
+        textarea.set_style(theme.style(SemanticToken::SearchInput));
     } else {
-        ta.set_style(theme.style(SemanticToken::Border));
+        textarea.set_style(theme.style(SemanticToken::Border));
     }
 
-    frame.render_widget(&ta, area);
+    frame.render_widget(&*textarea, area);
 }

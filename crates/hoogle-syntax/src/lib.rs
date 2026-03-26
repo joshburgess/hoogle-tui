@@ -26,7 +26,7 @@ fn token_to_semantic(token: &Token) -> SemanticToken {
 }
 
 /// Extract the text content from a token.
-fn token_text(token: &Token) -> String {
+fn token_text(token: &Token) -> std::borrow::Cow<'_, str> {
     match token {
         Token::Keyword(s)
         | Token::TypeConstructor(s)
@@ -37,9 +37,9 @@ fn token_text(token: &Token) -> String {
         | Token::NumericLiteral(s)
         | Token::Comment(s)
         | Token::Pragma(s)
-        | Token::Unknown(s) => s.clone(),
-        Token::Punctuation(c) => c.to_string(),
-        Token::Whitespace(n) => " ".repeat(*n),
+        | Token::Unknown(s) => std::borrow::Cow::Borrowed(s),
+        Token::Punctuation(c) => std::borrow::Cow::Owned(c.to_string()),
+        Token::Whitespace(n) => std::borrow::Cow::Owned(" ".repeat(*n)),
     }
 }
 
@@ -51,7 +51,7 @@ pub fn highlight_signature(sig: &str, theme: &Theme) -> Line<'static> {
         .map(|tok| {
             let semantic = token_to_semantic(tok);
             let style = theme.style(semantic);
-            Span::styled(token_text(tok), style)
+            Span::styled(token_text(tok).into_owned(), style)
         })
         .collect();
     Line::from(spans)
@@ -68,7 +68,7 @@ pub fn highlight_code(code: &str, theme: &Theme) -> Vec<Line<'static>> {
                 .map(|tok| {
                     let semantic = token_to_semantic(tok);
                     let style = theme.style(semantic);
-                    Span::styled(token_text(tok), style)
+                    Span::styled(token_text(tok).into_owned(), style)
                 })
                 .collect();
             Line::from(spans)

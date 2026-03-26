@@ -11,8 +11,16 @@ use ratatui::{
 const LINES_PER_RESULT: usize = 3;
 const SCROLL_CONTEXT: usize = 2;
 
+/// Pre-computed display strings for a search result (avoids per-frame formatting).
+pub struct CachedDisplay {
+    pub module_str: String,
+    pub pkg_str: String,
+}
+
 pub struct ResultListState {
     pub items: Vec<SearchResult>,
+    /// Pre-computed display strings, parallel to `items`.
+    pub display_cache: Vec<CachedDisplay>,
     pub selected: usize,
     pub scroll_offset: usize,
     pub loading: bool,
@@ -25,6 +33,7 @@ impl ResultListState {
     pub fn new() -> Self {
         Self {
             items: Vec::new(),
+            display_cache: Vec::new(),
             selected: 0,
             scroll_offset: 0,
             loading: false,
@@ -70,6 +79,21 @@ impl ResultListState {
     }
 
     pub fn set_items(&mut self, items: Vec<SearchResult>) {
+        self.display_cache = items
+            .iter()
+            .map(|r| CachedDisplay {
+                module_str: r
+                    .module
+                    .as_ref()
+                    .map(|m| m.to_string())
+                    .unwrap_or_default(),
+                pkg_str: r
+                    .package
+                    .as_ref()
+                    .map(|p| p.to_string())
+                    .unwrap_or_default(),
+            })
+            .collect();
         self.items = items;
         self.selected = 0;
         self.scroll_offset = 0;
@@ -222,55 +246,45 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
 
     let mut lines: Vec<Line> = Vec::new();
 
+    let available_width = inner.width as usize;
+    let selected_style = theme.style(SemanticToken::Selected);
+    let module_style = theme.style(SemanticToken::ModuleName);
+    let pkg_style = theme.style(SemanticToken::PackageName);
+
     let visible_end = (state.scroll_offset + viewport_results).min(visible_count);
     for vi in state.scroll_offset..visible_end {
         let idx = state.visible_index(vi);
         let result = &state.items[idx];
+        let cached = &state.display_cache[idx];
         let is_selected = vi == state.selected;
 
         let base_style = if is_selected {
-            theme.style(SemanticToken::Selected)
+            selected_style
         } else {
             Style::default()
         };
 
         // Line 1: module + package (right-aligned package)
-        let module_str = result
-            .module
-            .as_ref()
-            .map(|m| m.to_string())
-            .unwrap_or_default();
-        let pkg_str = result
-            .package
-            .as_ref()
-            .map(|p| p.to_string())
-            .unwrap_or_default();
-
-        let available_width = inner.width as usize;
-        let padding = available_width.saturating_sub(module_str.len() + pkg_str.len() + 4); // 2 prefix + 2 margin
+        let padding =
+            available_width.saturating_sub(cached.module_str.len() + cached.pkg_str.len() + 4);
 
         let marker = if is_selected { "> " } else { "  " };
 
         lines.push(Line::from(vec![
             Span::styled(
-                marker.to_string(),
+                marker,
                 if is_selected {
-                    theme
-                        .style(SemanticToken::ModuleName)
-                        .add_modifier(Modifier::BOLD)
+                    module_style.add_modifier(Modifier::BOLD)
                 } else {
                     Style::default()
                 },
             ),
             Span::styled(
-                module_str,
-                theme.style(SemanticToken::ModuleName).patch(base_style),
+                cached.module_str.as_str(),
+                module_style.patch(base_style),
             ),
             Span::styled(" ".repeat(padding), base_style),
-            Span::styled(
-                pkg_str,
-                theme.style(SemanticToken::PackageName).patch(base_style),
-            ),
+            Span::styled(cached.pkg_str.as_str(), pkg_style.patch(base_style)),
         ]));
 
         // Line 2: syntax-highlighted signature
