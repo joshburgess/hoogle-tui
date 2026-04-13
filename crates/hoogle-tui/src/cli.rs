@@ -95,9 +95,7 @@ impl CliArgs {
             std::process::exit(1);
         });
 
-        let status = std::process::Command::new(hoogle)
-            .arg("generate")
-            .status();
+        let status = std::process::Command::new(hoogle).arg("generate").status();
 
         match status {
             Ok(s) if s.success() => {
@@ -306,9 +304,6 @@ mod tests {
         assert!(!config.cache.enabled);
         assert_eq!(config.ui.max_results, 5);
         assert_eq!(config.backend.mode, BackendMode::Web);
-        assert_eq!(
-            config.backend.database_path,
-            Some(PathBuf::from("/tmp/db"))
-        );
+        assert_eq!(config.backend.database_path, Some(PathBuf::from("/tmp/db")));
     }
 }

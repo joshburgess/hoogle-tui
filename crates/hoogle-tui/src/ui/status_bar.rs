@@ -95,10 +95,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     }
 
     if state.search_by_type {
-        left_spans.push(Span::styled(
-            "[type] ",
-            theme.style(SemanticToken::Keyword),
-        ));
+        left_spans.push(Span::styled("[type] ", theme.style(SemanticToken::Keyword)));
     }
 
     if !state.package_scope.is_empty() {

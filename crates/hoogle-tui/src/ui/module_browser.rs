@@ -31,7 +31,10 @@ impl ModuleNode {
             self.result_count += 1;
             return;
         }
-        let child = self.children.entry(path[0].clone()).or_insert_with(ModuleNode::new);
+        let child = self
+            .children
+            .entry(path[0].clone())
+            .or_insert_with(ModuleNode::new);
         child.insert(&path[1..]);
     }
 }
@@ -221,7 +224,10 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
                 .style(SemanticToken::ModuleName)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(state.filter.as_str(), theme.style(SemanticToken::SearchInput)),
+        Span::styled(
+            state.filter.as_str(),
+            theme.style(SemanticToken::SearchInput),
+        ),
         Span::styled("\u{2588}", theme.style(SemanticToken::SearchInput)),
     ]);
     frame.render_widget(Paragraph::new(filter_line), filter_area);
@@ -332,7 +338,9 @@ mod tests {
             module: if module_path.is_empty() {
                 None
             } else {
-                Some(ModulePath(module_path.iter().map(|s| s.to_string()).collect()))
+                Some(ModulePath(
+                    module_path.iter().map(|s| s.to_string()).collect(),
+                ))
             },
             package: Some(PackageInfo {
                 name: "pkg".to_string(),
@@ -373,7 +381,9 @@ mod tests {
         assert!(!state.entries.is_empty());
 
         // Top-level entries should be Control and Data
-        let top_level: Vec<&str> = state.entries.iter()
+        let top_level: Vec<&str> = state
+            .entries
+            .iter()
             .filter(|e| e.depth == 0)
             .map(|e| e.name.as_str())
             .collect();
@@ -427,10 +437,7 @@ mod tests {
 
     #[test]
     fn move_up_decrements_selected() {
-        let results = vec![
-            make_result(&["Data"]),
-            make_result(&["Control"]),
-        ];
+        let results = vec![make_result(&["Data"]), make_result(&["Control"])];
         let mut state = ModuleBrowserState::new(&results);
         state.move_down();
         assert_eq!(state.selected, 1);
@@ -449,9 +456,7 @@ mod tests {
 
     #[test]
     fn toggle_expand() {
-        let results = vec![
-            make_result(&["Data", "Map"]),
-        ];
+        let results = vec![make_result(&["Data", "Map"])];
         let mut state = ModuleBrowserState::new(&results);
 
         // "Data" is at depth 0 and auto-expanded (depth < 1 => expanded)
@@ -498,10 +503,7 @@ mod tests {
 
     #[test]
     fn filter_resets_selection() {
-        let results = vec![
-            make_result(&["Data"]),
-            make_result(&["Control"]),
-        ];
+        let results = vec![make_result(&["Data"]), make_result(&["Control"])];
         let mut state = ModuleBrowserState::new(&results);
         state.move_down();
         assert_eq!(state.selected, 1);
@@ -512,10 +514,7 @@ mod tests {
 
     #[test]
     fn delete_filter_char() {
-        let results = vec![
-            make_result(&["Data"]),
-            make_result(&["Control"]),
-        ];
+        let results = vec![make_result(&["Data"]), make_result(&["Control"])];
         let mut state = ModuleBrowserState::new(&results);
 
         state.add_filter_char('z');
@@ -553,9 +552,7 @@ mod tests {
 
     #[test]
     fn full_paths_are_dotted() {
-        let results = vec![
-            make_result(&["Data", "Map", "Strict"]),
-        ];
+        let results = vec![make_result(&["Data", "Map", "Strict"])];
         let state = ModuleBrowserState::new(&results);
 
         let strict_entry = state.entries.iter().find(|e| e.name == "Strict").unwrap();
@@ -564,9 +561,7 @@ mod tests {
 
     #[test]
     fn has_children_flag() {
-        let results = vec![
-            make_result(&["Data", "Map"]),
-        ];
+        let results = vec![make_result(&["Data", "Map"])];
         let state = ModuleBrowserState::new(&results);
 
         let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();

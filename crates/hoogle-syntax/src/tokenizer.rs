@@ -210,7 +210,7 @@ fn consume_qualified_or_ident(input: &str, i: &mut usize) -> String {
         if *i + 1 < len && bytes[*i + 1].is_ascii_alphabetic() {
             let saved = *i;
             *i += 1; // consume dot
-            // Consume next segment
+                     // Consume next segment
             let seg_start = *i;
             while *i < len
                 && (bytes[*i].is_ascii_alphanumeric() || bytes[*i] == b'_' || bytes[*i] == b'\'')

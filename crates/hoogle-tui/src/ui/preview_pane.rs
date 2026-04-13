@@ -143,18 +143,24 @@ pub fn render(
                         .add_modifier(Modifier::BOLD),
                 )];
                 let highlighted = hoogle_syntax::highlight_signature(code, theme);
-                spans.extend(highlighted.spans.into_iter().map(|s| {
-                    Span::styled(s.content.to_string(), s.style)
-                }));
+                spans.extend(
+                    highlighted
+                        .spans
+                        .into_iter()
+                        .map(|s| Span::styled(s.content.to_string(), s.style)),
+                );
                 lines.push(Line::from(spans));
             } else if trimmed.starts_with("@") || (line.starts_with("    ") && !trimmed.is_empty())
             {
                 // Indented code or @-block — syntax highlight
                 let highlighted = hoogle_syntax::highlight_signature(trimmed, theme);
                 let mut spans = vec![Span::styled("  ", theme.style(SemanticToken::DocCode))];
-                spans.extend(highlighted.spans.into_iter().map(|s| {
-                    Span::styled(s.content.to_string(), s.style)
-                }));
+                spans.extend(
+                    highlighted
+                        .spans
+                        .into_iter()
+                        .map(|s| Span::styled(s.content.to_string(), s.style)),
+                );
                 lines.push(Line::from(spans));
             } else {
                 lines.push(Line::from(Span::styled(
@@ -192,8 +198,7 @@ pub fn render(
 
     // Scrollbar
     if state.total_lines > state.viewport_height {
-        let mut sb_state =
-            ScrollbarState::new(max_scroll).position(state.scroll_offset);
+        let mut sb_state = ScrollbarState::new(max_scroll).position(state.scroll_offset);
         frame.render_stateful_widget(
             Scrollbar::new(ScrollbarOrientation::VerticalRight)
                 .begin_symbol(None)

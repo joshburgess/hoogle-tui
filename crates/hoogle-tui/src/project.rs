@@ -77,11 +77,7 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
         if trimmed.to_lowercase().starts_with("build-depends:") {
             in_build_depends = true;
             // Parse deps on the same line after the colon
-            let after_colon = trimmed
-                .split_once(':')
-                .map(|x| x.1)
-                .unwrap_or("")
-                .trim();
+            let after_colon = trimmed.split_once(':').map(|x| x.1).unwrap_or("").trim();
             parse_dep_list(after_colon, &mut deps);
             continue;
         }
@@ -90,7 +86,12 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
             // Continuation lines are indented
             if line.starts_with(' ') || line.starts_with('\t') {
                 // Check if this looks like a new field (contains a colon at a low indent)
-                if trimmed.contains(':') && !trimmed.starts_with(',') && !trimmed.contains(">=") && !trimmed.contains("<=") && !trimmed.contains("==") {
+                if trimmed.contains(':')
+                    && !trimmed.starts_with(',')
+                    && !trimmed.contains(">=")
+                    && !trimmed.contains("<=")
+                    && !trimmed.contains("==")
+                {
                     in_build_depends = false;
                     continue;
                 }

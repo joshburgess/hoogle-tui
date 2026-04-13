@@ -290,8 +290,7 @@ async fn main() -> io::Result<()> {
                                 app.handle_action(action);
                             }
                             // F1, Ctrl-/, Ctrl-t bypass textarea
-                            actions::Action::ToggleHelp
-                            | actions::Action::OpenThemeSwitcher => {
+                            actions::Action::ToggleHelp | actions::Action::OpenThemeSwitcher => {
                                 app.handle_action(action);
                             }
                             _ => {

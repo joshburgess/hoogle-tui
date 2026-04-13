@@ -171,10 +171,7 @@ pub struct App {
 }
 
 fn rect_contains(rect: Rect, col: u16, row: u16) -> bool {
-    col >= rect.x
-        && col < rect.x + rect.width
-        && row >= rect.y
-        && row < rect.y + rect.height
+    col >= rect.x && col < rect.x + rect.width && row >= rect.y && row < rect.y + rect.height
 }
 
 impl App {
@@ -785,8 +782,7 @@ impl App {
                     self.popup = None;
                     self.theme_popup = None;
                 } else {
-                    self.theme_popup =
-                        Some(theme_popup::ThemePopupState::new(&self.theme.name));
+                    self.theme_popup = Some(theme_popup::ThemePopupState::new(&self.theme.name));
                     self.popup = Some(PopupMode::ThemeSwitcher);
                 }
             }
@@ -1453,8 +1449,7 @@ impl App {
             .set_cursor_line_style(ratatui::style::Style::default());
         self.textarea
             .set_placeholder_text("Type to search Hoogle...");
-        self.textarea
-            .move_cursor(tui_textarea::CursorMove::End);
+        self.textarea.move_cursor(tui_textarea::CursorMove::End);
         self.completion_index = (self.completion_index + 1) % self.completion_candidates.len();
     }
 
@@ -1490,17 +1485,14 @@ impl App {
         // In Results mode, use the selected result name
         // In DocView mode, use the current declaration name
         let name = match self.mode {
-            AppMode::Results => self
-                .results
-                .selected_result()
-                .map(|r| {
-                    let module = r.module.as_ref().map(|m| m.to_string());
-                    if let Some(module) = module {
-                        format!("{module}.{}", r.name)
-                    } else {
-                        r.name.clone()
-                    }
-                }),
+            AppMode::Results => self.results.selected_result().map(|r| {
+                let module = r.module.as_ref().map(|m| m.to_string());
+                if let Some(module) = module {
+                    format!("{module}.{}", r.name)
+                } else {
+                    r.name.clone()
+                }
+            }),
             AppMode::DocView => self.current_decl_name(),
             _ => None,
         };
@@ -1575,11 +1567,12 @@ impl App {
                 }
             }
             // Fallback: construct from module name and declaration
-            let kind_prefix = if decl
-                .signature
-                .as_ref()
-                .is_some_and(|s| s.starts_with("data ") || s.starts_with("type ") || s.starts_with("class ") || s.starts_with("newtype "))
-            {
+            let kind_prefix = if decl.signature.as_ref().is_some_and(|s| {
+                s.starts_with("data ")
+                    || s.starts_with("type ")
+                    || s.starts_with("class ")
+                    || s.starts_with("newtype ")
+            }) {
                 "t"
             } else {
                 "v"
@@ -1836,7 +1829,14 @@ impl App {
             self.hit_preview_pane = ly.preview_pane;
 
             let has_query = !self.last_searched.is_empty();
-            search_bar::render(frame, ly.search_bar, &mut self.textarea, self.mode, has_query, &self.theme);
+            search_bar::render(
+                frame,
+                ly.search_bar,
+                &mut self.textarea,
+                self.mode,
+                has_query,
+                &self.theme,
+            );
             result_list::render(frame, ly.result_list, &mut self.results, &self.theme);
 
             if let Some(preview_area) = ly.preview_pane {

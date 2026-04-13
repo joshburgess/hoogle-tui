@@ -100,11 +100,26 @@ impl Keymap {
         self.bind_key(AppMode::Results, Char('?'), ToggleHelp);
         // Yank menu, package scope, theme, compact, browser, export
         self.bind_key(AppMode::Results, Char('c'), OpenYankMenu);
-        self.bind(AppMode::Results, Char('p'), KeyModifiers::CONTROL, OpenPackageScope);
+        self.bind(
+            AppMode::Results,
+            Char('p'),
+            KeyModifiers::CONTROL,
+            OpenPackageScope,
+        );
         // Ctrl-t for theme is now global (bound above)
         self.bind_key(AppMode::Results, Char('v'), ToggleCompact);
-        self.bind(AppMode::Results, Char('o'), KeyModifiers::CONTROL, OpenInBrowser);
-        self.bind(AppMode::Results, Char('e'), KeyModifiers::CONTROL, ExportSession);
+        self.bind(
+            AppMode::Results,
+            Char('o'),
+            KeyModifiers::CONTROL,
+            OpenInBrowser,
+        );
+        self.bind(
+            AppMode::Results,
+            Char('e'),
+            KeyModifiers::CONTROL,
+            ExportSession,
+        );
         // Module browser: use M (capital) since Ctrl-m == Enter on most terminals
         self.bind_key(AppMode::Results, Char('M'), OpenModuleBrowser);
         self.bind_key(AppMode::Results, Char('P'), PinResult);
@@ -161,9 +176,19 @@ impl Keymap {
         self.bind_key(AppMode::DocView, Esc, Back);
         self.bind_key(AppMode::DocView, Char('q'), Quit);
         self.bind_key(AppMode::DocView, Char('?'), ToggleHelp);
-        self.bind(AppMode::DocView, Char('o'), KeyModifiers::CONTROL, OpenInBrowser);
+        self.bind(
+            AppMode::DocView,
+            Char('o'),
+            KeyModifiers::CONTROL,
+            OpenInBrowser,
+        );
         // Ctrl-t for theme is now global (bound above)
-        self.bind(AppMode::DocView, Char('e'), KeyModifiers::CONTROL, ExportSession);
+        self.bind(
+            AppMode::DocView,
+            Char('e'),
+            KeyModifiers::CONTROL,
+            ExportSession,
+        );
         self.bind_key(AppMode::DocView, Char('y'), YankDeclLink);
         self.bind_key(AppMode::DocView, Char('T'), YankGhciType);
         self.bind_key(AppMode::DocView, Char('D'), YankGhciInfo);

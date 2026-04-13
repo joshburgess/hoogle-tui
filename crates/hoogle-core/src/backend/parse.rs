@@ -67,11 +67,7 @@ fn extract_name(item_html: &str) -> String {
     let stripped = strip_html(item_html);
     let trimmed = stripped.trim();
     if let Some(rest) = strip_keyword_prefix(trimmed) {
-        return rest
-            .split_whitespace()
-            .next()
-            .unwrap_or(rest)
-            .to_string();
+        return rest.split_whitespace().next().unwrap_or(rest).to_string();
     }
     trimmed
         .split(|c: char| c == ':' || c.is_whitespace())

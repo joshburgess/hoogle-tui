@@ -69,21 +69,20 @@ pub fn render(frame: &mut Frame, state: &PackageScopeState, theme: &Theme) {
     let input_style = theme.style(SemanticToken::SearchInput);
 
     let lines = vec![
-        Line::from(Span::styled(
-            "Comma-separated package names:",
-            hint_style,
-        )),
+        Line::from(Span::styled("Comma-separated package names:", hint_style)),
         Line::from(""),
         Line::from(vec![
-            Span::styled("> ", theme.style(SemanticToken::ModuleName).add_modifier(Modifier::BOLD)),
+            Span::styled(
+                "> ",
+                theme
+                    .style(SemanticToken::ModuleName)
+                    .add_modifier(Modifier::BOLD),
+            ),
             Span::styled(state.input.as_str(), input_style),
             Span::styled("\u{2588}", input_style),
         ]),
         Line::from(""),
-        Line::from(Span::styled(
-            "e.g.: base, containers, text",
-            hint_style,
-        )),
+        Line::from(Span::styled("e.g.: base, containers, text", hint_style)),
     ];
 
     frame.render_widget(Paragraph::new(lines), inner);

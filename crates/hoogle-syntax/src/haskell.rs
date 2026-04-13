@@ -65,8 +65,7 @@ fn tokenize_haskell_line(line: &str) -> Vec<Token> {
         if b == b'{' && i + 2 < len && bytes[i + 1] == b'-' && bytes[i + 2] == b'#' {
             let start = i;
             while i < len {
-                if i + 2 < len && bytes[i] == b'#' && bytes[i + 1] == b'-' && bytes[i + 2] == b'}'
-                {
+                if i + 2 < len && bytes[i] == b'#' && bytes[i + 1] == b'-' && bytes[i + 2] == b'}' {
                     i += 3;
                     break;
                 }
@@ -114,8 +113,7 @@ fn tokenize_haskell_line(line: &str) -> Vec<Token> {
         }
 
         // Char literal
-        if b == b'\'' && i + 1 < len && bytes[i + 1] != b'\''
-            && i + 2 < len && bytes[i + 1] != b' '
+        if b == b'\'' && i + 1 < len && bytes[i + 1] != b'\'' && i + 2 < len && bytes[i + 1] != b' '
         {
             let saved = i;
             i += 1;

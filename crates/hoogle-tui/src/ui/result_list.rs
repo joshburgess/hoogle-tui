@@ -101,11 +101,7 @@ impl ResultListState {
         self.display_cache = items
             .iter()
             .map(|r| CachedDisplay {
-                module_str: r
-                    .module
-                    .as_ref()
-                    .map(|m| m.to_string())
-                    .unwrap_or_default(),
+                module_str: r.module.as_ref().map(|m| m.to_string()).unwrap_or_default(),
                 pkg_str: r
                     .package
                     .as_ref()
@@ -347,9 +343,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                                 .add_modifier(Modifier::BOLD),
                         ),
                         Span::styled(
-                            "\u{2500}".repeat(
-                                available_width.saturating_sub(current_module.len() + 4),
-                            ),
+                            "\u{2500}"
+                                .repeat(available_width.saturating_sub(current_module.len() + 4)),
                             theme.style(SemanticToken::Border),
                         ),
                     ]));
@@ -364,7 +359,11 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
         };
 
         let marker = if state.multi_select_mode {
-            if is_multi { "[x] " } else { "[ ] " }
+            if is_multi {
+                "[x] "
+            } else {
+                "[ ] "
+            }
         } else if is_selected {
             "> "
         } else {
@@ -416,8 +415,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
         } else {
             // Expanded: 3 lines
             // Line 1: module + package (right-aligned package)
-            let padding = available_width
-                .saturating_sub(cached.module_str.len() + cached.pkg_str.len() + 4);
+            let padding =
+                available_width.saturating_sub(cached.module_str.len() + cached.pkg_str.len() + 4);
 
             lines.push(Line::from(vec![
                 Span::styled(
@@ -428,10 +427,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                         Style::default()
                     },
                 ),
-                Span::styled(
-                    cached.module_str.as_str(),
-                    module_style.patch(base_style),
-                ),
+                Span::styled(cached.module_str.as_str(), module_style.patch(base_style)),
                 Span::styled(" ".repeat(padding), base_style),
                 Span::styled(cached.pkg_str.as_str(), pkg_style.patch(base_style)),
             ]));

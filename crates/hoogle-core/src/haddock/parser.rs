@@ -342,10 +342,7 @@ fn parse_doc_blocks(el: ElementRef, base_url: &Url) -> Vec<DocBlock> {
                 if let Some(summary) = child_el.select(&summary_sel).next() {
                     let content = parse_inlines(summary, base_url);
                     if !content.is_empty() {
-                        blocks.push(DocBlock::Header {
-                            level: 4,
-                            content,
-                        });
+                        blocks.push(DocBlock::Header { level: 4, content });
                     }
                 }
                 blocks.extend(parse_doc_blocks(child_el, base_url));

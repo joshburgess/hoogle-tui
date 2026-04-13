@@ -26,7 +26,11 @@ impl PinnedState {
 
     pub fn pin(&mut self, result: &SearchResult) {
         // Don't duplicate
-        if self.pins.iter().any(|p| p.name == result.name && p.module == result.module) {
+        if self
+            .pins
+            .iter()
+            .any(|p| p.name == result.name && p.module == result.module)
+        {
             return;
         }
         self.pins.push(result.clone());
@@ -234,11 +238,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Th
             .as_ref()
             .map(|m| m.to_string())
             .unwrap_or_default();
-        let pkg = pin
-            .package
-            .as_ref()
-            .map(|p| p.name.as_str())
-            .unwrap_or("");
+        let pkg = pin.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
         lines.push(Line::from(vec![
             Span::styled("  ", theme.style(SemanticToken::DocText)),
             Span::styled(module, theme.style(SemanticToken::ModuleName)),

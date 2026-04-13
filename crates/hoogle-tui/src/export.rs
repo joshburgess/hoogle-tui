@@ -30,21 +30,11 @@ pub fn export_session(
         md.push_str("|------|--------|---------|----------|\n");
 
         for r in results.iter().take(100) {
-            let module = r
-                .module
-                .as_ref()
-                .map(|m| m.to_string())
-                .unwrap_or_default();
-            let package = r
-                .package
-                .as_ref()
-                .map(|p| p.name.as_str())
-                .unwrap_or("");
+            let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
+            let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
             let sig = r.signature.as_deref().unwrap_or("");
             let name = &r.name;
-            md.push_str(&format!(
-                "| `{name}` | {module} | {package} | `{sig}` |\n"
-            ));
+            md.push_str(&format!("| `{name}` | {module} | {package} | `{sig}` |\n"));
         }
         md.push('\n');
     }
@@ -67,12 +57,15 @@ mod tests {
     use super::*;
     use hoogle_core::models::{ModulePath, PackageInfo, ResultKind};
 
-    fn make_result(name: &str, module: Option<&str>, package: Option<&str>, sig: Option<&str>) -> SearchResult {
+    fn make_result(
+        name: &str,
+        module: Option<&str>,
+        package: Option<&str>,
+        sig: Option<&str>,
+    ) -> SearchResult {
         SearchResult {
             name: name.to_string(),
-            module: module.map(|m| {
-                ModulePath(m.split('.').map(|s| s.to_string()).collect())
-            }),
+            module: module.map(|m| ModulePath(m.split('.').map(|s| s.to_string()).collect())),
             package: package.map(|p| PackageInfo {
                 name: p.to_string(),
                 version: None,
@@ -117,12 +110,20 @@ mod tests {
     #[test]
     fn export_with_results_and_docs() {
         let results = vec![
-            make_result("lookup", Some("Data.Map.Strict"), Some("containers"), Some("Ord k => k -> Map k a -> Maybe a")),
-            make_result("insert", Some("Data.Map.Strict"), Some("containers"), Some("Ord k => k -> a -> Map k a -> Map k a")),
+            make_result(
+                "lookup",
+                Some("Data.Map.Strict"),
+                Some("containers"),
+                Some("Ord k => k -> Map k a -> Maybe a"),
+            ),
+            make_result(
+                "insert",
+                Some("Data.Map.Strict"),
+                Some("containers"),
+                Some("Ord k => k -> a -> Map k a -> Map k a"),
+            ),
         ];
-        let viewed_docs = vec![
-            ("Data.Map.Strict".to_string(), "containers".to_string()),
-        ];
+        let viewed_docs = vec![("Data.Map.Strict".to_string(), "containers".to_string())];
 
         let query = "map";
 
@@ -137,7 +138,10 @@ mod tests {
             let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
             let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
             let sig = r.signature.as_deref().unwrap_or("");
-            md.push_str(&format!("| `{}` | {} | {} | `{}` |\n", r.name, module, package, sig));
+            md.push_str(&format!(
+                "| `{}` | {} | {} | `{}` |\n",
+                r.name, module, package, sig
+            ));
         }
         md.push('\n');
         md.push_str("## Viewed Documentation\n\n");
@@ -149,7 +153,9 @@ mod tests {
         assert!(md.contains("# Hoogle Search: map"));
         assert!(md.contains("## Results (2 found)"));
         assert!(md.contains("| Name | Module | Package | Signature |"));
-        assert!(md.contains("| `lookup` | Data.Map.Strict | containers | `Ord k => k -> Map k a -> Maybe a` |"));
+        assert!(md.contains(
+            "| `lookup` | Data.Map.Strict | containers | `Ord k => k -> Map k a -> Maybe a` |"
+        ));
         assert!(md.contains("| `insert` | Data.Map.Strict | containers |"));
         assert!(md.contains("## Viewed Documentation"));
         assert!(md.contains("- **Data.Map.Strict** (containers)"));
@@ -157,9 +163,12 @@ mod tests {
 
     #[test]
     fn export_markdown_table_format() {
-        let results = vec![
-            make_result("fmap", Some("Data.Functor"), Some("base"), Some("(a -> b) -> f a -> f b")),
-        ];
+        let results = vec![make_result(
+            "fmap",
+            Some("Data.Functor"),
+            Some("base"),
+            Some("(a -> b) -> f a -> f b"),
+        )];
         let viewed_docs: Vec<(String, String)> = vec![];
 
         let mut md = String::new();
@@ -170,7 +179,10 @@ mod tests {
             let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
             let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
             let sig = r.signature.as_deref().unwrap_or("");
-            md.push_str(&format!("| `{}` | {} | {} | `{}` |\n", r.name, module, package, sig));
+            md.push_str(&format!(
+                "| `{}` | {} | {} | `{}` |\n",
+                r.name, module, package, sig
+            ));
         }
 
         // Verify table header
@@ -182,9 +194,7 @@ mod tests {
 
     #[test]
     fn export_result_with_no_module_or_package() {
-        let results = vec![
-            make_result("something", None, None, None),
-        ];
+        let results = vec![make_result("something", None, None, None)];
 
         let r = &results[0];
         let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
@@ -198,9 +208,12 @@ mod tests {
     #[test]
     fn export_session_writes_file() {
         // Actually call export_session and verify it creates a file
-        let results = vec![
-            make_result("map", Some("Data.List"), Some("base"), Some("[a] -> [b]")),
-        ];
+        let results = vec![make_result(
+            "map",
+            Some("Data.List"),
+            Some("base"),
+            Some("[a] -> [b]"),
+        )];
         let viewed_docs = vec![("Data.List".to_string(), "base".to_string())];
 
         let path = export_session("map", &results, &viewed_docs).unwrap();
