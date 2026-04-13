@@ -1,6 +1,6 @@
 [package]
 name = "hoogle-tui"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Terminal user interface for Haskell's Hoogle search engine"
 license = "MIT"
@@ -13,8 +13,8 @@ name = "hoogle-tui"
 path = "src/main.rs"
 
 [dependencies]
-hoogle-core = { path = "../hoogle-core", version = "0.1.0" }
-hoogle-syntax = { path = "../hoogle-syntax", version = "0.1.0" }
+hoogle-core = { path = "../hoogle-core", version = "0.1.1" }
+hoogle-syntax = { path = "../hoogle-syntax", version = "0.1.1" }
 tokio = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }

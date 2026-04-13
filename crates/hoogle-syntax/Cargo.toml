@@ -1,6 +1,6 @@
 [package]
 name = "hoogle-syntax"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Haskell syntax highlighting and tokenization for hoogle-tui"
 license = "MIT"
