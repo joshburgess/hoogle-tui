@@ -13,8 +13,8 @@ name = "hoogle-tui"
 path = "src/main.rs"
 
 [dependencies]
-hoogle-core = { path = "../hoogle-core" }
-hoogle-syntax = { path = "../hoogle-syntax" }
+hoogle-core = { path = "../hoogle-core", version = "0.1.0" }
+hoogle-syntax = { path = "../hoogle-syntax", version = "0.1.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
