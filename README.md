@@ -2,7 +2,7 @@
 
 A terminal user interface for [Hoogle](https://hoogle.haskell.org/), Haskell's type-aware search engine.
 
-Browse Haskell APIs, read Haddock documentation, and view source code — all from your terminal.
+Browse Haskell APIs, read Haddock documentation, and view source code, all from your terminal.
 
 ## Features
 
@@ -10,7 +10,7 @@ Browse Haskell APIs, read Haddock documentation, and view source code — all fr
 - **Live search** with debounced input and syntax-highlighted type signatures
 - **Dual backend**: works with local `hoogle` CLI or the web API (auto-detected)
 - **Type signature detection**: automatically detects `->` / `=>` queries and shows a `[type]` indicator
-- **Package scoping**: restrict search to specific packages (`Ctrl-p`) — uses Hoogle's `+pkg` syntax
+- **Package scoping**: restrict search to specific packages (`Ctrl-p`), using Hoogle's `+pkg` syntax
 - **Tab completion**: press `Tab` in the search bar to complete from current result names
 - **Search history**: persistent across sessions, browse with `Ctrl-r`
 - **Cabal/Stack project awareness**: auto-detects your Haskell project and scopes search to its dependencies
@@ -310,7 +310,7 @@ Options:
 
 **Broken terminal after crash**: Run `reset` in your shell. The app installs a panic hook to restore the terminal, but if the process is killed with SIGKILL this can't run.
 
-**Logs**: Check `~/.local/share/hoogle-tui/hoogle-tui.log` — set `--log-level debug` for verbose output.
+**Logs**: Check `~/.local/share/hoogle-tui/hoogle-tui.log`. Set `--log-level debug` for verbose output.
 
 **Offline mode**: If the web backend can't connect, the status bar shows `OFFLINE`. Results from the disk cache are still available.
 
