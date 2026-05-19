@@ -13,6 +13,7 @@
 ### Changed
 - Bookmark and history writes now report persistence errors instead of silently ignoring them.
 - Bookmark and history loads now distinguish missing, unreadable, and corrupt persistence files.
+- Cache TTL and size limit calculations now saturate instead of overflowing on extreme config values.
 - CI now runs the same `scripts/verify.sh` workflow used for local verification.
 - Extracted shared popup centering layout for TUI popups.
 - Moved TUI action dispatch into a dedicated `app_actions.rs` module.
@@ -40,6 +41,7 @@
 - Added CLI integration tests for help, version, completions, and invalid flags.
 - Added checked-in render golden snapshots for key TUI surfaces.
 - Added `scripts/check-rust-panics.rb` to reject `.unwrap()` and `.expect()` in shipped Rust code.
+- Added regression tests for the shipped-code panic scanner.
 - Added `scripts/verify.sh` for one-command local verification.
 
 ### Documentation

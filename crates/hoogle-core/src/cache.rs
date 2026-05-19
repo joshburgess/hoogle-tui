@@ -14,8 +14,8 @@ impl DiskCache {
     pub fn new(base_dir: PathBuf, ttl_hours: u64, max_size_mb: u64) -> Self {
         Self {
             base_dir,
-            ttl: Duration::from_secs(ttl_hours * 3600),
-            max_size_bytes: max_size_mb * 1024 * 1024,
+            ttl: Duration::from_secs(ttl_hours.saturating_mul(3600)),
+            max_size_bytes: max_size_mb.saturating_mul(1024 * 1024),
         }
     }
 
@@ -129,7 +129,7 @@ impl DiskCache {
                 let mut meta = path.clone();
                 meta.set_extension("meta");
                 let _ = fs::remove_file(&meta).await;
-                total_size -= size;
+                total_size = total_size.saturating_sub(*size);
             }
         }
 
@@ -147,7 +147,7 @@ impl DiskCache {
                 let mut meta = path;
                 meta.set_extension("meta");
                 let _ = fs::remove_file(&meta).await;
-                total_size -= size;
+                total_size = total_size.saturating_sub(size);
             }
         }
 
@@ -222,5 +222,13 @@ mod tests {
         // get_stale() should still return the data
         let data = cache.get_stale("key").await.unwrap();
         assert_eq!(data, b"stale data");
+    }
+
+    #[test]
+    fn cache_size_and_ttl_saturate_on_large_values() {
+        let cache = DiskCache::new(PathBuf::from("."), u64::MAX, u64::MAX);
+
+        assert_eq!(cache.ttl, Duration::from_secs(u64::MAX));
+        assert_eq!(cache.max_size_bytes, u64::MAX);
     }
 }

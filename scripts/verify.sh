@@ -4,6 +4,7 @@ set -eu
 cargo fmt -- --check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+scripts/test-check-rust-panics.rb
 scripts/check-rust-panics.rb
 
 scan() {

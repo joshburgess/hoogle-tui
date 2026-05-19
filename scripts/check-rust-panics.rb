@@ -4,18 +4,31 @@
 require "pathname"
 
 ROOT = Pathname.new(__dir__).parent
-PATTERN = /\.(unwrap|expect)\s*\(/.freeze
+PATTERN = /(?:\.(?:unwrap|expect)\s*\(|\bpanic!\s*\()/.freeze
 
 def rust_files
-  Dir.chdir(ROOT) do
-    Dir.glob("crates/**/*.rs").reject do |path|
-      path.include?("/tests/") ||
-        path.include?("/benches/") ||
-        path.include?("/examples/") ||
-        File.basename(path).end_with?("_tests.rs") ||
-        File.basename(path).end_with?("render_tests.rs") ||
-        File.basename(path) == "build.rs"
+  paths = ARGV.empty? ? Dir.glob(ROOT.join("crates/**/*.rs")) : ARGV
+  paths.map { |path| Pathname.new(path) }.reject do |path|
+    path_string = path.to_s
+    path_string.include?("/tests/") ||
+      path_string.include?("/benches/") ||
+      path_string.include?("/examples/") ||
+      path.basename.to_s.end_with?("_tests.rs") ||
+      path.basename.to_s.end_with?("render_tests.rs") ||
+      path.basename.to_s == "build.rs"
+  end
+end
+
+def display_path(path)
+  path = Pathname.new(path)
+  if path.absolute?
+    begin
+      path.relative_path_from(ROOT).to_s
+    rescue ArgumentError
+      path.to_s
     end
+  else
+    path.to_s
   end
 end
 
@@ -30,7 +43,7 @@ rust_files.each do |path|
   test_depth = nil
   depth = 0
 
-  File.foreach(ROOT.join(path)).with_index(1) do |line, line_number|
+  File.foreach(path).with_index(1) do |line, line_number|
     stripped = line.strip
 
     cfg_test_pending = true if stripped == "#[cfg(test)]"
@@ -45,7 +58,7 @@ rust_files.each do |path|
     cfg_test_pending = false unless stripped.start_with?("#[") || stripped.empty?
 
     if test_depth.nil? && line.match?(PATTERN)
-      violations << "#{path}:#{line_number}: #{stripped}"
+      violations << "#{display_path(path)}:#{line_number}: #{stripped}"
     end
 
     depth += brace_delta(line)
