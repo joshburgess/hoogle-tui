@@ -1,12 +1,12 @@
 use hoogle_syntax::theme::{SemanticToken, Theme};
 use ratatui::{
-    layout::{Constraint, Layout, Rect},
     style::Modifier,
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
 
+use super::popup_layout::centered_popup;
 use crate::history::SearchHistory;
 
 pub struct HistoryPopupState {
@@ -129,20 +129,4 @@ pub fn render(
 
     let paragraph = Paragraph::new(lines);
     frame.render_widget(paragraph, inner);
-}
-
-fn centered_popup(area: Rect, width: u16, height: u16) -> Rect {
-    let vertical = Layout::vertical([
-        Constraint::Length((area.height.saturating_sub(height)) / 2),
-        Constraint::Length(height),
-        Constraint::Min(0),
-    ])
-    .split(area);
-
-    Layout::horizontal([
-        Constraint::Length((area.width.saturating_sub(width)) / 2),
-        Constraint::Length(width),
-        Constraint::Min(0),
-    ])
-    .split(vertical[1])[1]
 }

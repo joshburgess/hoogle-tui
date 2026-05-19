@@ -7,6 +7,7 @@ pub mod layout;
 pub mod module_browser;
 pub mod package_popup;
 pub mod pinned_panel;
+pub mod popup_layout;
 pub mod preview_pane;
 pub mod result_list;
 pub mod search_bar;
@@ -16,3 +17,6 @@ pub mod status_bar;
 pub mod theme_popup;
 pub mod toc_popup;
 pub mod yank_popup;
+
+#[cfg(test)]
+mod render_tests;

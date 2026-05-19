@@ -7,12 +7,20 @@ pub fn export_session(
     results: &[SearchResult],
     viewed_docs: &[(String, String)], // (module, package) pairs
 ) -> io::Result<PathBuf> {
-    let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
-    let filename = format!("hoogle-export-{timestamp}.md");
-
     let dir = dirs::document_dir()
         .or_else(dirs::home_dir)
         .unwrap_or_else(|| PathBuf::from("."));
+    export_session_to_dir(query, results, viewed_docs, dir)
+}
+
+fn export_session_to_dir(
+    query: &str,
+    results: &[SearchResult],
+    viewed_docs: &[(String, String)],
+    dir: PathBuf,
+) -> io::Result<PathBuf> {
+    let timestamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
+    let filename = format!("hoogle-export-{timestamp}.md");
     let path = dir.join(&filename);
 
     let mut md = String::new();
@@ -207,7 +215,7 @@ mod tests {
 
     #[test]
     fn export_session_writes_file() {
-        // Actually call export_session and verify it creates a file
+        let dir = tempfile::tempdir().unwrap();
         let results = vec![make_result(
             "map",
             Some("Data.List"),
@@ -216,7 +224,8 @@ mod tests {
         )];
         let viewed_docs = vec![("Data.List".to_string(), "base".to_string())];
 
-        let path = export_session("map", &results, &viewed_docs).unwrap();
+        let path =
+            export_session_to_dir("map", &results, &viewed_docs, dir.path().to_path_buf()).unwrap();
         assert!(path.exists());
 
         let content = std::fs::read_to_string(&path).unwrap();
@@ -226,7 +235,6 @@ mod tests {
         assert!(content.contains("## Viewed Documentation"));
         assert!(content.contains("- **Data.List** (base)"));
 
-        // Clean up
-        let _ = std::fs::remove_file(&path);
+        assert!(path.starts_with(dir.path()));
     }
 }

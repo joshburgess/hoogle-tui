@@ -713,35 +713,15 @@ Nothing</pre>
 
     #[test]
     fn parse_hackage_like_type_fixture_with_warning_and_rich_inlines() {
-        let html = r##"
-            <html>
-              <head><title>base-4.18.0.0: Data.Maybe</title></head>
-              <body>
-                <div id="module-header"><p class="caption">Data.Maybe</p></div>
-                <div class="top">
-                  <p class="src">
-                    <a id="t:Maybe" class="def">data Maybe</a> a
-                    <a href="src/Data-Maybe.html#Maybe" class="link">Source</a>
-                  </p>
-                  <div class="doc">
-                    <div class="warning"><p>Deprecated: prefer total APIs when possible.</p></div>
-                    <p>
-                      Optional values. See <a href="Control-Applicative.html">Control.Applicative</a>
-                      and <a href="#v:maybe">maybe</a>.
-                    </p>
-                    <p>
-                      This paragraph includes <em>emphasis</em>, <strong>strength</strong>,
-                      <span class="math">x^2</span>, H<sub>2</sub>O, and x<sup>n</sup>.
-                    </p>
-                  </div>
-                </div>
-              </body>
-            </html>
-        "##;
+        let html = include_str!("../../tests/fixtures/haddock/data_maybe_type.html");
 
         let doc = parse_haddock_html(html, &test_url()).unwrap();
         assert_eq!(doc.module, "Data.Maybe");
         assert_eq!(doc.package, "base-4.18.0.0");
+        assert!(doc
+            .description
+            .iter()
+            .any(|block| matches!(block, DocBlock::Paragraph(inlines) if inlines.iter().any(|inline| matches!(inline, Inline::Text(text) if text.contains("optional value"))))));
 
         let decl = &doc.declarations[0];
         assert_eq!(decl.name, "data Maybe");

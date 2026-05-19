@@ -11,6 +11,7 @@
 - Cleared clippy warnings across the workspace.
 
 ### Changed
+- Extracted shared popup centering layout for TUI popups.
 - Moved TUI action dispatch into a dedicated `app_actions.rs` module.
 - Moved TUI app construction and initial-query setup into a dedicated `app_init.rs` module.
 - Split popup action handling out of the main TUI action dispatcher and centralized popup cleanup.
@@ -33,6 +34,7 @@
 ### Added
 - Restored `L` to load more results.
 - Added a manual CI smoke-test job for local and web backend integration tests.
+- Added `scripts/verify.sh` for one-command local verification.
 
 ### Documentation
 - Added current implementation state notes for contributors.
@@ -43,7 +45,10 @@
 
 ### Tests
 - Added a Hackage-like Haddock parser fixture covering metadata, declarations, source links, tables, details, and definition lists.
+- Added an offline Haddock HTML fixture file for parser regression coverage.
 - Added a Hackage-like type declaration fixture covering warning blocks, module links, anchor links, math, emphasis, bold text, and subscript/superscript inline markup.
+- Added render-level `TestBackend` coverage for result list, status bar, source viewer, and filter popup surfaces.
+- Added shared popup layout tests.
 - Added regression coverage for Haddock `<details>` blocks so summaries render once and body paragraphs remain distinct.
 - Added deterministic unit coverage for local backend pagination slicing.
 - Added deterministic unit coverage for local backend Hoogle command arguments.

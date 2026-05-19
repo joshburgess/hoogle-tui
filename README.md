@@ -259,6 +259,14 @@ See `config/default.toml` for all options with inline documentation.
 
 See `docs/STATE.md` for the current crate breakdown, known gaps, and suggested next work.
 
+Run the automated local verification suite with:
+
+```sh
+./scripts/verify.sh
+```
+
+Set `RUN_SMOKE_TESTS=1` to include ignored live backend smoke tests.
+
 ## Themes
 
 Built-in: `dracula` (default), `catppuccin_mocha`, `gruvbox_dark`, `solarized_dark`, `monokai`, `nord`.
