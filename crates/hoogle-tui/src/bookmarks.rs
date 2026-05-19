@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::io;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 use url::Url;
 
@@ -21,14 +22,30 @@ pub struct BookmarkStore {
     path: PathBuf,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LoadStatus {
+    Loaded,
+    Missing,
+    Unreadable(String),
+    Corrupt(String),
+}
+
 impl BookmarkStore {
-    pub fn load(path: PathBuf) -> Self {
-        if let Ok(contents) = std::fs::read_to_string(&path) {
-            if let Ok(mut store) = serde_json::from_str::<BookmarkStore>(&contents) {
-                store.path = path;
-                return store;
-            }
+    pub fn load_with_status(path: PathBuf) -> (Self, LoadStatus) {
+        match std::fs::read_to_string(&path) {
+            Ok(contents) => match serde_json::from_str::<BookmarkStore>(&contents) {
+                Ok(mut store) => {
+                    store.path = path;
+                    (store, LoadStatus::Loaded)
+                }
+                Err(e) => (Self::empty(path), LoadStatus::Corrupt(e.to_string())),
+            },
+            Err(e) if e.kind() == ErrorKind::NotFound => (Self::empty(path), LoadStatus::Missing),
+            Err(e) => (Self::empty(path), LoadStatus::Unreadable(e.to_string())),
         }
+    }
+
+    fn empty(path: PathBuf) -> Self {
         Self {
             bookmarks: Vec::new(),
             path,
@@ -76,7 +93,7 @@ mod tests {
     fn temp_store() -> (TempDir, BookmarkStore) {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("bookmarks.json");
-        (dir, BookmarkStore::load(path))
+        (dir, BookmarkStore::load_with_status(path).0)
     }
 
     fn make_bookmark(name: &str, module: Option<&str>) -> Bookmark {
@@ -123,14 +140,37 @@ mod tests {
         let path = dir.path().join("bookmarks.json");
 
         {
-            let mut store = BookmarkStore::load(path.clone());
+            let mut store = BookmarkStore::load_with_status(path.clone()).0;
             store.add(make_bookmark("map", Some("Data.Map")));
             store.try_save().unwrap();
         }
 
-        let store = BookmarkStore::load(path);
+        let store = BookmarkStore::load_with_status(path).0;
         assert_eq!(store.bookmarks().len(), 1);
         assert_eq!(store.bookmarks()[0].name, "map");
+    }
+
+    #[test]
+    fn load_reports_missing_file() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("bookmarks.json");
+
+        let (store, status) = BookmarkStore::load_with_status(path);
+
+        assert_eq!(status, LoadStatus::Missing);
+        assert!(store.bookmarks().is_empty());
+    }
+
+    #[test]
+    fn load_reports_corrupt_json() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("bookmarks.json");
+        std::fs::write(&path, "{not json").unwrap();
+
+        let (store, status) = BookmarkStore::load_with_status(path);
+
+        assert!(matches!(status, LoadStatus::Corrupt(_)));
+        assert!(store.bookmarks().is_empty());
     }
 
     #[test]
@@ -139,7 +179,7 @@ mod tests {
         let path = dir.path().join("not-a-dir").join("bookmarks.json");
         std::fs::write(dir.path().join("not-a-dir"), "file").unwrap();
 
-        let mut store = BookmarkStore::load(path);
+        let mut store = BookmarkStore::load_with_status(path).0;
         store.add(make_bookmark("map", Some("Data.Map")));
 
         assert!(store.try_save().is_err());

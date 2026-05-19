@@ -771,6 +771,73 @@ Nothing</pre>
     }
 
     #[test]
+    fn parse_record_constructor_and_field_docs_fixture() {
+        let html = include_str!("../../tests/fixtures/haddock/person_record.html");
+        let url =
+            Url::parse("https://hackage.haskell.org/package/demo-0.1.0.0/docs/Demo-Person.html")
+                .unwrap();
+
+        let doc = parse_haddock_html(html, &url).unwrap();
+
+        assert_eq!(doc.module, "Demo.Person");
+        assert_eq!(doc.package, "demo-0.1.0.0");
+
+        let decl = &doc.declarations[0];
+        assert_eq!(decl.name, "data Person");
+        assert_eq!(decl.anchor.as_deref(), Some("t:Person"));
+        assert!(decl
+            .doc
+            .iter()
+            .any(|block| block_contains_text(block, "A person record")));
+        assert!(decl
+            .doc
+            .iter()
+            .any(|block| block_contains_text(block, "Construct a person")));
+        assert!(decl
+            .doc
+            .iter()
+            .any(|block| block_contains_text(block, "personName")));
+        assert!(decl
+            .doc
+            .iter()
+            .any(|block| block_contains_text(block, "personAge")));
+    }
+
+    fn block_contains_text(block: &DocBlock, needle: &str) -> bool {
+        match block {
+            DocBlock::Paragraph(inlines) => inlines_contain_text(inlines, needle),
+            DocBlock::CodeBlock { code, .. } => code.contains(needle),
+            DocBlock::UnorderedList(items) | DocBlock::OrderedList(items) => items
+                .iter()
+                .any(|inlines| inlines_contain_text(inlines, needle)),
+            DocBlock::Header { content, .. } => inlines_contain_text(content, needle),
+            DocBlock::HorizontalRule => false,
+            DocBlock::Note(inlines) => inlines_contain_text(inlines, needle),
+            DocBlock::Table { headers, rows } => {
+                headers
+                    .iter()
+                    .any(|inlines| inlines_contain_text(inlines, needle))
+                    || rows
+                        .iter()
+                        .flatten()
+                        .any(|inlines| inlines_contain_text(inlines, needle))
+            }
+        }
+    }
+
+    fn inlines_contain_text(inlines: &[Inline], needle: &str) -> bool {
+        inlines.iter().any(|inline| match inline {
+            Inline::Text(text)
+            | Inline::Code(text)
+            | Inline::ModuleLink(text)
+            | Inline::Emphasis(text)
+            | Inline::Bold(text)
+            | Inline::Math(text) => text.contains(needle),
+            Inline::Link { text, url } => text.contains(needle) || url.as_str().contains(needle),
+        })
+    }
+
+    #[test]
     fn parse_simple_declaration() {
         let html = r#"<html><body>
             <div class="top">

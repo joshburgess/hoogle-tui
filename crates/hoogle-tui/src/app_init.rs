@@ -10,8 +10,8 @@ use ratatui::layout::Rect;
 use tokio::sync::mpsc;
 
 use crate::app::{App, AppMode};
-use crate::bookmarks::{self, BookmarkStore};
-use crate::history::{self, SearchHistory};
+use crate::bookmarks::{self, BookmarkStore, LoadStatus as BookmarkLoadStatus};
+use crate::history::{self, LoadStatus as HistoryLoadStatus, SearchHistory};
 use crate::ui::{
     doc_viewer, filter_popup, help_overlay, pinned_panel, preview_pane, result_list, sort_popup,
     source_viewer, status_bar,
@@ -37,6 +37,14 @@ impl App {
         let fetcher = Arc::new(HaddockFetcher::new(cache, config.backend.timeout_secs)?);
 
         let preview_enabled = config.ui.preview_enabled;
+        let (history, history_status) = SearchHistory::load_with_status(history::history_path());
+        let (bookmark_store, bookmark_status) =
+            BookmarkStore::load_with_status(bookmarks::bookmarks_path());
+        let mut status = status_bar::StatusState::new(backend_name);
+        if let Some(message) = persistence_load_message(&history_status, &bookmark_status) {
+            status.set_error(message);
+        }
+
         Ok(Self {
             mode: AppMode::Search,
             should_quit: false,
@@ -68,11 +76,11 @@ impl App {
             toc_state: None,
             source_state: source_viewer::SourceViewState::new(),
             help_state: help_overlay::HelpState::new(),
-            history: SearchHistory::load(history::history_path()),
-            bookmark_store: BookmarkStore::load(bookmarks::bookmarks_path()),
+            history,
+            bookmark_store,
             history_popup: None,
             bookmarks_popup: None,
-            status: status_bar::StatusState::new(backend_name),
+            status,
             backend,
             fetcher,
             search_tx,
@@ -95,5 +103,61 @@ impl App {
     pub(crate) fn set_initial_query(&mut self, query: &str) {
         self.textarea = search_textarea_with_query(query);
         self.trigger_search();
+    }
+}
+
+fn persistence_load_message(
+    history_status: &HistoryLoadStatus,
+    bookmark_status: &BookmarkLoadStatus,
+) -> Option<String> {
+    let mut failed = Vec::new();
+
+    match history_status {
+        HistoryLoadStatus::Unreadable(_) => failed.push("history"),
+        HistoryLoadStatus::Corrupt(_) => failed.push("history"),
+        HistoryLoadStatus::Loaded | HistoryLoadStatus::Missing => {}
+    }
+
+    match bookmark_status {
+        BookmarkLoadStatus::Unreadable(_) => failed.push("bookmarks"),
+        BookmarkLoadStatus::Corrupt(_) => failed.push("bookmarks"),
+        BookmarkLoadStatus::Loaded | BookmarkLoadStatus::Missing => {}
+    }
+
+    if failed.is_empty() {
+        None
+    } else {
+        Some(format!("Could not load {}", failed.join(" and ")))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{persistence_load_message, BookmarkLoadStatus, HistoryLoadStatus};
+
+    #[test]
+    fn persistence_load_message_ignores_missing_files() {
+        assert_eq!(
+            persistence_load_message(&HistoryLoadStatus::Missing, &BookmarkLoadStatus::Missing),
+            None
+        );
+    }
+
+    #[test]
+    fn persistence_load_message_reports_corrupt_files() {
+        assert_eq!(
+            persistence_load_message(
+                &HistoryLoadStatus::Corrupt("bad json".to_string()),
+                &BookmarkLoadStatus::Loaded,
+            ),
+            Some("Could not load history".to_string())
+        );
+        assert_eq!(
+            persistence_load_message(
+                &HistoryLoadStatus::Unreadable("permission denied".to_string()),
+                &BookmarkLoadStatus::Corrupt("bad json".to_string()),
+            ),
+            Some("Could not load history and bookmarks".to_string())
+        );
     }
 }

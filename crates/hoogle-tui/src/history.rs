@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 use std::io;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 
 const MAX_HISTORY: usize = 500;
@@ -20,14 +21,30 @@ pub struct SearchHistory {
     path: PathBuf,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum LoadStatus {
+    Loaded,
+    Missing,
+    Unreadable(String),
+    Corrupt(String),
+}
+
 impl SearchHistory {
-    pub fn load(path: PathBuf) -> Self {
-        if let Ok(contents) = std::fs::read_to_string(&path) {
-            if let Ok(mut history) = serde_json::from_str::<SearchHistory>(&contents) {
-                history.path = path;
-                return history;
-            }
+    pub fn load_with_status(path: PathBuf) -> (Self, LoadStatus) {
+        match std::fs::read_to_string(&path) {
+            Ok(contents) => match serde_json::from_str::<SearchHistory>(&contents) {
+                Ok(mut history) => {
+                    history.path = path;
+                    (history, LoadStatus::Loaded)
+                }
+                Err(e) => (Self::empty(path), LoadStatus::Corrupt(e.to_string())),
+            },
+            Err(e) if e.kind() == ErrorKind::NotFound => (Self::empty(path), LoadStatus::Missing),
+            Err(e) => (Self::empty(path), LoadStatus::Unreadable(e.to_string())),
         }
+    }
+
+    fn empty(path: PathBuf) -> Self {
         Self {
             entries: VecDeque::new(),
             path,
@@ -90,7 +107,7 @@ mod tests {
     fn temp_history() -> (TempDir, SearchHistory) {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("history.json");
-        (dir, SearchHistory::load(path))
+        (dir, SearchHistory::load_with_status(path).0)
     }
 
     #[test]
@@ -129,15 +146,38 @@ mod tests {
         let path = dir.path().join("history.json");
 
         {
-            let mut h = SearchHistory::load(path.clone());
+            let mut h = SearchHistory::load_with_status(path.clone()).0;
             h.add("map", 42);
             h.add("filter", 10);
             h.try_save().unwrap();
         }
 
-        let h = SearchHistory::load(path);
+        let h = SearchHistory::load_with_status(path).0;
         assert_eq!(h.entries().len(), 2);
         assert_eq!(h.entries()[0].query, "filter");
+    }
+
+    #[test]
+    fn load_reports_missing_file() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("history.json");
+
+        let (h, status) = SearchHistory::load_with_status(path);
+
+        assert_eq!(status, LoadStatus::Missing);
+        assert!(h.entries().is_empty());
+    }
+
+    #[test]
+    fn load_reports_corrupt_json() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("history.json");
+        std::fs::write(&path, "{not json").unwrap();
+
+        let (h, status) = SearchHistory::load_with_status(path);
+
+        assert!(matches!(status, LoadStatus::Corrupt(_)));
+        assert!(h.entries().is_empty());
     }
 
     #[test]
@@ -166,7 +206,7 @@ mod tests {
         let path = dir.path().join("not-a-dir").join("history.json");
         std::fs::write(dir.path().join("not-a-dir"), "file").unwrap();
 
-        let mut h = SearchHistory::load(path);
+        let mut h = SearchHistory::load_with_status(path).0;
         h.add("map", 42);
 
         assert!(h.try_save().is_err());

@@ -1,6 +1,7 @@
 use hoogle_core::models::{ModulePath, PackageInfo, ResultKind, SearchResult};
 use hoogle_syntax::theme::Theme;
 use ratatui::{backend::TestBackend, layout::Rect, Terminal};
+use std::path::PathBuf;
 
 use crate::app::AppMode;
 use crate::ui::{filter_popup, result_list, source_viewer, status_bar};
@@ -23,6 +24,33 @@ where
     let mut terminal = Terminal::new(backend).expect("failed to create test terminal");
     terminal.draw(render).expect("failed to draw test frame");
     buffer_text(terminal.backend())
+}
+
+fn assert_snapshot(name: &str, actual: &str) {
+    let path = snapshot_path(name);
+    let actual = format!("{}\n", actual.trim_end());
+
+    if std::env::var_os("UPDATE_RENDER_GOLDENS").is_some() {
+        std::fs::create_dir_all(path.parent().expect("snapshot path has a parent"))
+            .expect("failed to create snapshot directory");
+        std::fs::write(&path, actual).expect("failed to write render snapshot");
+        return;
+    }
+
+    let expected = std::fs::read_to_string(&path).expect("failed to read render snapshot");
+    assert_eq!(
+        actual,
+        expected,
+        "render snapshot changed: {}",
+        path.display()
+    );
+}
+
+fn snapshot_path(name: &str) -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("snapshots")
+        .join(format!("{name}.snap"))
 }
 
 fn search_result(name: &str, signature: &str) -> SearchResult {
@@ -62,6 +90,7 @@ fn result_list_render_includes_selected_result_metadata() {
     assert!(output.contains("containers-0.6.7"));
     assert!(output.contains("Map k a -> Maybe a"));
     assert!(output.contains("Look up a key in the map."));
+    assert_snapshot("result_list_selected", &output);
 }
 
 #[test]
@@ -88,6 +117,7 @@ fn status_bar_render_includes_mode_backend_badges_and_message() {
     assert!(output.contains("[type]"));
     assert!(output.contains("[base,containers]"));
     assert!(output.contains("Ready"));
+    assert_snapshot("status_bar_results_ready", &output);
 }
 
 #[test]
@@ -108,6 +138,7 @@ fn source_viewer_render_includes_title_line_numbers_and_code() {
     assert!(output.contains("1"));
     assert!(output.contains("module Demo where"));
     assert!(output.contains("answer"));
+    assert_snapshot("source_viewer_basic", &output);
 }
 
 #[test]
@@ -124,4 +155,5 @@ fn filter_popup_render_includes_all_options() {
     assert!(output.contains("Functions"));
     assert!(output.contains("Data Types"));
     assert!(output.contains("Packages"));
+    assert_snapshot("filter_popup_default", &output);
 }

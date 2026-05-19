@@ -3,15 +3,26 @@ set -eu
 
 cargo fmt -- --check
 cargo test
-cargo clippy --all-targets --all-features
+cargo clippy --all-targets --all-features -- -D warnings
+scripts/check-rust-panics.rb
+
+scan() {
+  pattern="$1"
+  shift
+  if command -v rg >/dev/null 2>&1; then
+    rg -n "$pattern" "$@"
+  else
+    grep -RIn --exclude-dir target "$pattern" "$@"
+  fi
+}
 
 em_dash="$(printf '\342\200\224')"
-if rg -n "$em_dash" README.md CHANGELOG.md docs crates .github; then
+if scan "$em_dash" README.md CHANGELOG.md docs crates .github; then
   echo "em dash found in user-facing text" >&2
   exit 1
 fi
 
-if rg -n "use super::\\*" crates/hoogle-tui/src/app_*.rs; then
+if scan "use super::\\*" crates/hoogle-tui/src/app_*.rs; then
   echo "wildcard app module import found" >&2
   exit 1
 fi
