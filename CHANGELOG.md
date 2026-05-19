@@ -2,6 +2,59 @@
 
 ## Unreleased
 
+### Fixed
+- Removed a stale backend documentation-fetching method that had been superseded by `HaddockFetcher`.
+- Replaced the broken load-more path with backend pagination.
+- Removed a non-test panic path from Haddock CSS selector handling.
+- Removed non-test panic paths from Hoogle result parser regex initialization.
+- Fixed duplicate `<summary>` text when parsing Haddock `<details>` blocks while preserving body code blocks.
+- Cleared clippy warnings across the workspace.
+
+### Changed
+- Moved TUI action dispatch into a dedicated `app_actions.rs` module.
+- Moved TUI app construction and initial-query setup into a dedicated `app_init.rs` module.
+- Split popup action handling out of the main TUI action dispatcher and centralized popup cleanup.
+- Extracted common TUI back-navigation and scroll/move handling from the main action dispatcher.
+- Extracted doc-view navigation and current-declaration lookup helpers from the main TUI dispatcher.
+- Extracted result-mode action helpers for pinning, multi-select, grouping, module browsing, export, and popup opening.
+- Moved popup action handling and popup cleanup into a dedicated `app_popups.rs` module.
+- Moved result-mode helper methods into a dedicated `app_results.rs` module.
+- Moved doc-view, TOC, and source-loading helper methods into a dedicated `app_docs.rs` module.
+- Moved mouse click and scroll handling into a dedicated `app_mouse.rs` module.
+- Moved back, selection, and scroll navigation helpers into a dedicated `app_navigation.rs` module.
+- Moved TUI draw orchestration into a dedicated `app_render.rs` module.
+- Moved tick and async response handling into a dedicated `app_runtime.rs` module.
+- Moved search, filter, sort, and pagination helper methods into a dedicated `app_search.rs` module.
+- Moved clipboard, bookmark, browser, and project-detection command helpers into a dedicated `app_commands.rs` module.
+- Moved search, fuzzy-filter, and doc-search input handlers into a dedicated `app_input.rs` module.
+- Moved app helper tests into a dedicated `app_tests.rs` module.
+- Tightened extracted TUI app helper methods to crate-private visibility.
+
+### Added
+- Restored `L` to load more results.
+- Added a manual CI smoke-test job for local and web backend integration tests.
+
+### Documentation
+- Added current implementation state notes for contributors.
+- Removed the obsolete implementation plan in favor of the current state document.
+- Removed stale release wording from shipped `0.1.1` changes.
+- Documented verified Hoogle 5.0.19.0 local pagination behavior.
+- Documented the May 19, 2026 local verification of ignored backend smoke tests.
+
+### Tests
+- Added a Hackage-like Haddock parser fixture covering metadata, declarations, source links, tables, details, and definition lists.
+- Added a Hackage-like type declaration fixture covering warning blocks, module links, anchor links, math, emphasis, bold text, and subscript/superscript inline markup.
+- Added regression coverage for Haddock `<details>` blocks so summaries render once and body paragraphs remain distinct.
+- Added deterministic unit coverage for local backend pagination slicing.
+- Added deterministic unit coverage for local backend Hoogle command arguments.
+- Added deterministic unit coverage for backend factory selection and auto-mode fallback.
+- Added deterministic unit coverage for module/package Hoogle result parsing, noisy CLI output, invalid NDJSON, and hyphenated package versions.
+- Added direct app helper tests for extracted search, popup, result, and pin behavior.
+- Added direct app helper tests for doc-view declaration lookup and navigation behavior.
+- Added direct app helper tests for doc link following and source-view loading state.
+
+## v0.1.1
+
 ### New Features
 
 #### Search and Navigation
@@ -20,7 +73,7 @@
 - Clear pins (`Ctrl-x`)
 
 #### Copy and Integration
-- Copy menu (`c`): popup with 7 options — signature, qualified name, import, URL, `:type`, `:info`, deep link
+- Copy menu (`c`): popup with 7 options: signature, qualified name, import, URL, `:type`, `:info`, deep link
 - GHCi commands (`T`/`D`): copy `:type Module.name` or `:info Module.name` to clipboard
 - Haddock deep linking (`y` in doc view): copy URL with `#v:name` or `#t:name` anchor
 - Open in browser (`Ctrl-o`): opens Hackage URL in system browser
@@ -56,7 +109,7 @@
 ### Tests
 - 44 new tests: export, project detection, clipboard, layout, module browser
 
-## v0.1.0 — Initial Release
+## v0.1.0: Initial Release
 
 ### Features
 

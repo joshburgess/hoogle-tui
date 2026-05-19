@@ -21,6 +21,7 @@ Browse Haskell APIs, read Haddock documentation, and view source code, all from 
 - **Filtering**: `f` filters by kind (function, type, class, module, etc.)
 - **Sorting**: `s` sorts by relevance, name, package, or module
 - **Fuzzy filter**: type letters in result mode to narrow results client-side
+- **Pagination**: `L` loads the next page of results when more are available
 - **Preview pane**: scrollable split-pane preview with syntax-highlighted code examples
 
 ### Multi-Select and Comparison
@@ -153,6 +154,7 @@ Search  -->  Results  -->  Docs  -->  Source
 | `/` | Focus search bar |
 | `v` | Toggle compact/expanded view |
 | `w` | Toggle group by module |
+| `L` | Load more results |
 | `f` | Filter by kind |
 | `s` | Sort results |
 | `c` | Copy menu (7 options) |
@@ -252,6 +254,10 @@ See `config/default.toml` for all options with inline documentation.
 | `~/.local/share/hoogle-tui/history.json` | Search history |
 | `~/.local/share/hoogle-tui/bookmarks.json` | Bookmarks |
 | `~/.local/share/hoogle-tui/hoogle-tui.log` | Debug logs |
+
+## Development State
+
+See `docs/STATE.md` for the current crate breakdown, known gaps, and suggested next work.
 
 ## Themes
 
