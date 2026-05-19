@@ -80,7 +80,9 @@ impl App {
                     if let Some(ref hp) = self.history_popup {
                         if let Some(idx) = hp.selected_index() {
                             self.history.remove(idx);
-                            self.history.save();
+                            if let Err(e) = self.history.try_save() {
+                                self.show_error(&format!("Failed to save history: {e}"));
+                            }
                         }
                     }
                     let total = self.history.entries().len();
@@ -120,7 +122,9 @@ impl App {
                 Action::DeleteEntry => {
                     if let Some(ref bp) = self.bookmarks_popup {
                         self.bookmark_store.remove(bp.selected);
-                        self.bookmark_store.save();
+                        if let Err(e) = self.bookmark_store.try_save() {
+                            self.show_error(&format!("Failed to save bookmarks: {e}"));
+                        }
                     }
                     self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
                 }

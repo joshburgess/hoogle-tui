@@ -14,8 +14,10 @@ impl App {
                 added: chrono::Utc::now(),
             };
             self.bookmark_store.add(bookmark);
-            self.bookmark_store.save();
-            self.show_info("Bookmarked!");
+            match self.bookmark_store.try_save() {
+                Ok(()) => self.show_info("Bookmarked!"),
+                Err(e) => self.show_error(&format!("Failed to save bookmark: {e}")),
+            }
         }
     }
 

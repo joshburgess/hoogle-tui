@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::io;
 use std::path::PathBuf;
 use url::Url;
 
@@ -51,13 +52,12 @@ impl BookmarkStore {
         &self.bookmarks
     }
 
-    pub fn save(&self) {
+    pub fn try_save(&self) -> io::Result<()> {
         if let Some(parent) = self.path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+            std::fs::create_dir_all(parent)?;
         }
-        if let Ok(json) = serde_json::to_string_pretty(self) {
-            let _ = std::fs::write(&self.path, json);
-        }
+        let json = serde_json::to_string_pretty(self)?;
+        std::fs::write(&self.path, json)
     }
 }
 
@@ -125,11 +125,23 @@ mod tests {
         {
             let mut store = BookmarkStore::load(path.clone());
             store.add(make_bookmark("map", Some("Data.Map")));
-            store.save();
+            store.try_save().unwrap();
         }
 
         let store = BookmarkStore::load(path);
         assert_eq!(store.bookmarks().len(), 1);
         assert_eq!(store.bookmarks()[0].name, "map");
+    }
+
+    #[test]
+    fn save_reports_filesystem_errors() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("not-a-dir").join("bookmarks.json");
+        std::fs::write(dir.path().join("not-a-dir"), "file").unwrap();
+
+        let mut store = BookmarkStore::load(path);
+        store.add(make_bookmark("map", Some("Data.Map")));
+
+        assert!(store.try_save().is_err());
     }
 }

@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::io;
 use std::path::PathBuf;
 
 const MAX_HISTORY: usize = 500;
@@ -65,13 +66,12 @@ impl SearchHistory {
         &self.entries
     }
 
-    pub fn save(&self) {
+    pub fn try_save(&self) -> io::Result<()> {
         if let Some(parent) = self.path.parent() {
-            let _ = std::fs::create_dir_all(parent);
+            std::fs::create_dir_all(parent)?;
         }
-        if let Ok(json) = serde_json::to_string_pretty(self) {
-            let _ = std::fs::write(&self.path, json);
-        }
+        let json = serde_json::to_string_pretty(self)?;
+        std::fs::write(&self.path, json)
     }
 }
 
@@ -132,7 +132,7 @@ mod tests {
             let mut h = SearchHistory::load(path.clone());
             h.add("map", 42);
             h.add("filter", 10);
-            h.save();
+            h.try_save().unwrap();
         }
 
         let h = SearchHistory::load(path);
@@ -158,5 +158,17 @@ mod tests {
         h.add("", 0);
         h.add("   ", 0);
         assert!(h.entries().is_empty());
+    }
+
+    #[test]
+    fn save_reports_filesystem_errors() {
+        let dir = TempDir::new().unwrap();
+        let path = dir.path().join("not-a-dir").join("history.json");
+        std::fs::write(dir.path().join("not-a-dir"), "file").unwrap();
+
+        let mut h = SearchHistory::load(path);
+        h.add("map", 42);
+
+        assert!(h.try_save().is_err());
     }
 }

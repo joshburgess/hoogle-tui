@@ -11,6 +11,7 @@
 - Cleared clippy warnings across the workspace.
 
 ### Changed
+- Bookmark and history writes now report persistence errors instead of silently ignoring them.
 - Extracted shared popup centering layout for TUI popups.
 - Moved TUI action dispatch into a dedicated `app_actions.rs` module.
 - Moved TUI app construction and initial-query setup into a dedicated `app_init.rs` module.

@@ -34,7 +34,12 @@ impl App {
                         self.status.offline = false;
                         if !response.append {
                             self.history.add(&self.last_searched, count);
-                            self.history.save();
+                            if let Err(e) = self.history.try_save() {
+                                self.status
+                                    .set_error(format!("Failed to save history: {e}"));
+                                self.message_deadline =
+                                    Some(Instant::now() + std::time::Duration::from_secs(5));
+                            }
                         }
                     }
                     Err(e) => {
