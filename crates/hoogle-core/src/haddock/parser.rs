@@ -23,7 +23,9 @@ pub fn parse_haddock_html(html: &str, page_url: &Url) -> Result<HaddockDoc, Stri
 /// Extract raw Haskell source from a Hackage source HTML page.
 pub fn parse_source_html(html: &str) -> String {
     let document = Html::parse_document(html);
-    let sel = sel("pre");
+    let Some(sel) = sel("pre") else {
+        return String::new();
+    };
     // Source pages typically have a single <pre> with the code
     // Try the largest <pre> block
     let mut best = String::new();
@@ -39,18 +41,17 @@ pub fn parse_source_html(html: &str) -> String {
 // --- Module / Package extraction ---
 
 fn extract_module_name(doc: &Html) -> Option<String> {
-    // Try #module-header .caption
-    let header_sel = sel("#module-header .caption");
-    if let Some(el) = doc.select(&header_sel).next() {
-        let text = el.text().collect::<String>();
-        let trimmed = text.trim().to_string();
-        if !trimmed.is_empty() {
-            return Some(trimmed);
+    if let Some(header_sel) = sel("#module-header .caption") {
+        if let Some(el) = doc.select(&header_sel).next() {
+            let text = el.text().collect::<String>();
+            let trimmed = text.trim().to_string();
+            if !trimmed.is_empty() {
+                return Some(trimmed);
+            }
         }
     }
 
-    // Fallback: title tag often has "Module.Name"
-    let title_sel = sel("title");
+    let title_sel = sel("title")?;
     if let Some(el) = doc.select(&title_sel).next() {
         let text = el.text().collect::<String>();
         // Title is often "Module.Name" or "package-name-ver: Module.Name"
@@ -85,11 +86,14 @@ fn extract_package_name(_doc: &Html, page_url: &Url) -> String {
 // --- Description extraction ---
 
 fn extract_description(doc: &Html, base_url: &Url) -> Vec<DocBlock> {
-    let desc_sel = sel("#description");
+    let Some(desc_sel) = sel("#description") else {
+        return Vec::new();
+    };
     if let Some(desc_el) = doc.select(&desc_sel).next() {
-        let inner_sel = sel(".doc");
-        if let Some(doc_el) = desc_el.select(&inner_sel).next() {
-            return parse_doc_blocks(doc_el, base_url);
+        if let Some(inner_sel) = sel(".doc") {
+            if let Some(doc_el) = desc_el.select(&inner_sel).next() {
+                return parse_doc_blocks(doc_el, base_url);
+            }
         }
         return parse_doc_blocks(desc_el, base_url);
     }
@@ -101,8 +105,9 @@ fn extract_description(doc: &Html, base_url: &Url) -> Vec<DocBlock> {
 fn extract_declarations(doc: &Html, base_url: &Url) -> Vec<Declaration> {
     let mut declarations = Vec::new();
 
-    // Haddock declarations are in .top elements
-    let top_sel = sel(".top");
+    let Some(top_sel) = sel(".top") else {
+        return declarations;
+    };
     for top_el in doc.select(&top_sel) {
         if let Some(decl) = parse_declaration(top_el, base_url) {
             declarations.push(decl);
@@ -125,11 +130,8 @@ fn parse_declaration(el: ElementRef, base_url: &Url) -> Option<Declaration> {
     // Extract since annotation
     let since = extract_since(el);
 
-    // Extract documentation
-    let doc_sel = sel(".doc");
-    let doc = el
-        .select(&doc_sel)
-        .next()
+    let doc = sel(".doc")
+        .and_then(|doc_sel| el.select(&doc_sel).next())
         .map(|doc_el| parse_doc_blocks(doc_el, base_url))
         .unwrap_or_default();
 
@@ -144,26 +146,24 @@ fn parse_declaration(el: ElementRef, base_url: &Url) -> Option<Declaration> {
 }
 
 fn extract_decl_name_and_anchor(el: ElementRef) -> Option<(String, String)> {
-    // Try a.def first
-    let def_sel = sel("a.def");
-    for a in el.select(&def_sel) {
-        let name = a.text().collect::<String>().trim().to_string();
-        let anchor = a
-            .value()
-            .attr("id")
-            .or_else(|| a.value().attr("name"))
-            .unwrap_or("")
-            .to_string();
-        if !name.is_empty() {
-            return Some((name, anchor));
+    if let Some(def_sel) = sel("a.def") {
+        for a in el.select(&def_sel) {
+            let name = a.text().collect::<String>().trim().to_string();
+            let anchor = a
+                .value()
+                .attr("id")
+                .or_else(|| a.value().attr("name"))
+                .unwrap_or("")
+                .to_string();
+            if !name.is_empty() {
+                return Some((name, anchor));
+            }
         }
     }
 
-    // Try p.src content
-    let src_sel = sel("p.src");
+    let src_sel = sel("p.src")?;
     if let Some(src_el) = el.select(&src_sel).next() {
-        // Look for any anchor with an id
-        let a_sel = sel("a[id]");
+        let a_sel = sel("a[id]")?;
         for a in src_el.select(&a_sel) {
             let text = a.text().collect::<String>().trim().to_string();
             let id = a.value().attr("id").unwrap_or("").to_string();
@@ -177,7 +177,7 @@ fn extract_decl_name_and_anchor(el: ElementRef) -> Option<(String, String)> {
 }
 
 fn extract_decl_signature(el: ElementRef) -> Option<String> {
-    let src_sel = sel("p.src");
+    let src_sel = sel("p.src")?;
     let src_el = el.select(&src_sel).next()?;
 
     // Get the full text, but strip the "Source" link text
@@ -212,18 +212,18 @@ fn extract_decl_signature(el: ElementRef) -> Option<String> {
 }
 
 fn extract_source_url(el: ElementRef, base_url: &Url) -> Option<Url> {
-    let link_sel = sel("a.link");
-    for a in el.select(&link_sel) {
-        if let Some(href) = a.value().attr("href") {
-            let text = a.text().collect::<String>();
-            if text.contains("Source") || text.contains("#") {
-                return base_url.join(href).ok();
+    if let Some(link_sel) = sel("a.link") {
+        for a in el.select(&link_sel) {
+            if let Some(href) = a.value().attr("href") {
+                let text = a.text().collect::<String>();
+                if text.contains("Source") || text.contains("#") {
+                    return base_url.join(href).ok();
+                }
             }
         }
     }
 
-    // Also try a[href] where text is "Source"
-    let a_sel = sel("p.src a[href]");
+    let a_sel = sel("p.src a[href]")?;
     for a in el.select(&a_sel) {
         let text = a.text().collect::<String>();
         if text.trim() == "Source" || text.trim() == "#" {
@@ -237,7 +237,7 @@ fn extract_source_url(el: ElementRef, base_url: &Url) -> Option<Url> {
 }
 
 fn extract_since(el: ElementRef) -> Option<String> {
-    let since_sel = sel("p.since, .since, span.since");
+    let since_sel = sel("p.since, .since, span.since")?;
     for since_el in el.select(&since_sel) {
         let text = since_el.text().collect::<String>();
         let trimmed = text.trim().to_string();
@@ -255,7 +255,7 @@ fn parse_doc_blocks(el: ElementRef, base_url: &Url) -> Vec<DocBlock> {
 
     for child in el.children() {
         let Some(child_el) = ElementRef::wrap(child) else {
-            // Text node at top level — treat as paragraph if non-empty
+            // Text node at top level: treat as paragraph if non-empty
             if let Some(text) = child.value().as_text() {
                 let trimmed = text.trim();
                 if !trimmed.is_empty() {
@@ -265,103 +265,120 @@ fn parse_doc_blocks(el: ElementRef, base_url: &Url) -> Vec<DocBlock> {
             continue;
         };
 
-        let tag = child_el.value().name();
-        match tag {
-            "p" => {
-                let classes = child_el.value().attr("class").unwrap_or("");
-                if classes.contains("since") {
-                    // Skip since annotations (handled at decl level)
-                    continue;
-                }
-                let inlines = parse_inlines(child_el, base_url);
-                if !inlines.is_empty() {
-                    blocks.push(DocBlock::Paragraph(inlines));
-                }
+        append_doc_element(&mut blocks, child_el, base_url);
+    }
+
+    blocks
+}
+
+fn append_doc_element(blocks: &mut Vec<DocBlock>, el: ElementRef, base_url: &Url) {
+    let tag = el.value().name();
+    match tag {
+        "p" => {
+            let classes = el.value().attr("class").unwrap_or("");
+            if classes.contains("since") {
+                return;
             }
-            "pre" => {
-                let code = child_el.text().collect::<String>();
-                blocks.push(DocBlock::CodeBlock {
-                    language: Some("haskell".into()),
-                    code,
-                });
+            let inlines = parse_inlines(el, base_url);
+            if !inlines.is_empty() {
+                blocks.push(DocBlock::Paragraph(inlines));
             }
-            "ul" => {
-                let items = parse_list_items(child_el, base_url);
-                if !items.is_empty() {
-                    blocks.push(DocBlock::UnorderedList(items));
-                }
+        }
+        "pre" => {
+            let code = el.text().collect::<String>();
+            blocks.push(DocBlock::CodeBlock {
+                language: Some("haskell".into()),
+                code,
+            });
+        }
+        "ul" => {
+            let items = parse_list_items(el, base_url);
+            if !items.is_empty() {
+                blocks.push(DocBlock::UnorderedList(items));
             }
-            "ol" => {
-                let items = parse_list_items(child_el, base_url);
-                if !items.is_empty() {
-                    blocks.push(DocBlock::OrderedList(items));
-                }
+        }
+        "ol" => {
+            let items = parse_list_items(el, base_url);
+            if !items.is_empty() {
+                blocks.push(DocBlock::OrderedList(items));
             }
-            "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
-                let level = tag[1..].parse::<u8>().unwrap_or(1);
-                let content = parse_inlines(child_el, base_url);
-                blocks.push(DocBlock::Header { level, content });
+        }
+        "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
+            let level = tag
+                .as_bytes()
+                .get(1)
+                .and_then(|byte| char::from(*byte).to_digit(10))
+                .map_or(1, |digit| digit as u8);
+            let content = parse_inlines(el, base_url);
+            blocks.push(DocBlock::Header { level, content });
+        }
+        "hr" => {
+            blocks.push(DocBlock::HorizontalRule);
+        }
+        "div" => {
+            let classes = el.value().attr("class").unwrap_or("");
+            if classes.contains("warning") || classes.contains("note") {
+                let inlines = parse_inlines(el, base_url);
+                blocks.push(DocBlock::Note(inlines));
+            } else {
+                blocks.extend(parse_doc_blocks(el, base_url));
             }
-            "hr" => {
-                blocks.push(DocBlock::HorizontalRule);
+        }
+        "table" => {
+            blocks.push(parse_table(el, base_url));
+        }
+        "dl" => {
+            let items = parse_dl_items(el, base_url);
+            if !items.is_empty() {
+                blocks.push(DocBlock::UnorderedList(items));
             }
-            "div" => {
-                let classes = child_el.value().attr("class").unwrap_or("");
-                if classes.contains("warning") || classes.contains("note") {
-                    let inlines = parse_inlines(child_el, base_url);
-                    blocks.push(DocBlock::Note(inlines));
-                } else if classes.contains("doc") {
-                    // Nested doc div — recurse
-                    blocks.extend(parse_doc_blocks(child_el, base_url));
-                } else {
-                    // Generic div — recurse
-                    blocks.extend(parse_doc_blocks(child_el, base_url));
-                }
+        }
+        "blockquote" => {
+            let inlines = parse_inlines(el, base_url);
+            if !inlines.is_empty() {
+                blocks.push(DocBlock::Note(inlines));
             }
-            "table" => {
-                let table = parse_table(child_el, base_url);
-                blocks.push(table);
-            }
-            "dl" => {
-                // Definition list — convert to unordered list
-                let items = parse_dl_items(child_el, base_url);
-                if !items.is_empty() {
-                    blocks.push(DocBlock::UnorderedList(items));
-                }
-            }
-            "blockquote" => {
-                // Treat blockquote as an indented note
-                let inlines = parse_inlines(child_el, base_url);
-                if !inlines.is_empty() {
-                    blocks.push(DocBlock::Note(inlines));
-                }
-            }
-            "details" => {
-                // Expand <details> content (ignore <summary> as a header)
-                let summary_sel = sel("summary");
-                if let Some(summary) = child_el.select(&summary_sel).next() {
+        }
+        "details" => {
+            if let Some(summary_sel) = sel("summary") {
+                if let Some(summary) = el.select(&summary_sel).next() {
                     let content = parse_inlines(summary, base_url);
                     if !content.is_empty() {
                         blocks.push(DocBlock::Header { level: 4, content });
                     }
                 }
-                blocks.extend(parse_doc_blocks(child_el, base_url));
             }
-            _ => {
-                // Try to extract content
-                let inlines = parse_inlines(child_el, base_url);
-                if !inlines.is_empty() {
-                    blocks.push(DocBlock::Paragraph(inlines));
-                }
+            blocks.extend(parse_details_body(el, base_url));
+        }
+        _ => {
+            let inlines = parse_inlines(el, base_url);
+            if !inlines.is_empty() {
+                blocks.push(DocBlock::Paragraph(inlines));
             }
         }
+    }
+}
+
+fn parse_details_body(el: ElementRef, base_url: &Url) -> Vec<DocBlock> {
+    let mut blocks = Vec::new();
+
+    for child in el.children() {
+        let Some(child_el) = ElementRef::wrap(child) else {
+            continue;
+        };
+        if child_el.value().name() == "summary" {
+            continue;
+        }
+        append_doc_element(&mut blocks, child_el, base_url);
     }
 
     blocks
 }
 
 fn parse_list_items(el: ElementRef, base_url: &Url) -> Vec<Vec<Inline>> {
-    let li_sel = sel("li");
+    let Some(li_sel) = sel("li") else {
+        return Vec::new();
+    };
     el.select(&li_sel)
         .map(|li| parse_inlines(li, base_url))
         .filter(|inlines| !inlines.is_empty())
@@ -370,8 +387,12 @@ fn parse_list_items(el: ElementRef, base_url: &Url) -> Vec<Vec<Inline>> {
 
 fn parse_dl_items(el: ElementRef, base_url: &Url) -> Vec<Vec<Inline>> {
     let mut items = Vec::new();
-    let dt_sel = sel("dt");
-    let dd_sel = sel("dd");
+    let Some(dt_sel) = sel("dt") else {
+        return items;
+    };
+    let Some(dd_sel) = sel("dd") else {
+        return items;
+    };
 
     let dts: Vec<_> = el.select(&dt_sel).collect();
     let dds: Vec<_> = el.select(&dd_sel).collect();
@@ -379,7 +400,7 @@ fn parse_dl_items(el: ElementRef, base_url: &Url) -> Vec<Vec<Inline>> {
     for (i, dt) in dts.iter().enumerate() {
         let mut inlines = parse_inlines(*dt, base_url);
         if let Some(dd) = dds.get(i) {
-            inlines.push(Inline::Text(" — ".into()));
+            inlines.push(Inline::Text(" - ".into()));
             inlines.extend(parse_inlines(*dd, base_url));
         }
         if !inlines.is_empty() {
@@ -391,11 +412,21 @@ fn parse_dl_items(el: ElementRef, base_url: &Url) -> Vec<Vec<Inline>> {
 }
 
 fn parse_table(el: ElementRef, base_url: &Url) -> DocBlock {
-    let thead_sel = sel("thead tr");
-    let tbody_sel = sel("tbody tr");
-    let tr_sel = sel("tr");
-    let th_sel = sel("th");
-    let td_sel = sel("td");
+    let Some(thead_sel) = sel("thead tr") else {
+        return DocBlock::Paragraph(Vec::new());
+    };
+    let Some(tbody_sel) = sel("tbody tr") else {
+        return DocBlock::Paragraph(Vec::new());
+    };
+    let Some(tr_sel) = sel("tr") else {
+        return DocBlock::Paragraph(Vec::new());
+    };
+    let Some(th_sel) = sel("th") else {
+        return DocBlock::Paragraph(Vec::new());
+    };
+    let Some(td_sel) = sel("td") else {
+        return DocBlock::Paragraph(Vec::new());
+    };
 
     // Extract headers from <thead> or first row with <th>
     let mut headers: Vec<Vec<Inline>> = Vec::new();
@@ -554,9 +585,8 @@ fn is_module_link(href: &str) -> bool {
         && !name.is_empty()
 }
 
-/// Helper to create a Selector, panicking on invalid CSS.
-fn sel(s: &str) -> Selector {
-    Selector::parse(s).unwrap_or_else(|_| panic!("invalid selector: {s}"))
+fn sel(s: &str) -> Option<Selector> {
+    Selector::parse(s).ok()
 }
 
 #[cfg(test)]
@@ -601,6 +631,163 @@ mod tests {
         .unwrap();
         let result = parse_haddock_html("<html></html>", &url).unwrap();
         assert_eq!(result.package, "containers-0.6.7");
+    }
+
+    #[test]
+    fn parse_hackage_like_fixture() {
+        let html = r#"
+            <html>
+              <head><title>containers-0.6.7: Data.Map.Strict</title></head>
+              <body>
+                <div id="module-header"><p class="caption">Data.Map.Strict</p></div>
+                <div id="description">
+                  <div class="doc">
+                    <p>Strict maps from keys to values.</p>
+                    <table>
+                      <thead><tr><th>Operation</th><th>Cost</th></tr></thead>
+                      <tbody><tr><td><code>lookup</code></td><td>O(log n)</td></tr></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div class="top">
+                  <p class="src">
+                    <a id="v:lookup" class="def">lookup</a> :: Ord k => k -> Map k a -> Maybe a
+                    <a href="src/Data-Map-Strict.html#lookup" class="link">Source</a>
+                  </p>
+                  <p class="since">Since: containers-0.1</p>
+                  <div class="doc">
+                    <p>Look up a key in the map. See <a href="Data-Map-Lazy.html">Data.Map.Lazy</a>.</p>
+                    <details>
+                      <summary>Examples</summary>
+                      <pre>>>> lookup 1 empty
+Nothing</pre>
+                    </details>
+                    <dl>
+                      <dt>Warning</dt>
+                      <dd>Keys must be ordered.</dd>
+                    </dl>
+                  </div>
+                </div>
+              </body>
+            </html>
+        "#;
+
+        let url = Url::parse(
+            "https://hackage.haskell.org/package/containers-0.6.7/docs/Data-Map-Strict.html",
+        )
+        .unwrap();
+        let doc = parse_haddock_html(html, &url).unwrap();
+
+        assert_eq!(doc.module, "Data.Map.Strict");
+        assert_eq!(doc.package, "containers-0.6.7");
+        assert!(doc
+            .description
+            .iter()
+            .any(|block| matches!(block, DocBlock::Table { headers, rows } if headers.len() == 2 && rows.len() == 1)));
+
+        let decl = &doc.declarations[0];
+        assert_eq!(decl.name, "lookup");
+        assert_eq!(decl.anchor.as_deref(), Some("v:lookup"));
+        assert_eq!(decl.since.as_deref(), Some("Since: containers-0.1"));
+        assert!(decl
+            .signature
+            .as_deref()
+            .is_some_and(|signature| signature.contains("Ord k => k -> Map k a -> Maybe a")));
+        assert!(decl.source_url.as_ref().is_some_and(|source_url| {
+            source_url
+                .as_str()
+                .ends_with("src/Data-Map-Strict.html#lookup")
+        }));
+        assert!(decl
+            .doc
+            .iter()
+            .any(|block| matches!(block, DocBlock::Header { level: 4, .. })));
+        assert!(decl.doc.iter().any(
+            |block| matches!(block, DocBlock::CodeBlock { code, .. } if code.contains("Nothing"))
+        ));
+        assert!(decl
+            .doc
+            .iter()
+            .any(|block| matches!(block, DocBlock::UnorderedList(items) if items.len() == 1)));
+    }
+
+    #[test]
+    fn parse_hackage_like_type_fixture_with_warning_and_rich_inlines() {
+        let html = r##"
+            <html>
+              <head><title>base-4.18.0.0: Data.Maybe</title></head>
+              <body>
+                <div id="module-header"><p class="caption">Data.Maybe</p></div>
+                <div class="top">
+                  <p class="src">
+                    <a id="t:Maybe" class="def">data Maybe</a> a
+                    <a href="src/Data-Maybe.html#Maybe" class="link">Source</a>
+                  </p>
+                  <div class="doc">
+                    <div class="warning"><p>Deprecated: prefer total APIs when possible.</p></div>
+                    <p>
+                      Optional values. See <a href="Control-Applicative.html">Control.Applicative</a>
+                      and <a href="#v:maybe">maybe</a>.
+                    </p>
+                    <p>
+                      This paragraph includes <em>emphasis</em>, <strong>strength</strong>,
+                      <span class="math">x^2</span>, H<sub>2</sub>O, and x<sup>n</sup>.
+                    </p>
+                  </div>
+                </div>
+              </body>
+            </html>
+        "##;
+
+        let doc = parse_haddock_html(html, &test_url()).unwrap();
+        assert_eq!(doc.module, "Data.Maybe");
+        assert_eq!(doc.package, "base-4.18.0.0");
+
+        let decl = &doc.declarations[0];
+        assert_eq!(decl.name, "data Maybe");
+        assert_eq!(decl.anchor.as_deref(), Some("t:Maybe"));
+        assert_eq!(decl.signature.as_deref(), Some("data Maybe a"));
+        assert!(decl.source_url.as_ref().is_some_and(|source_url| {
+            source_url.as_str().ends_with("src/Data-Maybe.html#Maybe")
+        }));
+
+        assert!(decl.doc.iter().any(|block| {
+            matches!(
+                block,
+                DocBlock::Note(inlines)
+                    if inlines.iter().any(|inline| {
+                        matches!(inline, Inline::Text(text) if text.contains("Deprecated"))
+                    })
+            )
+        }));
+
+        assert!(decl.doc.iter().any(|block| {
+            matches!(
+                block,
+                DocBlock::Paragraph(inlines)
+                    if inlines.iter().any(|inline| {
+                        matches!(inline, Inline::ModuleLink(module) if module == "Control.Applicative")
+                    }) && inlines.iter().any(|inline| {
+                        matches!(
+                            inline,
+                            Inline::Link { text, url }
+                                if text == "maybe" && url.as_str().ends_with("Data-Maybe.html#v:maybe")
+                        )
+                    })
+            )
+        }));
+
+        assert!(decl.doc.iter().any(|block| {
+            matches!(
+                block,
+                DocBlock::Paragraph(inlines)
+                    if inlines.iter().any(|inline| matches!(inline, Inline::Emphasis(text) if text == "emphasis"))
+                        && inlines.iter().any(|inline| matches!(inline, Inline::Bold(text) if text == "strength"))
+                        && inlines.iter().any(|inline| matches!(inline, Inline::Math(text) if text == "x^2"))
+                        && inlines.iter().any(|inline| matches!(inline, Inline::Text(text) if text.contains("_2")))
+                        && inlines.iter().any(|inline| matches!(inline, Inline::Text(text) if text.contains("^n")))
+            )
+        }));
     }
 
     #[test]
@@ -879,6 +1066,33 @@ fromJust Nothing = error "fromJust"
         let result = parse_haddock_html(html, &test_url()).unwrap();
         // Should have a header from summary + paragraph from content
         assert!(result.description.len() >= 2);
+    }
+
+    #[test]
+    fn parse_details_summary_without_duplicate_body_paragraph() {
+        let html = r#"<html><body>
+            <div id="description">
+                <div class="doc">
+                    <details>
+                        <summary>Examples</summary>
+                        <p>Use this function for total inputs.</p>
+                    </details>
+                </div>
+            </div>
+        </body></html>"#;
+
+        let result = parse_haddock_html(html, &test_url()).unwrap();
+        assert_eq!(result.description.len(), 2);
+        assert!(matches!(
+            &result.description[0],
+            DocBlock::Header { content, .. }
+                if content.iter().any(|inline| matches!(inline, Inline::Text(text) if text.contains("Examples")))
+        ));
+        assert!(matches!(
+            &result.description[1],
+            DocBlock::Paragraph(inlines)
+                if inlines.iter().any(|inline| matches!(inline, Inline::Text(text) if text.contains("total inputs")))
+        ));
     }
 
     #[test]

@@ -4,6 +4,13 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      run-smoke-tests:
+        description: "Run ignored backend smoke tests"
+        required: false
+        default: false
+        type: boolean
 
 env:
   CARGO_TERM_COLOR: always
@@ -33,3 +40,34 @@ jobs:
 
       - name: Run tests
         run: cargo test --workspace
+
+  backend-smoke:
+    name: Backend smoke tests
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-smoke-tests }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: "9.10"
+          cabal-version: "latest"
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install hoogle
+        run: |
+          cabal update
+          cabal install hoogle
+
+      - name: Generate hoogle database
+        run: hoogle generate
+
+      - name: Run local backend smoke tests
+        run: cargo test -p hoogle-core integration_local_search -- --ignored
+
+      - name: Run web backend smoke tests
+        run: cargo test -p hoogle-core integration_web_search -- --ignored

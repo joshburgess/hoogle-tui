@@ -133,7 +133,7 @@ pub fn render(
         for line in wrap_text(doc, inner_width) {
             let trimmed = line.trim();
             if trimmed.starts_with(">>>") {
-                // GHCi prompt line — highlight the code
+                // GHCi prompt line, highlight the code.
                 let prompt_end = 3;
                 let code = &trimmed[prompt_end..].trim_start();
                 let mut spans = vec![Span::styled(
@@ -152,7 +152,7 @@ pub fn render(
                 lines.push(Line::from(spans));
             } else if trimmed.starts_with("@") || (line.starts_with("    ") && !trimmed.is_empty())
             {
-                // Indented code or @-block — syntax highlight
+                // Indented code or @-block, syntax highlight.
                 let highlighted = hoogle_syntax::highlight_signature(trimmed, theme);
                 let mut spans = vec![Span::styled("  ", theme.style(SemanticToken::DocCode))];
                 spans.extend(

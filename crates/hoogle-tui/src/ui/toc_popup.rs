@@ -189,7 +189,7 @@ mod tests {
             .enumerate()
             .map(|(i, name)| TocEntry {
                 name: name.to_string(),
-                signature: Some(format!("Int -> Int")),
+                signature: Some("Int -> Int".to_string()),
                 line_offset: i * 10,
             })
             .collect()

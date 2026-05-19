@@ -96,6 +96,87 @@ impl SourceViewState {
     }
 }
 
+pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme: &Theme) {
+    let title = if state.title.is_empty() {
+        " Source ".to_string()
+    } else {
+        format!(" Source: {} ", state.title)
+    };
+
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(title)
+        .border_style(theme.style(SemanticToken::Border));
+
+    let inner = block.inner(area);
+    state.viewport_height = inner.height as usize;
+
+    if state.loading {
+        let loading = Paragraph::new(Line::from(Span::styled(
+            "  Loading source code...",
+            theme.style(SemanticToken::Spinner),
+        )))
+        .block(block);
+        frame.render_widget(loading, area);
+        return;
+    }
+
+    if let Some(ref err) = state.error {
+        let error = Paragraph::new(vec![
+            Line::from(""),
+            Line::from(Span::styled(
+                format!("  {err}"),
+                theme.style(SemanticToken::Error),
+            )),
+            Line::from(""),
+            Line::from(Span::styled(
+                "  Press Esc to go back.",
+                theme.style(SemanticToken::Comment),
+            )),
+        ])
+        .block(block);
+        frame.render_widget(error, area);
+        return;
+    }
+
+    if state.rendered_lines.is_empty() {
+        let empty = Paragraph::new(Line::from(Span::styled(
+            "  No source loaded.",
+            theme.style(SemanticToken::Comment),
+        )))
+        .block(block);
+        frame.render_widget(empty, area);
+        return;
+    }
+
+    let total = state.rendered_lines.len();
+    let start = state.scroll_offset.min(total);
+    let end = (start + inner.height as usize).min(total);
+    let visible: Vec<Line> = state.rendered_lines[start..end].to_vec();
+
+    // Line count indicator
+    let block = block.title_bottom(Line::from(vec![Span::styled(
+        format!(" {}-{}/{} ", start + 1, end, total),
+        theme.style(SemanticToken::Comment),
+    )]));
+
+    let paragraph = Paragraph::new(visible).block(block);
+    frame.render_widget(paragraph, area);
+
+    // Scrollbar
+    if total > inner.height as usize {
+        let mut scrollbar_state = ScrollbarState::new(total.saturating_sub(inner.height as usize))
+            .position(state.scroll_offset);
+        frame.render_stateful_widget(
+            Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None),
+            area,
+            &mut scrollbar_state,
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -227,86 +308,5 @@ mod tests {
         let mut state = SourceViewState::new();
         state.scroll_to_line(0);
         assert_eq!(state.scroll_offset, 0);
-    }
-}
-
-pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme: &Theme) {
-    let title = if state.title.is_empty() {
-        " Source ".to_string()
-    } else {
-        format!(" Source: {} ", state.title)
-    };
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title(title)
-        .border_style(theme.style(SemanticToken::Border));
-
-    let inner = block.inner(area);
-    state.viewport_height = inner.height as usize;
-
-    if state.loading {
-        let loading = Paragraph::new(Line::from(Span::styled(
-            "  Loading source code...",
-            theme.style(SemanticToken::Spinner),
-        )))
-        .block(block);
-        frame.render_widget(loading, area);
-        return;
-    }
-
-    if let Some(ref err) = state.error {
-        let error = Paragraph::new(vec![
-            Line::from(""),
-            Line::from(Span::styled(
-                format!("  {err}"),
-                theme.style(SemanticToken::Error),
-            )),
-            Line::from(""),
-            Line::from(Span::styled(
-                "  Press Esc to go back.",
-                theme.style(SemanticToken::Comment),
-            )),
-        ])
-        .block(block);
-        frame.render_widget(error, area);
-        return;
-    }
-
-    if state.rendered_lines.is_empty() {
-        let empty = Paragraph::new(Line::from(Span::styled(
-            "  No source loaded.",
-            theme.style(SemanticToken::Comment),
-        )))
-        .block(block);
-        frame.render_widget(empty, area);
-        return;
-    }
-
-    let total = state.rendered_lines.len();
-    let start = state.scroll_offset.min(total);
-    let end = (start + inner.height as usize).min(total);
-    let visible: Vec<Line> = state.rendered_lines[start..end].to_vec();
-
-    // Line count indicator
-    let block = block.title_bottom(Line::from(vec![Span::styled(
-        format!(" {}-{}/{} ", start + 1, end, total),
-        theme.style(SemanticToken::Comment),
-    )]));
-
-    let paragraph = Paragraph::new(visible).block(block);
-    frame.render_widget(paragraph, area);
-
-    // Scrollbar
-    if total > inner.height as usize {
-        let mut scrollbar_state = ScrollbarState::new(total.saturating_sub(inner.height as usize))
-            .position(state.scroll_offset);
-        frame.render_stateful_widget(
-            Scrollbar::new(ScrollbarOrientation::VerticalRight)
-                .begin_symbol(None)
-                .end_symbol(None),
-            area,
-            &mut scrollbar_state,
-        );
     }
 }

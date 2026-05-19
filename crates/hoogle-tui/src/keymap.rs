@@ -39,7 +39,7 @@ impl Keymap {
     fn load_defaults(&mut self) {
         use Action::*;
         use KeyCode::*;
-        // Global — these work in every mode
+        // Global bindings work in every mode.
         for mode in AppMode::ALL {
             self.bind(mode, Char('c'), KeyModifiers::CONTROL, Quit);
             self.bind(mode, Char('l'), KeyModifiers::CONTROL, Redraw);
@@ -129,6 +129,7 @@ impl Keymap {
         self.bind_key(AppMode::Results, Char('w'), ToggleGroupByModule);
         self.bind_key(AppMode::Results, Char('T'), YankGhciType);
         self.bind_key(AppMode::Results, Char('D'), YankGhciInfo);
+        self.bind_key(AppMode::Results, Char('L'), LoadMore);
 
         // DocView mode
         self.bind_key(AppMode::DocView, Char('j'), ScrollDown);
@@ -205,7 +206,7 @@ impl Keymap {
         self.bind_key(AppMode::SourceView, Char('?'), ToggleHelp);
         self.bind_key(AppMode::SourceView, Char('y'), YankSignature);
 
-        // Help mode — q closes help (not quit app)
+        // Help mode: q closes help instead of quitting the app.
         self.bind_key(AppMode::Help, Esc, Back);
         self.bind_key(AppMode::Help, Char('?'), Back);
         self.bind_key(AppMode::Help, Char('q'), Back);
@@ -311,7 +312,10 @@ fn parse_key_string(s: &str) -> Option<KeyEvent> {
         "left" => KeyCode::Left,
         "right" => KeyCode::Right,
         "space" => KeyCode::Char(' '),
-        k if k.len() == 1 => KeyCode::Char(k.chars().next().unwrap()),
+        k if k.len() == 1 => {
+            let c = k.chars().next()?;
+            KeyCode::Char(c)
+        }
         _ => return None,
     };
 
@@ -372,6 +376,16 @@ mod tests {
             KeyEvent::new(KeyCode::Char('q'), KeyModifiers::NONE),
         );
         assert_eq!(action, Action::Quit);
+    }
+
+    #[test]
+    fn capital_l_loads_more_results() {
+        let km = default_keymap();
+        let action = km.resolve(
+            AppMode::Results,
+            KeyEvent::new(KeyCode::Char('L'), KeyModifiers::NONE),
+        );
+        assert_eq!(action, Action::LoadMore);
     }
 
     #[test]

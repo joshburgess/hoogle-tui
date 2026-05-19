@@ -49,7 +49,7 @@ pub fn tokenize_signature(input: &str) -> Vec<Token> {
             continue;
         }
 
-        // Hash — could be unboxed tuple or kind
+        // Hash, could be unboxed tuple or kind.
         if b == b'#' {
             tokens.push(Token::Operator("#".into()));
             i += 1;
@@ -106,7 +106,9 @@ pub fn tokenize_signature(input: &str) -> Vec<Token> {
         }
 
         // Non-ASCII or truly unknown character: consume one char
-        let c = input[i..].chars().next().unwrap();
+        let Some(c) = input[i..].chars().next() else {
+            break;
+        };
         tokens.push(Token::Unknown(c.to_string()));
         i += c.len_utf8();
     }
@@ -218,7 +220,7 @@ fn consume_qualified_or_ident(input: &str, i: &mut usize) -> String {
                 *i += 1;
             }
             if *i == seg_start {
-                // No segment after dot — revert
+                // No segment after dot, revert.
                 *i = saved;
                 break;
             }

@@ -65,7 +65,7 @@ fn try_cabal_project(dir: &Path) -> Option<ProjectInfo> {
 }
 
 /// Extract build-depends package names from a .cabal file.
-/// This is a simple parser — doesn't handle conditionals or version ranges perfectly,
+/// This is a simple parser. It doesn't handle conditionals or version ranges perfectly,
 /// but extracts the package names well enough for search scoping.
 fn extract_cabal_deps(contents: &str) -> Vec<String> {
     let mut deps = Vec::new();

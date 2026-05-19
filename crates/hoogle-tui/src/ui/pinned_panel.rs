@@ -71,6 +71,87 @@ impl PinnedState {
     }
 }
 
+pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Theme) {
+    let block = Block::default()
+        .borders(Borders::ALL)
+        .title(format!(" Pinned ({}) ", state.pins.len()))
+        .title_bottom(Span::styled(
+            " Ctrl-x:unpin all ",
+            theme.style(SemanticToken::Comment),
+        ))
+        .border_style(theme.style(SemanticToken::Border));
+
+    let inner = block.inner(area);
+    state.viewport_height = inner.height as usize;
+    frame.render_widget(block, area);
+
+    if state.pins.is_empty() {
+        let empty = Paragraph::new(Line::from(Span::styled(
+            "  Pin results with 'P' to compare",
+            theme.style(SemanticToken::Comment),
+        )));
+        frame.render_widget(empty, inner);
+        return;
+    }
+
+    let mut lines: Vec<Line> = Vec::new();
+
+    for (i, pin) in state.pins.iter().enumerate() {
+        if i > 0 {
+            lines.push(Line::from(Span::styled(
+                "\u{2500}".repeat(inner.width as usize),
+                theme.style(SemanticToken::Border),
+            )));
+        }
+
+        // Signature line
+        if let Some(ref sig) = pin.signature {
+            let full = format!("{} :: {sig}", pin.name);
+            let highlighted = hoogle_syntax::highlight_signature(&full, theme);
+            lines.push(highlighted);
+        } else {
+            lines.push(Line::from(Span::styled(
+                pin.name.as_str(),
+                theme
+                    .style(SemanticToken::TypeConstructor)
+                    .add_modifier(Modifier::BOLD),
+            )));
+        }
+
+        // Module line
+        let module = pin
+            .module
+            .as_ref()
+            .map(|m| m.to_string())
+            .unwrap_or_default();
+        let pkg = pin.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
+        lines.push(Line::from(vec![
+            Span::styled("  ", theme.style(SemanticToken::DocText)),
+            Span::styled(module, theme.style(SemanticToken::ModuleName)),
+            Span::styled("  ", theme.style(SemanticToken::DocText)),
+            Span::styled(pkg, theme.style(SemanticToken::PackageName)),
+        ]));
+    }
+
+    let total = lines.len();
+    let max_scroll = total.saturating_sub(state.viewport_height);
+    state.scroll_offset = state.scroll_offset.min(max_scroll);
+
+    let paragraph = Paragraph::new(lines).scroll((state.scroll_offset as u16, 0));
+    frame.render_widget(paragraph, inner);
+
+    if total > state.viewport_height {
+        let mut sb_state = ScrollbarState::new(max_scroll).position(state.scroll_offset);
+        frame.render_stateful_widget(
+            Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None),
+            area,
+            &mut sb_state,
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -182,86 +263,5 @@ mod tests {
         assert!(!state.is_empty());
         state.clear();
         assert!(state.is_empty());
-    }
-}
-
-pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Theme) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .title(format!(" Pinned ({}) ", state.pins.len()))
-        .title_bottom(Span::styled(
-            " Ctrl-x:unpin all ",
-            theme.style(SemanticToken::Comment),
-        ))
-        .border_style(theme.style(SemanticToken::Border));
-
-    let inner = block.inner(area);
-    state.viewport_height = inner.height as usize;
-    frame.render_widget(block, area);
-
-    if state.pins.is_empty() {
-        let empty = Paragraph::new(Line::from(Span::styled(
-            "  Pin results with 'P' to compare",
-            theme.style(SemanticToken::Comment),
-        )));
-        frame.render_widget(empty, inner);
-        return;
-    }
-
-    let mut lines: Vec<Line> = Vec::new();
-
-    for (i, pin) in state.pins.iter().enumerate() {
-        if i > 0 {
-            lines.push(Line::from(Span::styled(
-                "\u{2500}".repeat(inner.width as usize),
-                theme.style(SemanticToken::Border),
-            )));
-        }
-
-        // Signature line
-        if let Some(ref sig) = pin.signature {
-            let full = format!("{} :: {sig}", pin.name);
-            let highlighted = hoogle_syntax::highlight_signature(&full, theme);
-            lines.push(highlighted);
-        } else {
-            lines.push(Line::from(Span::styled(
-                pin.name.as_str(),
-                theme
-                    .style(SemanticToken::TypeConstructor)
-                    .add_modifier(Modifier::BOLD),
-            )));
-        }
-
-        // Module line
-        let module = pin
-            .module
-            .as_ref()
-            .map(|m| m.to_string())
-            .unwrap_or_default();
-        let pkg = pin.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
-        lines.push(Line::from(vec![
-            Span::styled("  ", theme.style(SemanticToken::DocText)),
-            Span::styled(module, theme.style(SemanticToken::ModuleName)),
-            Span::styled("  ", theme.style(SemanticToken::DocText)),
-            Span::styled(pkg, theme.style(SemanticToken::PackageName)),
-        ]));
-    }
-
-    let total = lines.len();
-    let max_scroll = total.saturating_sub(state.viewport_height);
-    state.scroll_offset = state.scroll_offset.min(max_scroll);
-
-    let paragraph = Paragraph::new(lines).scroll((state.scroll_offset as u16, 0));
-    frame.render_widget(paragraph, inner);
-
-    if total > state.viewport_height {
-        let mut sb_state = ScrollbarState::new(max_scroll).position(state.scroll_offset);
-        frame.render_stateful_widget(
-            Scrollbar::new(ScrollbarOrientation::VerticalRight)
-                .begin_symbol(None)
-                .end_symbol(None),
-            area,
-            &mut sb_state,
-        );
     }
 }

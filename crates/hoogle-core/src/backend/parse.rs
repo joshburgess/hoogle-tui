@@ -5,8 +5,11 @@ use url::Url;
 
 /// Strip HTML tags from a string.
 fn strip_html(html: &str) -> String {
-    static TAG_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]*>").unwrap());
-    let text = TAG_RE.replace_all(html, "");
+    static TAG_RE: LazyLock<Option<Regex>> = LazyLock::new(|| Regex::new(r"<[^>]*>").ok());
+    let text = TAG_RE
+        .as_ref()
+        .map(|re| re.replace_all(html, "").into_owned())
+        .unwrap_or_else(|| html.to_string());
     // Decode common HTML entities
     text.replace("&gt;", ">")
         .replace("&lt;", "<")
@@ -50,11 +53,10 @@ fn strip_keyword_prefix(trimmed: &str) -> Option<&str> {
 /// `<span class=name>...</span>` or `<s0>...</s0>` tags.
 fn extract_name(item_html: &str) -> String {
     // Try to find name in <span class=name> or <s0> tags
-    static NAME_RE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r#"<span class=name>([^<]*(?:<[^>]*>[^<]*)*)</span>"#).unwrap()
-    });
+    static NAME_RE: LazyLock<Option<Regex>> =
+        LazyLock::new(|| Regex::new(r#"<span class=name>([^<]*(?:<[^>]*>[^<]*)*)</span>"#).ok());
 
-    if let Some(cap) = NAME_RE.captures(item_html) {
+    if let Some(cap) = NAME_RE.as_ref().and_then(|re| re.captures(item_html)) {
         let inner = strip_html(&cap[1]);
         let trimmed = inner.trim();
         if let Some(rest) = strip_keyword_prefix(trimmed) {
@@ -112,9 +114,12 @@ fn extract_short_doc(docs: &str) -> Option<String> {
 /// Extract package version from the package URL or name.
 /// Hackage URLs look like: https://hackage.haskell.org/package/containers-0.6.7
 fn extract_version_from_url(url_str: &str) -> Option<String> {
-    static VERSION_RE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new(r"/package/[a-zA-Z][\w-]*?-([\d]+(?:\.[\d]+)*)/?$").unwrap());
-    VERSION_RE.captures(url_str).map(|c| c[1].to_string())
+    static VERSION_RE: LazyLock<Option<Regex>> =
+        LazyLock::new(|| Regex::new(r"/package/[a-zA-Z][\w-]*?-([\d]+(?:\.[\d]+)*)/?$").ok());
+    VERSION_RE
+        .as_ref()
+        .and_then(|re| re.captures(url_str))
+        .map(|c| c[1].to_string())
 }
 
 /// Parse a single Hoogle JSON result into a SearchResult.
@@ -310,6 +315,16 @@ mod tests {
     }
 
     #[test]
+    fn extract_version_from_url_hyphenated_package() {
+        assert_eq!(
+            extract_version_from_url(
+                "https://hackage.haskell.org/package/unordered-containers-0.2.20.1"
+            ),
+            Some("0.2.20.1".into())
+        );
+    }
+
+    #[test]
     fn extract_version_from_url_no_version() {
         assert_eq!(
             extract_version_from_url("https://hackage.haskell.org/package/containers"),
@@ -375,6 +390,55 @@ mod tests {
         let result = parse_hoogle_json(&json).unwrap();
         assert_eq!(result.result_kind, ResultKind::Class);
         assert!(result.signature.is_some());
+    }
+
+    #[test]
+    fn parse_module_result() {
+        let json = serde_json::json!({
+            "url": "https://hackage.haskell.org/package/containers-0.6.7/docs/Data-Map-Strict.html",
+            "module": {"name": "Data.Map.Strict", "url": "https://hackage.haskell.org/package/containers-0.6.7/docs/Data-Map-Strict.html"},
+            "package": {"name": "containers", "url": "https://hackage.haskell.org/package/containers-0.6.7"},
+            "item": "<span class=name>module Data.Map.Strict</span>",
+            "type": "",
+            "docs": "Finite maps from keys to values."
+        });
+
+        let result = parse_hoogle_json(&json).unwrap();
+        assert_eq!(result.name, "Data.Map.Strict");
+        assert_eq!(result.result_kind, ResultKind::Module);
+        assert!(result.signature.is_none());
+        assert_eq!(result.module.unwrap().to_string(), "Data.Map.Strict");
+        assert_eq!(result.package.as_ref().unwrap().name, "containers");
+        assert_eq!(
+            result.package.as_ref().unwrap().version.as_deref(),
+            Some("0.6.7")
+        );
+    }
+
+    #[test]
+    fn parse_package_result() {
+        let json = serde_json::json!({
+            "url": "https://hackage.haskell.org/package/unordered-containers-0.2.20.1",
+            "module": {},
+            "package": {"name": "unordered-containers", "url": "https://hackage.haskell.org/package/unordered-containers-0.2.20.1"},
+            "item": "<span class=name>package unordered-containers</span>",
+            "type": "",
+            "docs": "Efficient hashing-based container types."
+        });
+
+        let result = parse_hoogle_json(&json).unwrap();
+        assert_eq!(result.name, "unordered-containers");
+        assert_eq!(result.result_kind, ResultKind::Package);
+        assert!(result.signature.is_none());
+        assert!(result.module.is_none());
+        assert_eq!(
+            result.package.as_ref().unwrap().name,
+            "unordered-containers"
+        );
+        assert_eq!(
+            result.package.as_ref().unwrap().version.as_deref(),
+            Some("0.2.20.1")
+        );
     }
 
     #[test]
@@ -448,6 +512,23 @@ mod tests {
 
         let results = parse_hoogle_output(output).unwrap();
         assert_eq!(results.len(), 2);
+    }
+
+    #[test]
+    fn parse_output_non_json_message_is_empty() {
+        let output = "Warning: local Hoogle database is missing\nRun hoogle generate";
+
+        let results = parse_hoogle_output(output).unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn parse_output_invalid_ndjson_reports_line_error() {
+        let output = r#"{"url":"https://example.com","module":{"name":"A","url":""},"package":{"name":"p","url":""},"item":"<span class=name>foo</span> :: Int","type":"","docs":""}
+{"not valid json""#;
+
+        let err = parse_hoogle_output(output).unwrap_err();
+        assert!(err.contains("invalid JSON line"));
     }
 
     #[test]

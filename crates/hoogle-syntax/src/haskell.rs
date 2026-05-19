@@ -205,7 +205,9 @@ fn tokenize_haskell_line(line: &str) -> Vec<Token> {
         }
 
         // Non-ASCII or unknown
-        let c = line[i..].chars().next().unwrap();
+        let Some(c) = line[i..].chars().next() else {
+            break;
+        };
         tokens.push(Token::Unknown(c.to_string()));
         i += c.len_utf8();
     }

@@ -212,6 +212,10 @@ const SECTIONS: &[HelpSection] = &[
                 desc: "Browse module tree",
             },
             HelpEntry {
+                key: "L",
+                desc: "Load more results",
+            },
+            HelpEntry {
                 key: "T",
                 desc: "Copy :type command (GHCi)",
             },

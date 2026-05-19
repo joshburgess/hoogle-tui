@@ -76,6 +76,22 @@ pub fn render(frame: &mut Frame, state: &YankPopupState, theme: &Theme) {
     frame.render_widget(Paragraph::new(lines), inner);
 }
 
+fn centered_popup(area: Rect, width: u16, height: u16) -> Rect {
+    let vertical = Layout::vertical([
+        Constraint::Length((area.height.saturating_sub(height)) / 2),
+        Constraint::Length(height),
+        Constraint::Min(0),
+    ])
+    .split(area);
+
+    Layout::horizontal([
+        Constraint::Length((area.width.saturating_sub(width)) / 2),
+        Constraint::Length(width),
+        Constraint::Min(0),
+    ])
+    .split(vertical[1])[1]
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -149,20 +165,4 @@ mod tests {
         // Verify the constant matches expectations
         assert_eq!(YANK_OPTIONS.len(), 7);
     }
-}
-
-fn centered_popup(area: Rect, width: u16, height: u16) -> Rect {
-    let vertical = Layout::vertical([
-        Constraint::Length((area.height.saturating_sub(height)) / 2),
-        Constraint::Length(height),
-        Constraint::Min(0),
-    ])
-    .split(area);
-
-    Layout::horizontal([
-        Constraint::Length((area.width.saturating_sub(width)) / 2),
-        Constraint::Length(width),
-        Constraint::Min(0),
-    ])
-    .split(vertical[1])[1]
 }

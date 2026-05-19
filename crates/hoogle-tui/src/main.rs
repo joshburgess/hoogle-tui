@@ -124,7 +124,13 @@ async fn main() -> io::Result<()> {
     };
 
     let keymap = Keymap::new(&config.keybinds);
-    let mut app = App::new(config, backend);
+    let mut app = match App::new(config, backend) {
+        Ok(app) => app,
+        Err(e) => {
+            eprintln!("Error: {e}");
+            std::process::exit(1);
+        }
+    };
 
     // Handle initial query from CLI
     // Auto-detect Haskell project for package scoping

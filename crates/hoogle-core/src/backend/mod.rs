@@ -3,20 +3,20 @@ mod parse;
 pub mod web;
 
 use crate::config::BackendConfig;
-use crate::haddock::types::HaddockDoc;
 use crate::models::SearchResult;
 use async_trait::async_trait;
-use url::Url;
 
 pub use parse::parse_hoogle_json;
 
 #[async_trait]
 pub trait HoogleBackend: Send + Sync {
-    /// Search for a query string, returning up to `count` results.
-    async fn search(&self, query: &str, count: usize) -> Result<Vec<SearchResult>, BackendError>;
-
-    /// Fetch the Haddock documentation page at the given URL.
-    async fn fetch_doc(&self, url: &Url) -> Result<HaddockDoc, BackendError>;
+    /// Search for a query string, returning up to `count` results after `offset` matches.
+    async fn search(
+        &self,
+        query: &str,
+        offset: usize,
+        count: usize,
+    ) -> Result<Vec<SearchResult>, BackendError>;
 
     /// Return the backend name for display.
     fn name(&self) -> &str;
@@ -68,5 +68,48 @@ pub async fn create_backend(
                 Ok(Box::new(backend))
             }
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use crate::config::BackendMode;
+
+    use super::*;
+
+    fn config_with_mode(mode: BackendMode) -> BackendConfig {
+        BackendConfig {
+            mode,
+            hoogle_path: Some(PathBuf::from("/nonexistent/hoogle")),
+            web_url: "https://hoogle.haskell.org".into(),
+            ..Default::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn create_backend_web_mode_uses_web_backend() {
+        let backend = create_backend(&config_with_mode(BackendMode::Web))
+            .await
+            .unwrap();
+
+        assert_eq!(backend.name(), "hoogle.haskell.org");
+    }
+
+    #[tokio::test]
+    async fn create_backend_local_mode_reports_missing_hoogle() {
+        let result = create_backend(&config_with_mode(BackendMode::Local)).await;
+
+        assert!(matches!(result, Err(BackendError::HoogleNotFound { .. })));
+    }
+
+    #[tokio::test]
+    async fn create_backend_auto_mode_falls_back_to_web_when_local_missing() {
+        let backend = create_backend(&config_with_mode(BackendMode::Auto))
+            .await
+            .unwrap();
+
+        assert_eq!(backend.name(), "hoogle.haskell.org");
     }
 }

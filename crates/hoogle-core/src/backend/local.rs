@@ -3,11 +3,9 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::process::Command;
-use url::Url;
 
 use super::{parse, BackendError, HoogleBackend};
 use crate::config::BackendConfig;
-use crate::haddock::types::HaddockDoc;
 use crate::models::SearchResult;
 
 #[derive(Debug)]
@@ -43,17 +41,46 @@ impl LocalBackend {
     }
 }
 
+fn build_search_args(
+    query: &str,
+    offset: usize,
+    count: usize,
+    database_path: Option<&PathBuf>,
+) -> Vec<String> {
+    let fetch_count = offset.saturating_add(count);
+    let mut args = vec![
+        "search".to_string(),
+        query.to_string(),
+        format!("--count={fetch_count}"),
+        "--json".to_string(),
+    ];
+
+    if let Some(db) = database_path {
+        args.push(format!("--database={}", db.display()));
+    }
+
+    args
+}
+
+fn slice_results_for_offset(
+    results: impl IntoIterator<Item = SearchResult>,
+    offset: usize,
+    count: usize,
+) -> Vec<SearchResult> {
+    results.into_iter().skip(offset).take(count).collect()
+}
+
 #[async_trait]
 impl HoogleBackend for LocalBackend {
-    async fn search(&self, query: &str, count: usize) -> Result<Vec<SearchResult>, BackendError> {
+    async fn search(
+        &self,
+        query: &str,
+        offset: usize,
+        count: usize,
+    ) -> Result<Vec<SearchResult>, BackendError> {
         let mut cmd = Command::new(&self.hoogle_path);
-        cmd.arg("search")
-            .arg(query)
-            .arg(format!("--count={count}"))
-            .arg("--json");
-
-        if let Some(ref db) = self.database_path {
-            cmd.arg(format!("--database={}", db.display()));
+        for arg in build_search_args(query, offset, count, self.database_path.as_ref()) {
+            cmd.arg(arg);
         }
 
         let output = tokio::time::timeout(self.timeout, cmd.output())
@@ -75,19 +102,13 @@ impl HoogleBackend for LocalBackend {
         let stdout = String::from_utf8_lossy(&output.stdout);
         let results = parse::parse_hoogle_output(&stdout)
             .map_err(|message| BackendError::ParseError { message })?;
+        let results = slice_results_for_offset(results, offset, count);
         tracing::info!(
             "local search for {:?} returned {} results",
             query,
             results.len()
         );
         Ok(results)
-    }
-
-    async fn fetch_doc(&self, _url: &Url) -> Result<HaddockDoc, BackendError> {
-        // Doc fetching is implemented in Phase 7 via the HaddockFetcher
-        Err(BackendError::DocNotAvailable {
-            reason: "doc fetching not yet implemented".into(),
-        })
     }
 
     fn name(&self) -> &str {
@@ -111,7 +132,7 @@ mod tests {
             }
         };
 
-        let results = backend.search("map", 5).await.unwrap();
+        let results = backend.search("map", 0, 5).await.unwrap();
         assert!(!results.is_empty());
         assert!(results.len() <= 5);
 
@@ -130,7 +151,7 @@ mod tests {
             Err(_) => return,
         };
 
-        let results = backend.search("a -> a", 5).await.unwrap();
+        let results = backend.search("a -> a", 0, 5).await.unwrap();
         assert!(!results.is_empty());
     }
 
@@ -144,7 +165,7 @@ mod tests {
         };
 
         let results = backend
-            .search("xyzzy_nonexistent_function_42", 5)
+            .search("xyzzy_nonexistent_function_42", 0, 5)
             .await
             .unwrap();
         assert!(results.is_empty());
@@ -158,5 +179,75 @@ mod tests {
         };
         let err = LocalBackend::new(&config).unwrap_err();
         assert!(matches!(err, BackendError::HoogleNotFound { .. }));
+    }
+
+    #[test]
+    fn build_search_args_use_offset_adjusted_count() {
+        assert_eq!(
+            build_search_args("map", 10, 5, None),
+            vec!["search", "map", "--count=15", "--json"]
+        );
+    }
+
+    #[test]
+    fn build_search_args_preserve_type_signature_query() {
+        assert_eq!(
+            build_search_args("a -> b", 0, 20, None),
+            vec!["search", "a -> b", "--count=20", "--json"]
+        );
+    }
+
+    #[test]
+    fn build_search_args_include_database_path() {
+        let database_path = PathBuf::from("/tmp/hoogle/default.hoo");
+
+        assert_eq!(
+            build_search_args("foldMap", 2, 3, Some(&database_path)),
+            vec![
+                "search",
+                "foldMap",
+                "--count=5",
+                "--json",
+                "--database=/tmp/hoogle/default.hoo"
+            ]
+        );
+    }
+
+    #[test]
+    fn slices_results_for_cli_offset() {
+        let results = (0..5)
+            .map(|i| SearchResult {
+                name: format!("result_{i}"),
+                module: None,
+                package: None,
+                signature: None,
+                doc_url: None,
+                short_doc: None,
+                result_kind: crate::models::ResultKind::Function,
+            })
+            .collect::<Vec<_>>();
+
+        let page = slice_results_for_offset(results, 2, 2);
+        assert_eq!(
+            page.iter().map(|r| r.name.as_str()).collect::<Vec<_>>(),
+            vec!["result_2", "result_3"]
+        );
+    }
+
+    #[test]
+    fn slices_empty_page_after_available_results() {
+        let results = (0..2)
+            .map(|i| SearchResult {
+                name: format!("result_{i}"),
+                module: None,
+                package: None,
+                signature: None,
+                doc_url: None,
+                short_doc: None,
+                result_kind: crate::models::ResultKind::Function,
+            })
+            .collect::<Vec<_>>();
+
+        assert!(slice_results_for_offset(results, 10, 5).is_empty());
     }
 }

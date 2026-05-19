@@ -72,7 +72,7 @@ impl EventHandler {
                         Err(_) => return,
                     }
                 } else {
-                    // Poll timed out — check if pending resize should be flushed
+                    // Poll timed out, check if pending resize should be flushed.
                     if let Some((w, h, time)) = pending_resize {
                         if time.elapsed() >= resize_debounce {
                             pending_resize = None;

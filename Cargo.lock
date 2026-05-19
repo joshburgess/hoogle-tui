@@ -883,6 +883,7 @@ name = "hoogle-tui"
 version = "0.1.1"
 dependencies = [
  "arboard",
+ "async-trait",
  "chrono",
  "clap",
  "clap_complete",

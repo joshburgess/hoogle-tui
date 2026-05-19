@@ -169,7 +169,7 @@ mod tests {
             Some("base"),
             Some("(a -> b) -> f a -> f b"),
         )];
-        let viewed_docs: Vec<(String, String)> = vec![];
+        let _viewed_docs: Vec<(String, String)> = vec![];
 
         let mut md = String::new();
         md.push_str("## Results (1 found)\n\n");
@@ -194,7 +194,7 @@ mod tests {
 
     #[test]
     fn export_result_with_no_module_or_package() {
-        let results = vec![make_result("something", None, None, None)];
+        let results = [make_result("something", None, None, None)];
 
         let r = &results[0];
         let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
