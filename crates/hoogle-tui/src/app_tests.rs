@@ -207,6 +207,26 @@ fn result_helpers_update_selection_state() {
 }
 
 #[test]
+fn load_more_reports_unavailable_states() {
+    let mut app = test_app();
+
+    app.handle_action(Action::LoadMore);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No more results"
+    ));
+
+    app.loading_more = true;
+    app.handle_action(Action::LoadMore);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "Already loading more results"
+    ));
+}
+
+#[test]
 fn tab_complete_rebuilds_candidates_for_narrowed_query() {
     let mut app = test_app();
     app.results.set_items(vec![

@@ -83,8 +83,14 @@ impl App {
             }
             Action::ExportSession => self.export_session(),
             Action::TabComplete => {}
-            Action::LoadMore if self.has_more_results && !self.loading_more => {
-                self.load_more_results()
+            Action::LoadMore => {
+                if self.loading_more {
+                    self.show_info("Already loading more results");
+                } else if self.has_more_results {
+                    self.load_more_results();
+                } else {
+                    self.show_info("No more results");
+                }
             }
             Action::OpenModuleBrowser => self.open_module_browser(),
             Action::PinResult => self.pin_selected_result(),
