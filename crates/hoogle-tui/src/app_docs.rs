@@ -16,6 +16,8 @@ impl App {
         self.mode = AppMode::DocView;
         self.doc_state.loading = true;
         self.doc_state.error = None;
+        self.doc_state.current_url = None;
+        self.doc_state.nav_stack.clear();
         self.status.message = Some(status_bar::StatusMessage::Loading("Loading docs...".into()));
         self.fetch_doc(url.clone());
     }
@@ -95,7 +97,9 @@ impl App {
     pub(crate) fn follow_doc_link(&mut self) {
         if let Some(url) = self.doc_state.focused_link_url().cloned() {
             if url.as_str().contains("/docs/") || url.as_str().contains('#') {
-                self.doc_state.push_nav(url.clone());
+                if let Some(current_url) = self.doc_state.current_url.clone() {
+                    self.doc_state.push_nav(current_url);
+                }
                 self.fetch_doc(url);
             } else {
                 self.show_info(&format!("Link: {url}"));

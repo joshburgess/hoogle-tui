@@ -60,6 +60,7 @@ impl App {
         while let Ok(response) = self.doc_rx.try_recv() {
             match response.result {
                 Ok(doc) => {
+                    self.doc_state.current_url = Some(response.url);
                     self.viewed_docs
                         .push((doc.module.clone(), doc.package.clone()));
                     self.doc_state.set_doc(doc, &self.theme, self.last_width);

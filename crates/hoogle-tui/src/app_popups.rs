@@ -112,6 +112,8 @@ impl App {
                                 self.close_popup();
                                 self.mode = AppMode::DocView;
                                 self.doc_state.loading = true;
+                                self.doc_state.current_url = None;
+                                self.doc_state.nav_stack.clear();
                                 self.fetch_doc(url);
                                 return;
                             }

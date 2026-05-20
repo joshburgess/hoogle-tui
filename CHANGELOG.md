@@ -16,6 +16,7 @@
 - Cache TTL and size limit calculations now saturate instead of overflowing on extreme config values.
 - CI now runs the same `scripts/verify.sh` workflow used for local verification.
 - Ignored backend smoke tests now include explicit ignore reasons.
+- Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.
 - Extracted shared popup centering layout for TUI popups.
 - Moved TUI action dispatch into a dedicated `app_actions.rs` module.
 - Moved TUI app construction and initial-query setup into a dedicated `app_init.rs` module.

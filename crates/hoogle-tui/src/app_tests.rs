@@ -6,7 +6,7 @@ use hoogle_core::haddock::types::{Declaration, HaddockDoc};
 use hoogle_core::models::{ResultKind, SearchResult};
 use url::Url;
 
-use crate::app::{App, AppMode, PopupMode};
+use crate::app::{App, AppMode, DocResponse, PopupMode};
 
 #[derive(Debug)]
 struct TestBackend;
@@ -223,6 +223,39 @@ fn follow_external_doc_link_reports_without_fetching() {
     assert!(!app.doc_state.loading);
     assert!(app.doc_state.nav_stack.is_empty());
     assert!(app.status.message.is_some());
+}
+
+#[tokio::test]
+async fn follow_internal_doc_link_pushes_current_url() {
+    let mut app = app_with_doc();
+    let current_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap();
+    let next_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html#v:next").unwrap();
+    app.doc_state.current_url = Some(current_url.clone());
+    app.doc_state.focused_link = Some(0);
+    app.doc_state.links.push((2, next_url));
+
+    app.follow_doc_link();
+
+    assert_eq!(app.doc_state.nav_stack, vec![current_url]);
+    assert!(app.doc_state.loading);
+}
+
+#[test]
+fn doc_response_records_current_url() {
+    let mut app = app_with_doc();
+    let url = Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap();
+
+    app.doc_tx
+        .send(DocResponse {
+            url: url.clone(),
+            result: Ok(doc()),
+        })
+        .unwrap();
+    app.on_tick();
+
+    assert_eq!(app.doc_state.current_url, Some(url));
 }
 
 #[tokio::test]
