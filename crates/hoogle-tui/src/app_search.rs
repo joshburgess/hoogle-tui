@@ -168,6 +168,7 @@ impl App {
     pub(crate) fn tab_complete(&mut self) {
         let partial = self.query_text();
         if partial.is_empty() {
+            self.show_info("No query to complete");
             return;
         }
         let partial_lower = partial.to_lowercase();
@@ -196,6 +197,7 @@ impl App {
         }
 
         if self.completion_candidates.is_empty() {
+            self.show_info("No completions available");
             return;
         }
 

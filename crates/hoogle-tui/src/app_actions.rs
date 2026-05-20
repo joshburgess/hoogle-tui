@@ -73,7 +73,7 @@ impl App {
                 self.open_in_browser();
             }
             Action::ExportSession => self.export_session(),
-            Action::TabComplete => {}
+            Action::TabComplete => self.tab_complete(),
             Action::LoadMore => {
                 if self.loading_more {
                     self.show_info("Already loading more results");

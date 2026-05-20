@@ -321,6 +321,29 @@ fn tab_complete_rebuilds_candidates_for_narrowed_query() {
 }
 
 #[test]
+fn tab_complete_reports_unavailable_states() {
+    let mut app = test_app();
+
+    app.handle_action(Action::TabComplete);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No query to complete"
+    ));
+
+    app.status.message = None;
+    app.textarea = search_textarea_with_query("zz");
+    app.results.set_items(vec![result("map")]);
+
+    app.handle_action(Action::TabComplete);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No completions available"
+    ));
+}
+
+#[test]
 fn appended_search_results_preserve_result_view_state() {
     let mut app = test_app();
     app.all_results = vec![result("alpha")];
