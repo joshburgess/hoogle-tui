@@ -217,7 +217,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // Hits the real Hoogle web API
+    #[ignore = "hits the real Hoogle web API"]
     async fn integration_web_search() {
         let backend = WebBackend::new(&test_config()).unwrap();
         let results = backend.search("map", 0, 5).await.unwrap();
@@ -229,7 +229,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "hits the real Hoogle web API"]
     async fn integration_web_search_type_sig() {
         let backend = WebBackend::new(&test_config()).unwrap();
         let results = backend.search("a -> a", 0, 5).await.unwrap();

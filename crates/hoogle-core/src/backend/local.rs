@@ -121,7 +121,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    #[ignore] // Requires hoogle to be installed
+    #[ignore = "requires hoogle to be installed and a generated local database"]
     async fn integration_local_search() {
         let config = BackendConfig::default();
         let backend = match LocalBackend::new(&config) {
@@ -143,7 +143,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore] // Requires hoogle to be installed
+    #[ignore = "requires hoogle to be installed and a generated local database"]
     async fn integration_local_search_type_sig() {
         let config = BackendConfig::default();
         let backend = match LocalBackend::new(&config) {
@@ -156,7 +156,7 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore]
+    #[ignore = "requires hoogle to be installed and a generated local database"]
     async fn integration_local_search_empty() {
         let config = BackendConfig::default();
         let backend = match LocalBackend::new(&config) {
