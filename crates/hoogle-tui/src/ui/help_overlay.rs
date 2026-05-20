@@ -22,7 +22,7 @@ impl HelpState {
     }
 
     pub fn scroll_down(&mut self, n: usize) {
-        let max = HELP_LINES.len().saturating_sub(self.viewport_height);
+        let max = total_help_lines().saturating_sub(self.viewport_height);
         self.scroll_offset = (self.scroll_offset + n).min(max);
     }
 
@@ -367,8 +367,13 @@ const SECTIONS: &[HelpSection] = &[
     },
 ];
 
-// Pre-compute total lines for scroll bounds
-const HELP_LINES: &[(); 100] = &[(); 100]; // placeholder; actual count computed at render time
+fn total_help_lines() -> usize {
+    SECTIONS
+        .iter()
+        .map(|section| section.entries.len() + 3)
+        .sum::<usize>()
+        + 1
+}
 
 pub fn render(frame: &mut Frame, state: &mut HelpState, theme: &Theme) {
     let area = frame.area();
