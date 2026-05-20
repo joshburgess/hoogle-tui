@@ -70,6 +70,7 @@
 - Added a manual CI smoke-test job for local and web backend integration tests.
 - Added CLI integration tests for help, version, completions, and invalid flags.
 - Added checked-in render golden snapshots for key TUI surfaces.
+- Added wide Unicode render regression coverage for compact results and documentation tables.
 - Added `scripts/check-rust-panics.rb` to reject `.unwrap()` and `.expect()` in shipped Rust code.
 - Added regression tests for the shipped-code panic scanner.
 - Added `scripts/verify.sh` for one-command local verification.

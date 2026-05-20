@@ -1,10 +1,13 @@
-use hoogle_core::models::{ModulePath, PackageInfo, ResultKind, SearchResult};
+use hoogle_core::{
+    haddock::types::{DocBlock, HaddockDoc, Inline},
+    models::{ModulePath, PackageInfo, ResultKind, SearchResult},
+};
 use hoogle_syntax::theme::Theme;
 use ratatui::{backend::TestBackend, layout::Rect, Terminal};
 use std::path::PathBuf;
 
 use crate::app::AppMode;
-use crate::ui::{filter_popup, result_list, source_viewer, status_bar};
+use crate::ui::{doc_viewer, filter_popup, result_list, source_viewer, status_bar};
 
 fn buffer_text(backend: &TestBackend) -> String {
     backend
@@ -46,6 +49,15 @@ fn assert_snapshot(name: &str, actual: &str) {
     );
 }
 
+fn assert_lines_fit(actual: &str, width: usize) {
+    for line in actual.lines() {
+        assert!(
+            line.chars().count() <= width,
+            "rendered row has more than {width} cells: {line:?}"
+        );
+    }
+}
+
 fn snapshot_path(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("tests")
@@ -53,14 +65,10 @@ fn snapshot_path(name: &str) -> PathBuf {
         .join(format!("{name}.snap"))
 }
 
-fn search_result(name: &str, signature: &str) -> SearchResult {
+fn search_result_with_module(name: &str, signature: &str, module: ModulePath) -> SearchResult {
     SearchResult {
         name: name.to_string(),
-        module: Some(ModulePath(vec![
-            "Data".to_string(),
-            "Map".to_string(),
-            "Strict".to_string(),
-        ])),
+        module: Some(module),
         package: Some(PackageInfo {
             name: "containers".to_string(),
             version: Some("0.6.7".to_string()),
@@ -70,6 +78,18 @@ fn search_result(name: &str, signature: &str) -> SearchResult {
         short_doc: Some("Look up a key in the map.".to_string()),
         result_kind: ResultKind::Function,
     }
+}
+
+fn search_result(name: &str, signature: &str) -> SearchResult {
+    search_result_with_module(
+        name,
+        signature,
+        ModulePath(vec![
+            "Data".to_string(),
+            "Map".to_string(),
+            "Strict".to_string(),
+        ]),
+    )
 }
 
 #[test]
@@ -91,6 +111,60 @@ fn result_list_render_includes_selected_result_metadata() {
     assert!(output.contains("Map k a -> Maybe a"));
     assert!(output.contains("Look up a key in the map."));
     assert_snapshot("result_list_selected", &output);
+}
+
+#[test]
+fn result_list_compact_wide_text_keeps_module_visible() {
+    let theme = Theme::dracula();
+    let mut state = result_list::ResultListState::new();
+    state.compact = true;
+    state.set_items(vec![search_result_with_module(
+        "型型lookup",
+        "型型型型型型型型型型型型型型型型 -> Maybe 型",
+        ModulePath(vec!["Data".to_string(), "型型型".to_string()]),
+    )]);
+
+    let output = render_to_text(42, 5, |frame| {
+        result_list::render(frame, Rect::new(0, 0, 42, 5), &mut state, &theme);
+    });
+
+    assert!(output.contains("Data."), "{output}");
+    assert!(output.contains("型 型 lookup"), "{output}");
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 42);
+}
+
+#[test]
+fn doc_viewer_table_wide_text_fits_render_width() {
+    let theme = Theme::dracula();
+    let doc = HaddockDoc {
+        module: "Demo.Wide".to_string(),
+        package: "demo-0.1.0".to_string(),
+        description: vec![DocBlock::Table {
+            headers: vec![
+                vec![Inline::Text("名前".to_string())],
+                vec![Inline::Text("型".to_string())],
+            ],
+            rows: vec![vec![
+                vec![Inline::Text("型型lookup".to_string())],
+                vec![Inline::Text(
+                    "型型型型型型型型型型型型型型 -> Maybe 型".to_string(),
+                )],
+            ]],
+        }],
+        declarations: Vec::new(),
+    };
+    let mut state = doc_viewer::DocViewState::new();
+    state.set_doc(doc, &theme, 44);
+
+    let output = render_to_text(44, 10, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 44, 10), &mut state, &theme);
+    });
+
+    assert!(output.contains("名 前"), "{output}");
+    assert!(output.contains("型 型 lookup"), "{output}");
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 44);
 }
 
 #[test]
