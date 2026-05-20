@@ -77,7 +77,7 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
             in_build_depends = true;
             // Parse deps on the same line after the colon
             let after_colon = trimmed.split_once(':').map(|x| x.1).unwrap_or("").trim();
-            parse_dep_list(after_colon, &mut deps);
+            parse_dep_list(strip_cabal_comment(after_colon), &mut deps);
             continue;
         }
 
@@ -94,7 +94,7 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
                     in_build_depends = false;
                     continue;
                 }
-                parse_dep_list(trimmed, &mut deps);
+                parse_dep_list(strip_cabal_comment(trimmed), &mut deps);
             } else {
                 in_build_depends = false;
             }
@@ -104,6 +104,10 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
     deps.sort();
     deps.dedup();
     deps
+}
+
+fn strip_cabal_comment(text: &str) -> &str {
+    text.split_once("--").map_or(text, |(before, _)| before)
 }
 
 fn parse_dep_list(text: &str, deps: &mut Vec<String>) {
@@ -286,5 +290,26 @@ library
         parse_dep_list("123bad, good-package", &mut deps);
         // 123bad starts with a digit, should be skipped
         assert_eq!(deps, vec!["good-package".to_string()]);
+    }
+
+    #[test]
+    fn parse_build_depends_ignores_inline_comments() {
+        let cabal = r#"
+library
+  build-depends:
+    base >= 4.14, -- text here is a comment, not a dependency
+    containers,
+    -- bytestring here is also a comment
+    aeson
+"#;
+        let deps = extract_cabal_deps(cabal);
+        assert_eq!(deps, vec!["aeson", "base", "containers"]);
+    }
+
+    #[test]
+    fn parse_inline_build_depends_ignores_comment_suffix() {
+        let cabal = "  build-depends: base, containers -- text, aeson\n";
+        let deps = extract_cabal_deps(cabal);
+        assert_eq!(deps, vec!["base", "containers"]);
     }
 }

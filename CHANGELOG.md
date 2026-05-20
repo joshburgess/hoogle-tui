@@ -5,6 +5,7 @@
 ### Fixed
 - Removed a stale backend documentation-fetching method that had been superseded by `HaddockFetcher`.
 - Replaced the broken load-more path with backend pagination.
+- Cabal project detection now ignores dependency names that only appear after inline comments.
 - Removed a non-test panic path from Haddock CSS selector handling.
 - Removed non-test panic paths from Hoogle result parser regex initialization.
 - Fixed duplicate `<summary>` text when parsing Haddock `<details>` blocks while preserving body code blocks.
