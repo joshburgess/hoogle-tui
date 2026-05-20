@@ -103,13 +103,17 @@ impl App {
                     self.close_popup();
                 }
                 Action::DeleteEntry => {
-                    if let Some(ref hp) = self.history_popup {
-                        if let Some(idx) = hp.selected_index() {
-                            self.history.remove(idx);
-                            if let Err(e) = self.history.try_save() {
-                                self.show_error(&format!("Failed to save history: {e}"));
-                            }
-                        }
+                    let selected = self
+                        .history_popup
+                        .as_ref()
+                        .and_then(|hp| hp.selected_index());
+                    let Some(idx) = selected else {
+                        self.show_info("No history entry selected");
+                        return;
+                    };
+                    self.history.remove(idx);
+                    if let Err(e) = self.history.try_save() {
+                        self.show_error(&format!("Failed to save history: {e}"));
                     }
                     if let Some(ref mut hp) = self.history_popup {
                         hp.update_filter_preserving_selection(&self.history);
@@ -156,6 +160,10 @@ impl App {
                 }
                 Action::DeleteEntry => {
                     if let Some(selected) = self.bookmarks_popup.as_ref().map(|bp| bp.selected) {
+                        if selected >= self.bookmark_store.bookmarks().len() {
+                            self.show_info("No bookmark selected");
+                            return;
+                        }
                         self.bookmark_store.remove(selected);
                         if let Err(e) = self.bookmark_store.try_save() {
                             self.show_error(&format!("Failed to save bookmarks: {e}"));

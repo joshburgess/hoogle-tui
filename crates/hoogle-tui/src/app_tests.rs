@@ -409,6 +409,23 @@ fn bookmark_select_without_url_reports_noop() {
 }
 
 #[test]
+fn bookmark_delete_without_selection_reports_noop() {
+    let mut app = test_app();
+    app.bookmarks_popup = Some(crate::ui::bookmarks_popup::BookmarksPopupState {
+        selected: app.bookmark_store.bookmarks().len(),
+    });
+    app.popup = Some(PopupMode::Bookmarks);
+
+    app.handle_action(Action::DeleteEntry);
+
+    assert_eq!(app.popup, Some(PopupMode::Bookmarks));
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No bookmark selected"
+    ));
+}
+
+#[test]
 fn history_delete_keeps_selection_near_deleted_row() {
     let mut app = test_app();
     app.history.add("first", 1);
@@ -425,6 +442,21 @@ fn history_delete_keeps_selection_near_deleted_row() {
         Some(1)
     );
     assert_eq!(app.history.entries()[1].query, "first");
+}
+
+#[test]
+fn history_delete_without_selection_reports_noop() {
+    let mut app = test_app();
+    app.history_popup = Some(history_popup::HistoryPopupState::new(0));
+    app.popup = Some(PopupMode::History);
+
+    app.handle_action(Action::DeleteEntry);
+
+    assert_eq!(app.popup, Some(PopupMode::History));
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No history entry selected"
+    ));
 }
 
 #[test]
