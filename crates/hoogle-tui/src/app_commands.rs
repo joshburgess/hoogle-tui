@@ -92,25 +92,7 @@ impl App {
     }
 
     pub(crate) fn open_in_browser(&mut self) {
-        let url = match self.mode {
-            AppMode::Results => self
-                .results
-                .selected_result()
-                .and_then(|r| r.doc_url.as_ref())
-                .map(|u| u.to_string()),
-            AppMode::DocView => self
-                .doc_state
-                .doc
-                .as_ref()
-                .and_then(|_| self.doc_state.nav_stack.last().map(|u| u.to_string()))
-                .or_else(|| {
-                    self.results
-                        .selected_result()
-                        .and_then(|r| r.doc_url.as_ref())
-                        .map(|u| u.to_string())
-                }),
-            _ => None,
-        };
+        let url = self.browser_url();
         if let Some(url) = url {
             match open::that(&url) {
                 Ok(()) => self.show_info("Opened in browser"),
@@ -118,6 +100,28 @@ impl App {
             }
         } else {
             self.show_info("No URL available");
+        }
+    }
+
+    pub(crate) fn browser_url(&self) -> Option<String> {
+        match self.mode {
+            AppMode::Results => self
+                .results
+                .selected_result()
+                .and_then(|r| r.doc_url.as_ref())
+                .map(|u| u.to_string()),
+            AppMode::DocView => self
+                .doc_state
+                .current_url
+                .as_ref()
+                .map(|u| u.to_string())
+                .or_else(|| {
+                    self.results
+                        .selected_result()
+                        .and_then(|r| r.doc_url.as_ref())
+                        .map(|u| u.to_string())
+                }),
+            _ => None,
         }
     }
 

@@ -374,3 +374,16 @@ fn source_view_yank_text_uses_loaded_source() {
     assert_eq!(text, "targetDecl = 1");
     assert_eq!(label, "Copied source to clipboard");
 }
+
+#[test]
+fn doc_view_browser_url_uses_current_doc_url() {
+    let mut app = app_with_doc();
+    let previous_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Previous.html").unwrap();
+    let current_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Current.html").unwrap();
+    app.doc_state.nav_stack.push(previous_url);
+    app.doc_state.current_url = Some(current_url.clone());
+
+    assert_eq!(app.browser_url(), Some(current_url.to_string()));
+}
