@@ -188,6 +188,7 @@ async fn main() -> io::Result<()> {
                             KeyCode::Enter => actions::Action::Select,
                             KeyCode::Esc => actions::Action::Back,
                             KeyCode::Char('q') => actions::Action::Back,
+                            KeyCode::Char('c') if has_control => actions::Action::Quit,
                             KeyCode::Char('d') if has_control => actions::Action::DeleteEntry,
                             KeyCode::Char('t') if has_control => actions::Action::OpenThemeSwitcher,
                             KeyCode::Backspace if app.popup == Some(app::PopupMode::Toc) => {
@@ -226,9 +227,15 @@ async fn main() -> io::Result<()> {
                 match &event {
                     AppEvent::Key(key) => {
                         use crossterm::event::KeyCode;
+                        let has_control = key
+                            .modifiers
+                            .contains(crossterm::event::KeyModifiers::CONTROL);
                         match key.code {
                             KeyCode::Enter => app.handle_action(actions::Action::Select),
                             KeyCode::Esc => app.handle_action(actions::Action::Back),
+                            KeyCode::Char('c') if has_control => {
+                                app.handle_action(actions::Action::Quit);
+                            }
                             KeyCode::Char('j') | KeyCode::Down => {
                                 app.handle_action(actions::Action::MoveDown);
                             }
@@ -263,19 +270,21 @@ async fn main() -> io::Result<()> {
                 match &event {
                     AppEvent::Key(key) => {
                         use crossterm::event::KeyCode;
+                        let has_control = key
+                            .modifiers
+                            .contains(crossterm::event::KeyModifiers::CONTROL);
                         match key.code {
                             KeyCode::Enter => app.handle_action(actions::Action::Select),
                             KeyCode::Esc => app.handle_action(actions::Action::Back),
+                            KeyCode::Char('c') if has_control => {
+                                app.handle_action(actions::Action::Quit);
+                            }
                             KeyCode::Backspace => {
                                 if let Some(ref mut pp) = app.package_popup {
                                     pp.delete_char();
                                 }
                             }
-                            KeyCode::Char('u')
-                                if key
-                                    .modifiers
-                                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
-                            {
+                            KeyCode::Char('u') if has_control => {
                                 app.handle_action(actions::Action::ClearSearch);
                             }
                             KeyCode::Char(c) => {

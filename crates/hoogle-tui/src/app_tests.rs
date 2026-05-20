@@ -8,6 +8,7 @@ use hoogle_core::models::{ResultKind, SearchResult};
 use ratatui::layout::Rect;
 use url::Url;
 
+use crate::actions::Action;
 use crate::app::{App, AppMode, DocResponse, PopupMode, SearchResponse, SourceResponse};
 use crate::ui::{history_popup, toc_popup};
 
@@ -173,6 +174,17 @@ fn popup_helpers_open_expected_popup_state() {
     app.toggle_theme_switcher();
     assert_eq!(app.popup, None);
     assert!(app.theme_popup.is_none());
+}
+
+#[test]
+fn quit_action_exits_even_when_popup_is_open() {
+    let mut app = test_app();
+    app.open_package_scope_popup();
+
+    app.handle_action(Action::Quit);
+
+    assert!(app.should_quit);
+    assert_eq!(app.popup, Some(PopupMode::PackageScope));
 }
 
 #[test]

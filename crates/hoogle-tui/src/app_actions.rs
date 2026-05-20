@@ -6,6 +6,11 @@ use super::app_input::search_textarea;
 
 impl App {
     pub(crate) fn handle_action(&mut self, action: Action) {
+        if action == Action::Quit {
+            self.should_quit = true;
+            return;
+        }
+
         if let Some(popup) = self.popup {
             self.handle_popup_action(popup, action);
             return;
