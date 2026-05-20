@@ -1,17 +1,45 @@
-pub fn truncate_chars(text: &str, max_chars: usize, suffix: &str) -> String {
-    let text_len = text.chars().count();
-    if text_len <= max_chars {
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
+pub fn truncate_width(text: &str, max_width: usize, suffix: &str) -> String {
+    if UnicodeWidthStr::width(text) <= max_width {
         return text.to_string();
     }
 
-    let suffix_len = suffix.chars().count();
-    if max_chars <= suffix_len {
-        return suffix.chars().take(max_chars).collect();
+    let suffix_width = UnicodeWidthStr::width(suffix);
+    if max_width <= suffix_width {
+        return truncate_suffix_to_width(suffix, max_width);
     }
 
-    let keep = max_chars - suffix_len;
-    let mut truncated: String = text.chars().take(keep).collect();
+    let keep_width = max_width - suffix_width;
+    let mut used = 0;
+    let mut truncated = String::new();
+
+    for ch in text.chars() {
+        let width = UnicodeWidthChar::width(ch).unwrap_or(0);
+        if used + width > keep_width {
+            break;
+        }
+        used += width;
+        truncated.push(ch);
+    }
+
     truncated.push_str(suffix);
+    truncated
+}
+
+fn truncate_suffix_to_width(suffix: &str, max_width: usize) -> String {
+    let mut used = 0;
+    let mut truncated = String::new();
+
+    for ch in suffix.chars() {
+        let width = UnicodeWidthChar::width(ch).unwrap_or(0);
+        if used + width > max_width {
+            break;
+        }
+        used += width;
+        truncated.push(ch);
+    }
+
     truncated
 }
 
@@ -20,22 +48,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn truncate_chars_preserves_short_text() {
-        assert_eq!(truncate_chars("lookup", 10, "..."), "lookup");
+    fn truncate_width_accounts_for_wide_characters() {
+        assert_eq!(truncate_width("型型abc", 5, "..."), "型...");
     }
 
     #[test]
-    fn truncate_chars_adds_suffix() {
-        assert_eq!(truncate_chars("containers", 6, "..."), "con...");
+    fn truncate_width_adds_suffix() {
+        assert_eq!(truncate_width("containers", 6, "..."), "con...");
     }
 
     #[test]
-    fn truncate_chars_handles_unicode_boundaries() {
-        assert_eq!(truncate_chars("λx. café", 6, "..."), "λx....");
+    fn truncate_width_preserves_short_display_text() {
+        assert_eq!(truncate_width("λx", 2, "..."), "λx");
     }
 
     #[test]
-    fn truncate_chars_handles_tiny_limit() {
-        assert_eq!(truncate_chars("containers", 2, "..."), "..");
+    fn truncate_width_handles_tiny_limit() {
+        assert_eq!(truncate_width("containers", 2, "..."), "..");
     }
 }

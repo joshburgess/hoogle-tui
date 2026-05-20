@@ -37,6 +37,7 @@
 - Disk cache writes now enforce the configured maximum cache size.
 - Help overlay scroll bounds now derive from the actual help content instead of a fixed placeholder count.
 - UI truncation now preserves UTF-8 character boundaries in rendered lists and documentation tables.
+- UI truncation now accounts for terminal display width when shortening wide Unicode text.
 - Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
 - Verification now rejects `#[allow(dead_code)]` in shipped Rust code.
 - Extracted shared popup centering layout for TUI popups.

@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use super::text::truncate_chars;
+use super::text::truncate_width;
 
 const LINES_PER_RESULT_EXPANDED: usize = 3;
 const LINES_PER_RESULT_COMPACT: usize = 1;
@@ -386,7 +386,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                 let sig_text = format!("{} :: {sig}", result.name);
                 let max = available_width.saturating_sub(cached.module_str.len() + 6);
                 let truncated = if sig_text.len() > max {
-                    truncate_chars(&sig_text, max, "\u{2026}")
+                    truncate_width(&sig_text, max, "\u{2026}")
                 } else {
                     sig_text
                 };
@@ -462,7 +462,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                 .map(|d| {
                     let max_len = available_width.saturating_sub(6);
                     if d.len() > max_len {
-                        format!("    {}", truncate_chars(d, max_len, "..."))
+                        format!("    {}", truncate_width(d, max_len, "..."))
                     } else {
                         format!("    {d}")
                     }

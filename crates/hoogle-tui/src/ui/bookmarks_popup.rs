@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
-use super::text::truncate_chars;
+use super::text::truncate_width;
 use crate::bookmarks::BookmarkStore;
 
 pub struct BookmarksPopupState {
@@ -85,7 +85,7 @@ pub fn render(
                 let max =
                     (inner.width as usize).saturating_sub(bm.name.len() + module_str.len() + 8);
                 if s.len() > max {
-                    format!(" :: {}", truncate_chars(s, max, "..."))
+                    format!(" :: {}", truncate_width(s, max, "..."))
                 } else {
                     format!(" :: {s}")
                 }
