@@ -7,6 +7,7 @@ use crate::ui::{sort_popup, status_bar};
 use super::app_input::{search_textarea, search_textarea_with_query};
 impl App {
     pub(crate) fn clear_search_state(&mut self) {
+        self.search_generation += 1;
         self.textarea = search_textarea();
         self.results.set_items(Vec::new());
         self.all_results.clear();
@@ -14,17 +15,21 @@ impl App {
         self.last_searched.clear();
         self.has_more_results = false;
         self.loading_more = false;
+        self.results.loading = false;
     }
 
     pub(crate) fn trigger_search(&mut self) {
         let query = self.query_text();
         if query.is_empty() {
+            self.search_generation += 1;
             self.results.set_items(Vec::new());
+            self.all_results.clear();
             self.status.result_count = 0;
             self.status.search_by_type = false;
             self.last_searched.clear();
             self.has_more_results = false;
             self.loading_more = false;
+            self.results.loading = false;
             return;
         }
 
