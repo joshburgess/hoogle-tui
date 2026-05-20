@@ -1,6 +1,5 @@
 use crate::actions::Action;
 use crate::app::{App, AppMode, PopupMode};
-use crate::ui::{bookmarks_popup, history_popup};
 
 impl App {
     pub(crate) fn handle_action(&mut self, action: Action) {
@@ -55,15 +54,8 @@ impl App {
                 self.popup = Some(PopupMode::Sort);
             }
             Action::Bookmark => self.bookmark_selected(),
-            Action::OpenBookmarks => {
-                self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
-                self.popup = Some(PopupMode::Bookmarks);
-            }
-            Action::SearchHistory => {
-                let total = self.history.entries().len();
-                self.history_popup = Some(history_popup::HistoryPopupState::new(total));
-                self.popup = Some(PopupMode::History);
-            }
+            Action::OpenBookmarks => self.open_bookmarks_popup(),
+            Action::SearchHistory => self.open_history_popup(),
             Action::YankSignature => self.yank_signature(),
             Action::YankImport => self.yank_import(),
             Action::YankUrl => self.yank_url(),

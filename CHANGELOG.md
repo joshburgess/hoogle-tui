@@ -83,6 +83,7 @@
 - Clearing pins now reports when there are no pins to clear instead of claiming success.
 - Multi-select now reports when no result is selected instead of entering an empty selection mode.
 - Compact-view and module-grouping toggles now report their new state.
+- Bookmark and history popups now report when there are no saved entries instead of opening empty popups.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.

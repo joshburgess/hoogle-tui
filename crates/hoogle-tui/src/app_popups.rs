@@ -3,6 +3,25 @@ use crate::app::{App, AppMode, PopupMode};
 use crate::ui::{bookmarks_popup, history_popup};
 
 impl App {
+    pub(crate) fn open_bookmarks_popup(&mut self) {
+        if self.bookmark_store.bookmarks().is_empty() {
+            self.show_info("No bookmarks saved");
+            return;
+        }
+        self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
+        self.popup = Some(PopupMode::Bookmarks);
+    }
+
+    pub(crate) fn open_history_popup(&mut self) {
+        let total = self.history.entries().len();
+        if total == 0 {
+            self.show_info("No search history");
+            return;
+        }
+        self.history_popup = Some(history_popup::HistoryPopupState::new(total));
+        self.popup = Some(PopupMode::History);
+    }
+
     pub(crate) fn add_toc_filter_char(&mut self, c: char) {
         if let Some(ref mut toc) = self.toc_state {
             toc.add_filter_char(c);

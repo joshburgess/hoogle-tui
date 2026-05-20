@@ -10,7 +10,8 @@ use url::Url;
 
 use crate::actions::Action;
 use crate::app::{App, AppMode, DocResponse, PopupMode, SearchResponse, SourceResponse};
-use crate::bookmarks::Bookmark;
+use crate::bookmarks::{Bookmark, BookmarkStore};
+use crate::history::SearchHistory;
 use crate::ui::status_bar::StatusMessage;
 use crate::ui::{history_popup, toc_popup};
 
@@ -418,6 +419,33 @@ fn open_module_browser_shows_available_modules() {
 
     assert_eq!(app.popup, Some(PopupMode::ModuleBrowser));
     assert!(app.module_browser.is_some());
+}
+
+#[test]
+fn empty_bookmarks_and_history_report_noop() {
+    let mut app = test_app();
+    let temp_dir = tempfile::tempdir().unwrap();
+    app.bookmark_store = BookmarkStore::load_with_status(temp_dir.path().join("bookmarks.json")).0;
+    app.history = SearchHistory::load_with_status(temp_dir.path().join("history.json")).0;
+
+    app.handle_action(Action::OpenBookmarks);
+
+    assert_eq!(app.popup, None);
+    assert!(app.bookmarks_popup.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No bookmarks saved"
+    ));
+
+    app.status.message = None;
+    app.handle_action(Action::SearchHistory);
+
+    assert_eq!(app.popup, None);
+    assert!(app.history_popup.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No search history"
+    ));
 }
 
 #[test]
