@@ -16,6 +16,11 @@ fn help_prints_usage() {
     assert!(stdout.contains("Terminal UI for Hoogle"));
     assert!(stdout.contains("Usage:"));
     assert!(stdout.contains("--backend"));
+    assert!(stdout.contains("[possible values: auto, local, web]"));
+    assert!(stdout.contains("--max-results <MAX_RESULTS>"));
+    assert!(stdout.contains("[possible values: error, warn, info, debug, trace]"));
+    assert!(stdout.contains("[possible values: bash, elvish, fish, powershell, zsh]"));
+    assert!(stdout.contains("--generate"));
 }
 
 #[test]

@@ -307,17 +307,17 @@ Arguments:
   [QUERY]  Initial search query
 
 Options:
-  -b, --backend <BACKEND>      Backend: auto, local, web [default: auto]
-  -d, --database <DATABASE>    Path to hoogle database
-  -t, --theme <THEME>          Color theme name
-  -c, --config <CONFIG>        Config file path
-      --no-cache               Disable caching
-      --max-results <N>        Max results
-      --log-level <LEVEL>      Log level [default: warn]
-      --completions <SHELL>    Generate shell completions (bash, zsh, fish, powershell)
-      --generate               Run hoogle generate, then exit
-  -h, --help                   Print help
-  -V, --version                Print version
+  -b, --backend <BACKEND>          Backend: auto, local, web [default: auto] [possible values: auto, local, web]
+  -d, --database <DATABASE>        Path to hoogle database
+  -t, --theme <THEME>              Color theme name
+  -c, --config <CONFIG>            Config file path
+      --no-cache                   Disable caching
+      --max-results <MAX_RESULTS>  Max results
+      --log-level <LOG_LEVEL>      Log level (error, warn, info, debug, trace) [default: warn] [possible values: error, warn, info, debug, trace]
+      --completions <SHELL>        Generate shell completions and exit [possible values: bash, elvish, fish, powershell, zsh]
+      --generate                   Run 'hoogle generate' to build/update the local database, then exit
+  -h, --help                       Print help
+  -V, --version                    Print version
 ```
 
 ## Troubleshooting
