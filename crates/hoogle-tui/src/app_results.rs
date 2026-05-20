@@ -32,6 +32,15 @@ impl App {
         }
     }
 
+    pub(crate) fn toggle_preview(&mut self) {
+        self.preview_enabled = !self.preview_enabled;
+        if self.preview_enabled {
+            self.show_info("Preview enabled");
+        } else {
+            self.show_info("Preview disabled");
+        }
+    }
+
     pub(crate) fn toggle_compact_results(&mut self) {
         self.results.compact = !self.results.compact;
         if self.results.compact {

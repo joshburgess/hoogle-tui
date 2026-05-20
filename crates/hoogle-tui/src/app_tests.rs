@@ -216,6 +216,28 @@ fn result_helpers_update_selection_state() {
 }
 
 #[test]
+fn preview_toggle_reports_new_state() {
+    let mut app = test_app();
+    app.preview_enabled = false;
+
+    app.handle_action(Action::TogglePreview);
+
+    assert!(app.preview_enabled);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "Preview enabled"
+    ));
+
+    app.handle_action(Action::TogglePreview);
+
+    assert!(!app.preview_enabled);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "Preview disabled"
+    ));
+}
+
+#[test]
 fn multi_select_without_result_reports_noop() {
     let mut app = test_app();
     app.mode = AppMode::Results;

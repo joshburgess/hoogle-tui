@@ -42,9 +42,7 @@ impl App {
             Action::ViewSource if self.mode == AppMode::DocView => {
                 self.open_source_for_current_decl()
             }
-            Action::TogglePreview => {
-                self.preview_enabled = !self.preview_enabled;
-            }
+            Action::TogglePreview => self.toggle_preview(),
             Action::OpenFilter => {
                 self.filter_state.sync_selection();
                 self.popup = Some(PopupMode::Filter);
