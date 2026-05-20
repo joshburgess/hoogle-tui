@@ -287,15 +287,17 @@ fn parse_action_name(name: &str) -> Option<Action> {
 
 fn parse_key_string(s: &str) -> Option<KeyEvent> {
     let s = s.trim();
-    let (modifiers, key_part) = if let Some(rest) = s.strip_prefix("ctrl-") {
-        (KeyModifiers::CONTROL, rest)
-    } else if let Some(rest) = s.strip_prefix("alt-") {
-        (KeyModifiers::ALT, rest)
+    let lower = s.to_ascii_lowercase();
+    let (modifiers, key_part) = if lower.starts_with("ctrl-") {
+        (KeyModifiers::CONTROL, &s[5..])
+    } else if lower.starts_with("alt-") {
+        (KeyModifiers::ALT, &s[4..])
     } else {
         (KeyModifiers::NONE, s)
     };
+    let key_name = key_part.to_ascii_lowercase();
 
-    let code = match key_part {
+    let code = match key_name.as_str() {
         "enter" => KeyCode::Enter,
         "esc" | "escape" => KeyCode::Esc,
         "tab" => KeyCode::Tab,
@@ -305,8 +307,8 @@ fn parse_key_string(s: &str) -> Option<KeyEvent> {
         "left" => KeyCode::Left,
         "right" => KeyCode::Right,
         "space" => KeyCode::Char(' '),
-        k if k.len() == 1 => {
-            let c = k.chars().next()?;
+        _ if key_part.chars().count() == 1 => {
+            let c = key_part.chars().next()?;
             KeyCode::Char(c)
         }
         _ => return None,
@@ -464,6 +466,27 @@ mod tests {
     #[test]
     fn parse_key_string_invalid() {
         assert!(parse_key_string("nonexistent").is_none());
+    }
+
+    #[test]
+    fn parse_key_string_named_keys_are_case_insensitive() {
+        assert_eq!(parse_key_string("Enter").unwrap().code, KeyCode::Enter);
+        assert_eq!(parse_key_string("ESCAPE").unwrap().code, KeyCode::Esc);
+        assert_eq!(
+            parse_key_string("Ctrl-C").unwrap().modifiers,
+            KeyModifiers::CONTROL
+        );
+        assert_eq!(
+            parse_key_string("ALT-Enter").unwrap().modifiers,
+            KeyModifiers::ALT
+        );
+    }
+
+    #[test]
+    fn parse_key_string_preserves_literal_character_case() {
+        let event = parse_key_string("M").unwrap();
+        assert_eq!(event.code, KeyCode::Char('M'));
+        assert_eq!(event.modifiers, KeyModifiers::NONE);
     }
 
     #[test]

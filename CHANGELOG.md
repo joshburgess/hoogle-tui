@@ -22,6 +22,7 @@
 - Package-version verification now has deterministic regression coverage.
 - Updated the packaged Homebrew formula version to match the workspace version.
 - Homebrew installs now generate shell completions from the installed binary.
+- Keybinding overrides now accept uppercase modifier prefixes and named keys.
 - Verification now checks shell and Ruby script syntax, including the packaged Homebrew formula.
 - Verification now runs `actionlint` when it is available locally.
 - Ignored backend smoke tests now include explicit ignore reasons.
