@@ -96,17 +96,20 @@ impl App {
     }
 
     pub(crate) fn yank_qualified_name(&mut self) {
-        if let Some(result) = self.results.selected_result() {
-            let module = result.module.as_ref().map(|m| m.to_string());
-            let qualified = if let Some(module) = module {
-                format!("{module}.{}", result.name)
-            } else {
-                result.name.clone()
-            };
-            match clipboard::copy_to_clipboard(&qualified) {
-                Ok(()) => self.show_info("Copied qualified name to clipboard"),
-                Err(e) => self.show_error(&e),
-            }
+        let Some(result) = self.results.selected_result() else {
+            self.show_info("No result selected");
+            return;
+        };
+
+        let module = result.module.as_ref().map(|m| m.to_string());
+        let qualified = if let Some(module) = module {
+            format!("{module}.{}", result.name)
+        } else {
+            result.name.clone()
+        };
+        match clipboard::copy_to_clipboard(&qualified) {
+            Ok(()) => self.show_info("Copied qualified name to clipboard"),
+            Err(e) => self.show_error(&e),
         }
     }
 

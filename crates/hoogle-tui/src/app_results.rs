@@ -42,12 +42,15 @@ impl App {
     }
 
     pub(crate) fn pin_selected_result(&mut self) {
-        if let Some(result) = self.results.selected_result().cloned() {
-            if self.pinned.toggle(&result) {
-                self.show_info("Pinned");
-            } else {
-                self.show_info("Unpinned");
-            }
+        let Some(result) = self.results.selected_result().cloned() else {
+            self.show_info("No result selected");
+            return;
+        };
+
+        if self.pinned.toggle(&result) {
+            self.show_info("Pinned");
+        } else {
+            self.show_info("Unpinned");
         }
     }
 

@@ -317,6 +317,24 @@ fn unavailable_yank_and_bookmark_commands_report_noop() {
         Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
     ));
 
+    app.pin_selected_result();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
+
+    app.yank_qualified_name();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
+
+    app.open_doc_for_selected();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
+
     app.results.set_items(vec![result("map")]);
 
     app.yank_signature();

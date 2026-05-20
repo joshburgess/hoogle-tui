@@ -81,6 +81,7 @@
 - Direct view switches now clear stale help restore state.
 - Clearing pins now reports when there are no pins to clear instead of claiming success.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
+- Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
 - Keybinding overrides now accept `delete_entry` and `redraw` action names.
 - CLI backend selection now rejects values outside `auto`, `local`, and `web`.

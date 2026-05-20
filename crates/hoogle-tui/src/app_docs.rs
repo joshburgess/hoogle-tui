@@ -7,6 +7,7 @@ use crate::ui::{status_bar, toc_popup};
 impl App {
     pub(crate) fn open_doc_for_selected(&mut self) {
         let Some(result) = self.results.selected_result().cloned() else {
+            self.show_info("No result selected");
             return;
         };
         let Some(ref url) = result.doc_url else {
