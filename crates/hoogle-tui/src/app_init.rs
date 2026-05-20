@@ -94,6 +94,7 @@ impl App {
             hit_search_bar: Rect::default(),
             hit_result_list: Rect::default(),
             hit_preview_pane: None,
+            hit_pinned_panel: None,
             hit_doc_area: Rect::default(),
             last_click_time: None,
             last_click_row: 0,

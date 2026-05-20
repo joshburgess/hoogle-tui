@@ -184,6 +184,7 @@ pub struct App {
     pub hit_search_bar: Rect,
     pub hit_result_list: Rect,
     pub hit_preview_pane: Option<Rect>,
+    pub hit_pinned_panel: Option<Rect>,
     pub hit_doc_area: Rect,
 
     // Double-click tracking

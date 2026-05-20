@@ -14,7 +14,6 @@ pub struct PinnedState {
     pub viewport_height: usize,
 }
 
-#[allow(dead_code)]
 impl PinnedState {
     pub fn new() -> Self {
         Self {
@@ -25,7 +24,6 @@ impl PinnedState {
     }
 
     pub fn pin(&mut self, result: &SearchResult) {
-        // Don't duplicate
         if self
             .pins
             .iter()
@@ -34,6 +32,20 @@ impl PinnedState {
             return;
         }
         self.pins.push(result.clone());
+    }
+
+    pub fn toggle(&mut self, result: &SearchResult) -> bool {
+        if let Some(index) = self
+            .pins
+            .iter()
+            .position(|p| p.name == result.name && p.module == result.module)
+        {
+            self.unpin(index);
+            false
+        } else {
+            self.pin(result);
+            true
+        }
     }
 
     pub fn unpin(&mut self, index: usize) {

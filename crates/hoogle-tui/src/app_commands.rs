@@ -210,6 +210,7 @@ impl App {
         match crate::project::detect_project() {
             Some(info) => {
                 let pkg_count = info.dependencies.len();
+                let root = info.root.display().to_string();
                 self.package_scope = info.dependencies;
                 self.status.package_scope = self.package_scope.clone();
                 let proj_type = match info.project_type {
@@ -217,7 +218,7 @@ impl App {
                     crate::project::ProjectType::Stack => "stack",
                 };
                 self.show_info(&format!(
-                    "Detected {proj_type} project: {pkg_count} dependencies scoped"
+                    "Detected {proj_type} project at {root}: {pkg_count} dependencies scoped"
                 ));
                 if !self.last_searched.is_empty() {
                     self.trigger_search();

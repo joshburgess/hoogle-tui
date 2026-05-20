@@ -1,9 +1,11 @@
 use super::app_input::search_textarea_with_query;
 use async_trait::async_trait;
+use crossterm::event::{KeyModifiers, MouseEvent, MouseEventKind};
 use hoogle_core::backend::{BackendError, HoogleBackend};
 use hoogle_core::config::Config;
 use hoogle_core::haddock::types::{Declaration, HaddockDoc};
 use hoogle_core::models::{ResultKind, SearchResult};
+use ratatui::layout::Rect;
 use url::Url;
 
 use crate::app::{App, AppMode, DocResponse, PopupMode};
@@ -153,8 +155,34 @@ fn pin_helpers_update_pinned_state() {
     app.pin_selected_result();
     assert!(!app.pinned.is_empty());
 
+    app.pin_selected_result();
+    assert!(app.pinned.is_empty());
+
+    app.pin_selected_result();
     app.clear_pinned_results();
     assert!(app.pinned.is_empty());
+}
+
+#[test]
+fn mouse_wheel_scrolls_pinned_panel_independently() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    for name in ["a", "b", "c", "d"] {
+        app.pinned.pin(&result(name));
+    }
+    app.pinned.viewport_height = 3;
+    app.hit_pinned_panel = Some(Rect::new(40, 10, 20, 8));
+    app.hit_preview_pane = Some(Rect::new(40, 0, 20, 10));
+
+    app.handle_mouse(MouseEvent {
+        kind: MouseEventKind::ScrollDown,
+        column: 45,
+        row: 12,
+        modifiers: KeyModifiers::NONE,
+    });
+
+    assert_eq!(app.pinned.scroll_offset, 3);
+    assert_eq!(app.preview_state.scroll_offset, 0);
 }
 
 #[test]

@@ -54,6 +54,7 @@ impl App {
             self.hit_search_bar = ly.search_bar;
             self.hit_result_list = ly.result_list;
             self.hit_preview_pane = ly.preview_pane;
+            self.hit_pinned_panel = None;
 
             let has_query = !self.last_searched.is_empty();
             search_bar::render(
@@ -73,6 +74,8 @@ impl App {
                         ratatui::layout::Constraint::Percentage(40),
                     ])
                     .split(preview_area);
+                    self.hit_preview_pane = Some(split[0]);
+                    self.hit_pinned_panel = Some(split[1]);
                     let selected = self.results.selected_result().cloned();
                     preview_pane::render(
                         frame,

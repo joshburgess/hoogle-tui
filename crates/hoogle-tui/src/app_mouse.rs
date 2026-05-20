@@ -119,6 +119,15 @@ impl App {
                         self.results.move_up();
                     }
                 } else if self
+                    .hit_pinned_panel
+                    .is_some_and(|r| rect_contains(r, col, row))
+                {
+                    if down {
+                        self.pinned.scroll_down(3);
+                    } else {
+                        self.pinned.scroll_up(3);
+                    }
+                } else if self
                     .hit_preview_pane
                     .is_some_and(|r| rect_contains(r, col, row))
                 {

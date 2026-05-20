@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 /// Detected Haskell project info.
-#[allow(dead_code)]
 pub struct ProjectInfo {
     pub project_type: ProjectType,
     pub root: PathBuf,

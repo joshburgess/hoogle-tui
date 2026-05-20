@@ -136,9 +136,13 @@ async fn main() -> io::Result<()> {
     // Auto-detect Haskell project for package scoping
     if let Some(info) = project::detect_project() {
         let count = info.dependencies.len();
+        let root = info.root.display().to_string();
         app.package_scope = info.dependencies;
         app.status.package_scope = app.package_scope.clone();
-        tracing::info!("detected {:?} project with {count} deps", info.project_type);
+        tracing::info!(
+            "detected {:?} project at {root} with {count} deps",
+            info.project_type
+        );
     }
 
     if let Some(ref query) = args.query {
