@@ -75,6 +75,7 @@
 - Moved app helper tests into a dedicated `app_tests.rs` module.
 - Tightened extracted TUI app helper methods to crate-private visibility.
 - Source view status hints now advertise help and quit bindings.
+- Results-mode preview scroll-up now scrolls the preview pane instead of moving result selection when previews are enabled.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
 - Keybinding overrides now accept `delete_entry` and `redraw` action names.
 - CLI backend selection now rejects values outside `auto`, `local`, and `web`.

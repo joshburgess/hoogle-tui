@@ -62,6 +62,9 @@ impl App {
             (AppMode::Results, true) if self.preview_enabled => {
                 self.preview_state.scroll_down(amount);
             }
+            (AppMode::Results, false) if self.preview_enabled => {
+                self.preview_state.scroll_up(amount);
+            }
             (AppMode::Results, true) => self.results.move_down(),
             (AppMode::Results, false) => self.results.move_up(),
             (AppMode::Search, _) => {}

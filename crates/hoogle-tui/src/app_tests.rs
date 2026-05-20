@@ -317,6 +317,24 @@ fn mouse_wheel_scrolls_pinned_panel_independently() {
 }
 
 #[test]
+fn scroll_up_in_results_mode_scrolls_preview_when_enabled() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.preview_enabled = true;
+    app.results
+        .set_items(vec![result("first"), result("second")]);
+    app.results.selected = 1;
+    app.preview_state.total_lines = 20;
+    app.preview_state.viewport_height = 5;
+    app.preview_state.scroll_offset = 3;
+
+    app.handle_action(Action::ScrollUp);
+
+    assert_eq!(app.preview_state.scroll_offset, 2);
+    assert_eq!(app.results.selected, 1);
+}
+
+#[test]
 fn current_doc_and_declaration_tracks_scroll_position() {
     let mut app = app_with_doc();
 
