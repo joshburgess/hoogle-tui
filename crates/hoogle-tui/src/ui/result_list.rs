@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use super::text::truncate_width;
+use super::text::{display_width, spans_width, truncate_width};
 
 const LINES_PER_RESULT_EXPANDED: usize = 3;
 const LINES_PER_RESULT_COMPACT: usize = 1;
@@ -345,8 +345,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                                 .add_modifier(Modifier::BOLD),
                         ),
                         Span::styled(
-                            "\u{2500}"
-                                .repeat(available_width.saturating_sub(current_module.len() + 4)),
+                            "\u{2500}".repeat(
+                                available_width.saturating_sub(display_width(current_module) + 4),
+                            ),
                             theme.style(SemanticToken::Border),
                         ),
                     ]));
@@ -406,8 +407,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                 ));
             }
             // Right-align module name
-            let used: usize = spans.iter().map(|s| s.content.len()).sum();
-            let pad = available_width.saturating_sub(used + cached.module_str.len() + 1);
+            let used = spans_width(spans.iter());
+            let pad = available_width.saturating_sub(used + display_width(&cached.module_str) + 1);
             spans.push(Span::styled(" ".repeat(pad), base_style));
             spans.push(Span::styled(
                 cached.module_str.as_str(),
@@ -417,8 +418,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
         } else {
             // Expanded: 3 lines
             // Line 1: module + package (right-aligned package)
-            let padding =
-                available_width.saturating_sub(cached.module_str.len() + cached.pkg_str.len() + 4);
+            let padding = available_width.saturating_sub(
+                display_width(&cached.module_str) + display_width(&cached.pkg_str) + 4,
+            );
 
             lines.push(Line::from(vec![
                 Span::styled(

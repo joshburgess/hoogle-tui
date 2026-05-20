@@ -4,6 +4,13 @@ pub fn display_width(text: &str) -> usize {
     UnicodeWidthStr::width(text)
 }
 
+pub fn spans_width<'a>(spans: impl IntoIterator<Item = &'a ratatui::text::Span<'a>>) -> usize {
+    spans
+        .into_iter()
+        .map(|span| display_width(span.content.as_ref()))
+        .sum()
+}
+
 pub fn truncate_width(text: &str, max_width: usize, suffix: &str) -> String {
     if display_width(text) <= max_width {
         return text.to_string();
@@ -74,5 +81,14 @@ mod tests {
     #[test]
     fn display_width_counts_wide_characters() {
         assert_eq!(display_width("型a"), 3);
+    }
+
+    #[test]
+    fn spans_width_counts_display_width() {
+        let spans = [
+            ratatui::text::Span::raw("型"),
+            ratatui::text::Span::raw("ab"),
+        ];
+        assert_eq!(spans_width(spans.iter()), 4);
     }
 }

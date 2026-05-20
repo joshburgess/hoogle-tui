@@ -9,6 +9,8 @@ use ratatui::{
 
 use crate::app::AppMode;
 
+use super::text::spans_width;
+
 const SPINNER_FRAMES: &[char] = &[
     '\u{280b}', '\u{2819}', '\u{2839}', '\u{2838}', '\u{283c}', '\u{2834}', '\u{2826}', '\u{2827}',
     '\u{2807}', '\u{280f}',
@@ -180,8 +182,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     right_spans.push(Span::styled(" ", status_style));
 
     // Combine: fill middle with spaces
-    let left_len: usize = left_spans.iter().map(|s| s.content.len()).sum();
-    let right_len: usize = right_spans.iter().map(|s| s.content.len()).sum();
+    let left_len = spans_width(left_spans.iter());
+    let right_len = spans_width(right_spans.iter());
     let padding = (area.width as usize).saturating_sub(left_len + right_len);
 
     let mut all_spans = left_spans;
