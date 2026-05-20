@@ -122,6 +122,17 @@ impl App {
         }
     }
 
+    pub(crate) fn cycle_doc_link(&mut self) {
+        if self.doc_state.links.is_empty() {
+            self.show_info("No links available");
+            return;
+        }
+        self.doc_state.focus_next_link();
+        if self.doc_state.focused_link_url().is_none() {
+            self.show_info("No visible links");
+        }
+    }
+
     pub(crate) fn navigate_doc_back(&mut self) {
         if let Some(url) = self.doc_state.pop_nav() {
             self.fetch_doc(url);
