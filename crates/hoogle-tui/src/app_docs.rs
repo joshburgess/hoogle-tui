@@ -72,20 +72,23 @@ impl App {
     }
 
     pub(crate) fn open_toc(&mut self) {
-        if let Some(ref doc) = self.doc_state.doc {
-            let entries: Vec<toc_popup::TocEntry> = doc
-                .declarations
-                .iter()
-                .zip(self.doc_state.declaration_offsets.iter())
-                .map(|(decl, (_, offset))| toc_popup::TocEntry {
-                    name: decl.name.clone(),
-                    signature: decl.signature.clone(),
-                    line_offset: *offset,
-                })
-                .collect();
-            self.toc_state = Some(toc_popup::TocState::new(entries));
-            self.popup = Some(PopupMode::Toc);
-        }
+        let Some(ref doc) = self.doc_state.doc else {
+            self.show_info("No document loaded");
+            return;
+        };
+
+        let entries: Vec<toc_popup::TocEntry> = doc
+            .declarations
+            .iter()
+            .zip(self.doc_state.declaration_offsets.iter())
+            .map(|(decl, (_, offset))| toc_popup::TocEntry {
+                name: decl.name.clone(),
+                signature: decl.signature.clone(),
+                line_offset: *offset,
+            })
+            .collect();
+        self.toc_state = Some(toc_popup::TocState::new(entries));
+        self.popup = Some(PopupMode::Toc);
     }
 
     pub(crate) fn move_doc_declaration_or_match(&mut self, forward: bool) {

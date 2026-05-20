@@ -96,6 +96,7 @@
 - Deleting from empty bookmark and history popups now reports the unavailable action instead of silently doing nothing.
 - Load-more actions now report when no more results are available or another page is already loading.
 - Focusing results with no results now reports the unavailable action instead of silently doing nothing.
+- Opening the table of contents without a loaded document now reports the unavailable action instead of silently doing nothing.
 
 ### Added
 - Restored `L` to load more results.

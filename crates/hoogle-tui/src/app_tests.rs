@@ -220,6 +220,21 @@ fn focus_results_reports_when_results_are_empty() {
 }
 
 #[test]
+fn open_toc_reports_when_document_is_missing() {
+    let mut app = test_app();
+    app.mode = AppMode::DocView;
+
+    app.handle_action(Action::OpenTOC);
+
+    assert_eq!(app.popup, None);
+    assert!(app.toc_state.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No document loaded"
+    ));
+}
+
+#[test]
 fn load_more_reports_unavailable_states() {
     let mut app = test_app();
 
