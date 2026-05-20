@@ -37,7 +37,12 @@ impl App {
     }
 
     pub(crate) fn open_module_browser(&mut self) {
-        self.module_browser = Some(module_browser::ModuleBrowserState::new(&self.all_results));
+        let state = module_browser::ModuleBrowserState::new(&self.all_results);
+        if state.selected_module().is_none() {
+            self.show_info("No modules available");
+            return;
+        }
+        self.module_browser = Some(state);
         self.popup = Some(PopupMode::ModuleBrowser);
     }
 

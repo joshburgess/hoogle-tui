@@ -4,7 +4,7 @@ use crossterm::event::{KeyModifiers, MouseEvent, MouseEventKind};
 use hoogle_core::backend::{BackendError, HoogleBackend};
 use hoogle_core::config::Config;
 use hoogle_core::haddock::types::{Declaration, HaddockDoc};
-use hoogle_core::models::{ResultKind, SearchResult};
+use hoogle_core::models::{ModulePath, ResultKind, SearchResult};
 use ratatui::layout::Rect;
 use url::Url;
 
@@ -49,6 +49,15 @@ fn result(name: &str) -> SearchResult {
         doc_url: None,
         short_doc: None,
         result_kind: ResultKind::Function,
+    }
+}
+
+fn module_result(name: &str, module: &[&str]) -> SearchResult {
+    SearchResult {
+        module: Some(ModulePath(
+            module.iter().map(|part| (*part).to_string()).collect(),
+        )),
+        ..result(name)
     }
 }
 
@@ -222,6 +231,32 @@ fn popup_helpers_open_expected_popup_state() {
     app.toggle_theme_switcher();
     assert_eq!(app.popup, None);
     assert!(app.theme_popup.is_none());
+}
+
+#[test]
+fn open_module_browser_reports_empty_module_list() {
+    let mut app = test_app();
+    app.all_results = vec![result("map")];
+
+    app.open_module_browser();
+
+    assert_eq!(app.popup, None);
+    assert!(app.module_browser.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No modules available"
+    ));
+}
+
+#[test]
+fn open_module_browser_shows_available_modules() {
+    let mut app = test_app();
+    app.all_results = vec![module_result("map", &["Data", "Map"])];
+
+    app.open_module_browser();
+
+    assert_eq!(app.popup, Some(PopupMode::ModuleBrowser));
+    assert!(app.module_browser.is_some());
 }
 
 #[test]
