@@ -8,7 +8,7 @@ use hoogle_core::models::{ResultKind, SearchResult};
 use ratatui::layout::Rect;
 use url::Url;
 
-use crate::app::{App, AppMode, DocResponse, PopupMode, SourceResponse};
+use crate::app::{App, AppMode, DocResponse, PopupMode, SearchResponse, SourceResponse};
 use crate::ui::{history_popup, toc_popup};
 
 #[derive(Debug)]
@@ -122,6 +122,34 @@ fn result_helpers_update_selection_state() {
 
     app.toggle_compact_results();
     assert!(app.results.compact);
+}
+
+#[test]
+fn appended_search_results_preserve_result_view_state() {
+    let mut app = test_app();
+    app.all_results = vec![result("alpha")];
+    app.results.set_items(app.all_results.clone());
+    app.results.start_fuzzy_filter();
+    app.results.fuzzy_add_char('a');
+    app.results.multi_select_mode = true;
+    app.results.toggle_select_current();
+    app.loading_more = true;
+
+    app.search_tx
+        .send(SearchResponse {
+            generation: app.search_generation,
+            append: true,
+            results: Ok(vec![result("beta")]),
+        })
+        .unwrap();
+
+    app.on_tick();
+
+    assert!(!app.loading_more);
+    assert_eq!(app.results.fuzzy_filter.as_deref(), Some("a"));
+    assert_eq!(app.results.visible_count(), 2);
+    assert!(app.results.multi_select_mode);
+    assert!(app.results.multi_selected.contains(&0));
 }
 
 #[test]

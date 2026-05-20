@@ -25,10 +25,11 @@ impl App {
                         if response.append {
                             self.all_results.extend(items);
                             self.loading_more = false;
+                            self.apply_filter_and_sort_preserving_view();
                         } else {
                             self.all_results = items;
+                            self.apply_filter_and_sort();
                         }
-                        self.apply_filter_and_sort();
                         self.results.loading = false;
                         self.status.message = None;
                         self.status.offline = false;

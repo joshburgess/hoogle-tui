@@ -56,6 +56,14 @@ impl App {
     }
 
     pub(crate) fn apply_filter_and_sort(&mut self) {
+        self.apply_filter_and_sort_with_view_reset(true);
+    }
+
+    pub(crate) fn apply_filter_and_sort_preserving_view(&mut self) {
+        self.apply_filter_and_sort_with_view_reset(false);
+    }
+
+    fn apply_filter_and_sort_with_view_reset(&mut self, reset_view: bool) {
         let needs_sort = self.sort_state.active_sort != sort_popup::SortMode::Relevance;
 
         let mut items: Vec<SearchResult> = if let Some(kind) = self.filter_state.active_filter {
@@ -68,7 +76,12 @@ impl App {
             self.all_results.clone()
         } else {
             self.status.result_count = self.all_results.len();
-            self.results.set_items(self.all_results.clone());
+            if reset_view {
+                self.results.set_items(self.all_results.clone());
+            } else {
+                self.results
+                    .set_items_preserving_view(self.all_results.clone());
+            }
             return;
         };
 
@@ -94,7 +107,11 @@ impl App {
         }
 
         self.status.result_count = items.len();
-        self.results.set_items(items);
+        if reset_view {
+            self.results.set_items(items);
+        } else {
+            self.results.set_items_preserving_view(items);
+        }
     }
 
     pub(crate) fn load_more_results(&mut self) {

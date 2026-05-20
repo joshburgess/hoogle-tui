@@ -7,6 +7,7 @@ use ratatui::{
     widgets::{Block, Borders, Paragraph},
     Frame,
 };
+use std::collections::HashSet;
 
 use super::text::{display_width, spans_width, truncate_width};
 
@@ -100,6 +101,50 @@ impl ResultListState {
     }
 
     pub fn set_items(&mut self, items: Vec<SearchResult>) {
+        self.replace_items(items);
+        self.selected = 0;
+        self.scroll_offset = 0;
+        self.fuzzy_filter = None;
+        self.filtered_indices = None;
+        self.multi_selected.clear();
+        self.multi_select_mode = false;
+    }
+
+    pub fn set_items_preserving_view(&mut self, items: Vec<SearchResult>) {
+        let selected_key = self.selected_result().map(result_key);
+        let selected_keys: HashSet<String> = self
+            .multi_selected
+            .iter()
+            .filter_map(|idx| self.items.get(*idx).map(result_key))
+            .collect();
+
+        self.replace_items(items);
+
+        if self.fuzzy_filter.is_some() {
+            self.apply_fuzzy_filter();
+        } else {
+            self.clamp_selection();
+        }
+
+        if let Some(key) = selected_key {
+            if let Some(position) = (0..self.visible_count()).find(|pos| {
+                self.visible_index(*pos)
+                    .and_then(|idx| self.items.get(idx))
+                    .is_some_and(|result| result_key(result) == key)
+            }) {
+                self.selected = position;
+            }
+        }
+
+        self.multi_selected = self
+            .items
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, result)| selected_keys.contains(&result_key(result)).then_some(idx))
+            .collect();
+    }
+
+    fn replace_items(&mut self, items: Vec<SearchResult>) {
         self.display_cache = items
             .iter()
             .map(|r| CachedDisplay {
@@ -112,12 +157,16 @@ impl ResultListState {
             })
             .collect();
         self.items = items;
-        self.selected = 0;
-        self.scroll_offset = 0;
-        self.fuzzy_filter = None;
-        self.filtered_indices = None;
-        self.multi_selected.clear();
-        self.multi_select_mode = false;
+    }
+
+    fn clamp_selection(&mut self) {
+        let count = self.visible_count();
+        if count == 0 {
+            self.selected = 0;
+            self.scroll_offset = 0;
+        } else if self.selected >= count {
+            self.selected = count - 1;
+        }
     }
 
     pub fn selected_result(&self) -> Option<&SearchResult> {
@@ -232,6 +281,25 @@ impl ResultListState {
             self.scroll_offset = self.scroll_offset.min(max_scroll);
         }
     }
+}
+
+fn result_key(result: &SearchResult) -> String {
+    format!(
+        "{}\u{1f}{}\u{1f}{}\u{1f}{}\u{1f}{:?}",
+        result.name,
+        result
+            .module
+            .as_ref()
+            .map(|m| m.as_dotted())
+            .unwrap_or_default(),
+        result
+            .package
+            .as_ref()
+            .map(|p| p.to_string())
+            .unwrap_or_default(),
+        result.signature.as_deref().unwrap_or_default(),
+        result.result_kind
+    )
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme: &Theme) {
