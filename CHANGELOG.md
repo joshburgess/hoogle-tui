@@ -71,6 +71,7 @@
 - Tightened extracted TUI app helper methods to crate-private visibility.
 - Source view status hints now advertise help and quit bindings.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
+- Keybinding overrides now accept `delete_entry` and `redraw` action names.
 
 ### Added
 - Restored `L` to load more results.

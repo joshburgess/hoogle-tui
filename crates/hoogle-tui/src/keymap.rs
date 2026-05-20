@@ -263,6 +263,8 @@ fn parse_action_name(name: &str) -> Option<Action> {
         "clear_search" => Action::ClearSearch,
         "bookmark" => Action::Bookmark,
         "open_bookmarks" => Action::OpenBookmarks,
+        "delete_entry" => Action::DeleteEntry,
+        "redraw" => Action::Redraw,
         "open_yank_menu" => Action::OpenYankMenu,
         "open_package_scope" => Action::OpenPackageScope,
         "open_theme_switcher" => Action::OpenThemeSwitcher,
@@ -497,6 +499,8 @@ mod tests {
             parse_action_name("yank_signature"),
             Some(Action::YankSignature)
         );
+        assert_eq!(parse_action_name("delete_entry"), Some(Action::DeleteEntry));
+        assert_eq!(parse_action_name("redraw"), Some(Action::Redraw));
     }
 
     #[test]
