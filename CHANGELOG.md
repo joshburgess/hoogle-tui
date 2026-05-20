@@ -72,6 +72,7 @@
 - Added checked-in render golden snapshots for key TUI surfaces.
 - Added wide Unicode render regression coverage for compact results and documentation tables.
 - Added wide Unicode render regression coverage for bookmarks and table-of-contents popups.
+- Added tiny-terminal render regression coverage for TUI popups.
 - Added `scripts/check-rust-panics.rb` to reject `.unwrap()` and `.expect()` in shipped Rust code.
 - Added regression tests for the shipped-code panic scanner.
 - Added `scripts/verify.sh` for one-command local verification.

@@ -8,8 +8,11 @@ use std::path::PathBuf;
 
 use crate::app::AppMode;
 use crate::bookmarks::{Bookmark, BookmarkStore};
+use crate::history::SearchHistory;
 use crate::ui::{
-    bookmarks_popup, doc_viewer, filter_popup, result_list, source_viewer, status_bar, toc_popup,
+    bookmarks_popup, doc_viewer, filter_popup, help_overlay, history_popup, module_browser,
+    package_popup, result_list, sort_popup, source_viewer, status_bar, theme_popup, toc_popup,
+    yank_popup,
 };
 
 fn buffer_text(backend: &TestBackend) -> String {
@@ -210,6 +213,68 @@ fn bookmarks_popup_wide_signature_fits_render_width() {
     assert!(output.contains("Data.型 型 型"), "{output}");
     assert!(output.contains("..."), "{output}");
     assert_lines_fit(&output, 60);
+}
+
+#[test]
+fn popups_render_on_tiny_terminal() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let history = SearchHistory::load_with_status(dir.path().join("history.json")).0;
+    let bookmarks = BookmarkStore::load_with_status(dir.path().join("bookmarks.json")).0;
+    let results = vec![search_result("lookup", "Ord k => k -> Map k a -> Maybe a")];
+    let mut module_state = module_browser::ModuleBrowserState::new(&results);
+    let mut help_state = help_overlay::HelpState::new();
+
+    let renders = [
+        render_to_text(8, 4, |frame| {
+            filter_popup::render(frame, &filter_popup::FilterState::new(), &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            sort_popup::render(frame, &sort_popup::SortState::new(), &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            theme_popup::render(frame, &theme_popup::ThemePopupState::new("dracula"), &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            yank_popup::render(frame, &yank_popup::YankPopupState::new(), &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            package_popup::render(
+                frame,
+                &package_popup::PackageScopeState::new(&["base".to_string()]),
+                &theme,
+            );
+        }),
+        render_to_text(8, 4, |frame| {
+            history_popup::render(
+                frame,
+                &history_popup::HistoryPopupState::new(0),
+                &history,
+                &theme,
+            );
+        }),
+        render_to_text(8, 4, |frame| {
+            bookmarks_popup::render(
+                frame,
+                &bookmarks_popup::BookmarksPopupState::new(),
+                &bookmarks,
+                &theme,
+            );
+        }),
+        render_to_text(8, 4, |frame| {
+            toc_popup::render(frame, &toc_popup::TocState::new(Vec::new()), &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            module_browser::render(frame, &mut module_state, &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            help_overlay::render(frame, &mut help_state, &theme);
+        }),
+    ];
+
+    for output in renders {
+        assert_lines_fit(&output, 8);
+    }
 }
 
 #[test]
