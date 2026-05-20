@@ -59,6 +59,10 @@ impl App {
         }
 
         while let Ok(response) = self.doc_rx.try_recv() {
+            if self.pending_doc_url.as_ref() != Some(&response.url) {
+                continue;
+            }
+            self.pending_doc_url = None;
             match response.result {
                 Ok(doc) => {
                     self.doc_state.current_url = Some(response.url);
@@ -79,6 +83,10 @@ impl App {
         }
 
         while let Ok(response) = self.source_rx.try_recv() {
+            if self.pending_source_decl.as_deref() != Some(response.decl_name.as_str()) {
+                continue;
+            }
+            self.pending_source_decl = None;
             match response.result {
                 Ok(source) => {
                     self.source_state

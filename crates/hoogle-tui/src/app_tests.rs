@@ -406,6 +406,7 @@ async fn follow_internal_doc_link_pushes_current_url() {
 fn doc_response_records_current_url() {
     let mut app = app_with_doc();
     let url = Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap();
+    app.pending_doc_url = Some(url.clone());
 
     app.doc_tx
         .send(DocResponse {
@@ -416,6 +417,27 @@ fn doc_response_records_current_url() {
     app.on_tick();
 
     assert_eq!(app.doc_state.current_url, Some(url));
+}
+
+#[test]
+fn stale_doc_response_is_ignored() {
+    let mut app = app_with_doc();
+    let current_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Current.html").unwrap();
+    let stale_url = Url::parse("https://hackage.haskell.org/package/demo/docs/Stale.html").unwrap();
+    app.pending_doc_url = Some(current_url.clone());
+    app.doc_state.current_url = Some(current_url.clone());
+
+    app.doc_tx
+        .send(DocResponse {
+            url: stale_url,
+            result: Ok(doc()),
+        })
+        .unwrap();
+    app.on_tick();
+
+    assert_eq!(app.doc_state.current_url, Some(current_url));
+    assert!(app.pending_doc_url.is_some());
 }
 
 #[test]
@@ -493,6 +515,7 @@ async fn open_source_for_current_decl_sets_source_loading_state() {
 #[test]
 fn source_response_scrolls_to_declaration_name() {
     let mut app = app_with_doc();
+    app.pending_source_decl = Some("targetDecl".to_string());
     app.source_tx
         .send(SourceResponse {
             decl_name: "targetDecl".to_string(),
@@ -503,6 +526,23 @@ fn source_response_scrolls_to_declaration_name() {
     app.on_tick();
 
     assert_eq!(app.source_state.scroll_offset, 2);
+}
+
+#[test]
+fn stale_source_response_is_ignored() {
+    let mut app = app_with_doc();
+    app.pending_source_decl = Some("currentDecl".to_string());
+
+    app.source_tx
+        .send(SourceResponse {
+            decl_name: "staleDecl".to_string(),
+            result: Ok("staleDecl = 1".to_string()),
+        })
+        .unwrap();
+    app.on_tick();
+
+    assert!(app.source_state.source.is_none());
+    assert_eq!(app.pending_source_decl.as_deref(), Some("currentDecl"));
 }
 
 #[test]

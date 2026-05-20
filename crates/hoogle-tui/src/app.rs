@@ -143,10 +143,12 @@ pub struct App {
 
     // Doc viewer
     pub doc_state: doc_viewer::DocViewState,
+    pub pending_doc_url: Option<Url>,
     pub toc_state: Option<toc_popup::TocState>,
 
     // Source viewer
     pub source_state: source_viewer::SourceViewState,
+    pub pending_source_decl: Option<String>,
 
     // History & bookmarks
     pub history: SearchHistory,

@@ -26,6 +26,7 @@ impl App {
         tracing::info!("fetching doc: {url}");
         self.doc_state.loading = true;
         self.doc_state.error = None;
+        self.pending_doc_url = Some(url.clone());
 
         let fetcher = self.fetcher.clone();
         let tx = self.doc_tx.clone();
@@ -55,6 +56,7 @@ impl App {
         self.mode = AppMode::SourceView;
         self.source_state.loading = true;
         self.source_state.error = None;
+        self.pending_source_decl = Some(decl_name.clone());
         self.status.message = Some(status_bar::StatusMessage::Loading(
             "Loading source...".into(),
         ));
