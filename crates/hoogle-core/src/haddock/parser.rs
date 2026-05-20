@@ -574,10 +574,9 @@ fn is_module_link(href: &str) -> bool {
         return false;
     }
     let filename = path.rsplit('/').next().unwrap_or(path);
-    if !filename.ends_with(".html") {
+    let Some(name) = filename.strip_suffix(".html") else {
         return false;
-    }
-    let name = &filename[..filename.len() - 5];
+    };
     // Module names: hyphen-separated components starting with uppercase
     // e.g. "Data-Map-Strict"
     name.split('-')
@@ -603,6 +602,7 @@ mod tests {
         assert!(is_module_link("Data-Map-Strict.html"));
         assert!(is_module_link("Control-Monad.html"));
         assert!(is_module_link("../Data-Map.html"));
+        assert!(!is_module_link("Λambda-Calculus.html"));
         assert!(!is_module_link("https://example.com"));
         assert!(!is_module_link("src/Data-Map.html")); // src pages have lowercase
         assert!(!is_module_link(""));

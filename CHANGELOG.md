@@ -8,6 +8,7 @@
 - Removed a non-test panic path from Haddock CSS selector handling.
 - Removed non-test panic paths from Hoogle result parser regex initialization.
 - Fixed duplicate `<summary>` text when parsing Haddock `<details>` blocks while preserving body code blocks.
+- Haddock module-link detection now avoids byte-index suffix stripping.
 - Cleared clippy warnings across the workspace.
 
 ### Changed
