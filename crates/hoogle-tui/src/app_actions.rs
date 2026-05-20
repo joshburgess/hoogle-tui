@@ -21,6 +21,7 @@ impl App {
             Action::FocusResults if !self.results.items.is_empty() => {
                 self.switch_mode(AppMode::Results)
             }
+            Action::FocusResults => self.show_info("No results to focus"),
             Action::MoveDown => self.move_selection_or_scroll(1),
             Action::MoveUp => self.move_selection_or_scroll(-1),
             Action::MoveToTop => self.move_selection_or_scroll_to_edge(false),

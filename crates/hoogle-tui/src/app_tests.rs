@@ -207,6 +207,19 @@ fn result_helpers_update_selection_state() {
 }
 
 #[test]
+fn focus_results_reports_when_results_are_empty() {
+    let mut app = test_app();
+
+    app.handle_action(Action::FocusResults);
+
+    assert_eq!(app.mode, AppMode::Search);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No results to focus"
+    ));
+}
+
+#[test]
 fn load_more_reports_unavailable_states() {
     let mut app = test_app();
 
