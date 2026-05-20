@@ -27,8 +27,8 @@ Browse Haskell APIs, read Haddock documentation, and view source code, all from 
 ### Multi-Select and Comparison
 - **Multi-select**: `x` toggles selection on results, auto-advances for rapid picking
 - **Batch import yanking**: `I` copies all selected results as import statements to clipboard
-- **Pinned results**: `P` pins a result to a comparison panel below the preview pane
-- **Module browser**: `Ctrl-m` opens a hierarchical module tree built from search results
+- **Pinned results**: `P` toggles a result in the comparison panel below the preview pane
+- **Module browser**: `M` opens a hierarchical module tree built from search results
 
 ### Documentation
 - **Haddock doc viewer**: full module documentation with syntax-highlighted code blocks, GHCi examples (`>>>`), headers, lists, and notes
@@ -163,9 +163,9 @@ Search  -->  Results  -->  Docs  -->  Source
 | `D` | Copy GHCi `:info` command |
 | `x` | Multi-select toggle |
 | `I` | Yank all selected imports |
-| `P` | Pin result for comparison |
+| `P` | Pin/unpin result for comparison |
 | `Ctrl-x` | Clear all pins |
-| `Ctrl-m` | Module browser |
+| `M` | Module browser |
 | `Ctrl-o` | Open in browser |
 | `Ctrl-p` | Set package scope |
 | `Ctrl-t` | Switch theme |

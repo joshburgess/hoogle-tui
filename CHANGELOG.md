@@ -20,6 +20,7 @@
 - Table-of-contents and history popups now accept typed filters instead of carrying unused filtering state.
 - Pinned result panels now handle mouse-wheel scrolling independently from the preview pane.
 - Pressing `P` on an already pinned result now unpins it.
+- User-facing keybinding docs now list `M` for the module browser, matching the runtime keymap.
 - Project detection messages now include the detected project root.
 - Source views now jump to the loaded declaration when its name appears in the source.
 - Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
@@ -85,14 +86,14 @@
 - Package scoping (`Ctrl-p`): restrict search to specific packages using Hoogle's `+pkg` syntax
 - Tab completion: press `Tab` in search bar to cycle through matching result names
 - Cabal/Stack project awareness: auto-detects project on startup and scopes search to dependencies
-- Module browser (`Ctrl-m`): hierarchical tree view of modules with expand/collapse and filtering
+- Module browser (`M`): hierarchical tree view of modules with expand/collapse and filtering
 - Compact/expanded display toggle (`v`): switch between 1-line and 3-line result display
 - Result grouping by module (`w`): visual module headers with horizontal rules
 
 #### Multi-Select and Comparison
 - Multi-select (`x`): toggle selection on results with `[x]`/`[ ]` markers
 - Batch import yank (`I`): copy all selected results as import statements
-- Pinned results (`P`): pin results to a comparison panel below the preview pane
+- Pinned results (`P`): pin or unpin results in a comparison panel below the preview pane
 - Clear pins (`Ctrl-x`)
 
 #### Copy and Integration

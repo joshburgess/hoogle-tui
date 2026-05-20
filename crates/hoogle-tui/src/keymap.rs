@@ -88,13 +88,6 @@ impl Keymap {
             KeyModifiers::CONTROL,
             DeleteEntry,
         );
-        // d in Results is unbound (DeleteEntry only makes sense in History/Bookmarks popups)
-        self.bind(
-            AppMode::Results,
-            Char('d'),
-            KeyModifiers::CONTROL,
-            DeleteEntry,
-        );
         self.bind_key(AppMode::Results, Char('q'), Quit);
         self.bind_key(AppMode::Results, Esc, Back);
         self.bind_key(AppMode::Results, Char('?'), ToggleHelp);

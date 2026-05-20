@@ -190,7 +190,7 @@ const SECTIONS: &[HelpSection] = &[
             },
             HelpEntry {
                 key: "P",
-                desc: "Pin result for comparison",
+                desc: "Pin/unpin result for comparison",
             },
             HelpEntry {
                 key: "Ctrl-x",
