@@ -10,6 +10,9 @@ SCRIPT = File.join(ROOT, "scripts", "check-package-versions.sh")
 
 def write_fixture(root, workspace:, flake:, homebrew:)
   FileUtils.mkdir_p(File.join(root, "packaging"))
+  FileUtils.mkdir_p(File.join(root, "crates", "hoogle-core"))
+  FileUtils.mkdir_p(File.join(root, "crates", "hoogle-syntax"))
+  FileUtils.mkdir_p(File.join(root, "crates", "hoogle-tui"))
 
   File.write(
     File.join(root, "Cargo.toml"),
@@ -37,6 +40,37 @@ def write_fixture(root, workspace:, flake:, homebrew:)
         version "#{homebrew}"
       end
     RUBY
+  )
+
+  File.write(
+    File.join(root, "crates", "hoogle-core", "Cargo.toml"),
+    <<~TOML,
+      [package]
+      name = "hoogle-core"
+      version = "#{workspace}"
+    TOML
+  )
+
+  File.write(
+    File.join(root, "crates", "hoogle-syntax", "Cargo.toml"),
+    <<~TOML,
+      [package]
+      name = "hoogle-syntax"
+      version = "#{workspace}"
+    TOML
+  )
+
+  File.write(
+    File.join(root, "crates", "hoogle-tui", "Cargo.toml"),
+    <<~TOML,
+      [package]
+      name = "hoogle-tui"
+      version = "#{workspace}"
+
+      [dependencies]
+      hoogle-core = { path = "../hoogle-core", version = "#{workspace}" }
+      hoogle-syntax = { path = "../hoogle-syntax", version = "#{workspace}" }
+    TOML
   )
 end
 
@@ -97,3 +131,58 @@ assert_fails(
   flake: "1.2.3",
   homebrew: "1.2.4",
 )
+
+Dir.mktmpdir("check-package-versions") do |dir|
+  write_fixture(dir, workspace: "1.2.3", flake: "1.2.3", homebrew: "1.2.3")
+  File.write(
+    File.join(dir, "crates", "hoogle-core", "Cargo.toml"),
+    <<~TOML,
+      [package]
+      name = "hoogle-core"
+      version = "1.2.4"
+    TOML
+  )
+
+  success, stderr = run_checker(dir)
+  if success
+    warn "crate version mismatch should have failed"
+    exit 1
+  end
+
+  expected = "hoogle-core/Cargo.toml version (1.2.4) does not match workspace version (1.2.3)"
+  unless stderr.include?(expected)
+    warn "crate version mismatch failed without expected output"
+    warn "expected: #{expected}"
+    warn stderr
+    exit 1
+  end
+end
+
+Dir.mktmpdir("check-package-versions") do |dir|
+  write_fixture(dir, workspace: "1.2.3", flake: "1.2.3", homebrew: "1.2.3")
+  File.write(
+    File.join(dir, "crates", "hoogle-tui", "Cargo.toml"),
+    <<~TOML,
+      [package]
+      name = "hoogle-tui"
+      version = "1.2.3"
+
+      [dependencies]
+      hoogle-core = { path = "../hoogle-core", version = "1.2.4" }
+    TOML
+  )
+
+  success, stderr = run_checker(dir)
+  if success
+    warn "path dependency version mismatch should have failed"
+    exit 1
+  end
+
+  expected = "hoogle-tui/Cargo.toml path dependency version (1.2.4) does not match workspace version (1.2.3)"
+  unless stderr.include?(expected)
+    warn "path dependency version mismatch failed without expected output"
+    warn "expected: #{expected}"
+    warn stderr
+    exit 1
+  end
+end
