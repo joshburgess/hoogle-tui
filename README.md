@@ -315,6 +315,7 @@ Options:
       --max-results <N>        Max results
       --log-level <LEVEL>      Log level [default: warn]
       --completions <SHELL>    Generate shell completions (bash, zsh, fish, powershell)
+      --generate               Run hoogle generate, then exit
   -h, --help                   Print help
   -V, --version                Print version
 ```

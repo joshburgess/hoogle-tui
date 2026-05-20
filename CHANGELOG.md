@@ -97,6 +97,7 @@
 - Removed stale release wording from shipped `0.1.1` changes.
 - Documented verified Hoogle 5.0.19.0 local pagination behavior.
 - Documented the May 19, 2026 local verification of ignored backend smoke tests.
+- Documented the `--generate` CLI option.
 
 ### Tests
 - Added a Hackage-like Haddock parser fixture covering metadata, declarations, source links, tables, details, and definition lists.
