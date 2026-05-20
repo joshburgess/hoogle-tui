@@ -7,7 +7,10 @@ use ratatui::{backend::TestBackend, layout::Rect, Terminal};
 use std::path::PathBuf;
 
 use crate::app::AppMode;
-use crate::ui::{doc_viewer, filter_popup, result_list, source_viewer, status_bar};
+use crate::bookmarks::{Bookmark, BookmarkStore};
+use crate::ui::{
+    bookmarks_popup, doc_viewer, filter_popup, result_list, source_viewer, status_bar, toc_popup,
+};
 
 fn buffer_text(backend: &TestBackend) -> String {
     backend
@@ -165,6 +168,48 @@ fn doc_viewer_table_wide_text_fits_render_width() {
     assert!(output.contains("型 型 lookup"), "{output}");
     assert!(output.contains("\u{2026}"), "{output}");
     assert_lines_fit(&output, 44);
+}
+
+#[test]
+fn toc_popup_wide_signature_fits_render_width() {
+    let theme = Theme::dracula();
+    let state = toc_popup::TocState::new(vec![toc_popup::TocEntry {
+        name: "型型lookup".to_string(),
+        signature: Some("型型型型型型型型型型型型型型 -> Maybe 型".to_string()),
+        line_offset: 0,
+    }]);
+
+    let output = render_to_text(42, 8, |frame| {
+        toc_popup::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("型 型 lookup"), "{output}");
+    assert!(output.contains("..."), "{output}");
+    assert_lines_fit(&output, 42);
+}
+
+#[test]
+fn bookmarks_popup_wide_signature_fits_render_width() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let mut store = BookmarkStore::load_with_status(dir.path().join("bookmarks.json")).0;
+    store.add(Bookmark {
+        name: "型型lookup".to_string(),
+        module: Some("Data.型型型".to_string()),
+        package: Some("containers".to_string()),
+        signature: Some("型型型型型型型型型型型型型型 -> Maybe 型".to_string()),
+        doc_url: None,
+        added: chrono::Utc::now(),
+    });
+    let state = bookmarks_popup::BookmarksPopupState::new();
+
+    let output = render_to_text(60, 8, |frame| {
+        bookmarks_popup::render(frame, &state, &store, &theme);
+    });
+
+    assert!(output.contains("Data.型 型 型"), "{output}");
+    assert!(output.contains("..."), "{output}");
+    assert_lines_fit(&output, 60);
 }
 
 #[test]
