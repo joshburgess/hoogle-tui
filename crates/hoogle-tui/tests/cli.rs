@@ -36,16 +36,28 @@ fn version_prints_package_version() {
 }
 
 #[test]
-fn completions_print_shell_script_without_starting_tui() {
-    let output = hoogle_tui()
-        .args(["--completions", "bash"])
-        .output()
-        .expect("failed to run hoogle-tui --completions bash");
+fn completions_print_shell_scripts_without_starting_tui() {
+    for shell in ["bash", "elvish", "fish", "powershell", "zsh"] {
+        let output = hoogle_tui()
+            .args(["--completions", shell])
+            .output()
+            .unwrap_or_else(|err| panic!("failed to run hoogle-tui --completions {shell}: {err}"));
 
-    assert!(output.status.success());
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("_hoogle-tui"));
-    assert!(stdout.contains("--backend"));
+        assert!(output.status.success(), "{shell} completions failed");
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        assert!(
+            stdout.contains("hoogle-tui"),
+            "{shell} completions omit binary name"
+        );
+        assert!(
+            stdout.contains("backend"),
+            "{shell} completions omit backend flag"
+        );
+        assert!(
+            stdout.contains("generate"),
+            "{shell} completions omit generate flag"
+        );
+    }
 }
 
 #[test]
