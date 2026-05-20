@@ -11,6 +11,15 @@ pub fn spans_width<'a>(spans: impl IntoIterator<Item = &'a ratatui::text::Span<'
         .sum()
 }
 
+pub fn pad_to_width(text: &str, width: usize) -> String {
+    let current = display_width(text);
+    if current >= width {
+        return text.to_string();
+    }
+
+    format!("{text}{}", " ".repeat(width - current))
+}
+
 pub fn truncate_width(text: &str, max_width: usize, suffix: &str) -> String {
     if display_width(text) <= max_width {
         return text.to_string();
@@ -90,5 +99,15 @@ mod tests {
             ratatui::text::Span::raw("ab"),
         ];
         assert_eq!(spans_width(spans.iter()), 4);
+    }
+
+    #[test]
+    fn pad_to_width_accounts_for_wide_characters() {
+        assert_eq!(pad_to_width("型", 4), "型  ");
+    }
+
+    #[test]
+    fn pad_to_width_preserves_already_wide_text() {
+        assert_eq!(pad_to_width("abcdef", 3), "abcdef");
     }
 }

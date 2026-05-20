@@ -9,7 +9,7 @@ use ratatui::{
 };
 use url::Url;
 
-use super::text::{display_width, truncate_width};
+use super::text::{display_width, pad_to_width, truncate_width};
 
 pub struct DocViewState {
     pub doc: Option<HaddockDoc>,
@@ -761,12 +761,12 @@ fn render_table(
     // Compute column widths
     let mut col_widths: Vec<usize> = vec![0; num_cols];
     for (i, h) in headers.iter().enumerate() {
-        col_widths[i] = col_widths[i].max(to_text(h).len());
+        col_widths[i] = col_widths[i].max(display_width(&to_text(h)));
     }
     for row in rows {
         for (i, cell) in row.iter().enumerate() {
             if i < num_cols {
-                col_widths[i] = col_widths[i].max(to_text(cell).len());
+                col_widths[i] = col_widths[i].max(display_width(&to_text(cell)));
             }
         }
     }
@@ -806,7 +806,7 @@ fn render_table(
         for (i, h) in headers.iter().enumerate() {
             let text = to_text(h);
             let w = col_widths.get(i).copied().unwrap_or(10);
-            let padded = format!("{:<width$}", text, width = w);
+            let padded = pad_to_width(&text, w);
             spans.push(Span::styled(padded, header_style));
             spans.push(Span::styled(" \u{2502} ", border_style));
         }
@@ -820,10 +820,10 @@ fn render_table(
         for i in 0..num_cols {
             let text = row.get(i).map(|c| to_text(c)).unwrap_or_default();
             let w = col_widths.get(i).copied().unwrap_or(10);
-            let truncated = if text.len() > w {
+            let truncated = if display_width(&text) > w {
                 truncate_width(&text, w, "\u{2026}")
             } else {
-                format!("{:<width$}", text, width = w)
+                pad_to_width(&text, w)
             };
             spans.push(Span::styled(truncated, cell_style));
             spans.push(Span::styled(" \u{2502} ", border_style));
