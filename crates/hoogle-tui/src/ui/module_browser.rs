@@ -120,12 +120,10 @@ impl ModuleBrowserState {
     fn visible_indices(&self) -> impl Iterator<Item = usize> + '_ {
         let filter_lower = self.filter.to_lowercase();
         self.entries.iter().enumerate().filter_map(move |(i, e)| {
-            // Show entry if it's a top-level node or its parent is expanded
-            let parent_visible = e.depth == 0 || self.is_parent_expanded(i);
-            if !parent_visible {
+            if filter_lower.is_empty() && e.depth != 0 && !self.is_parent_expanded(i) {
                 return None;
             }
-            // Apply text filter
+
             if !filter_lower.is_empty()
                 && !e.full_path.to_lowercase().contains(&filter_lower)
                 && !e.name.to_lowercase().contains(&filter_lower)
@@ -485,6 +483,27 @@ mod tests {
                     || entry.name.to_lowercase().contains("data")
             );
         }
+    }
+
+    #[test]
+    fn filter_finds_entries_under_collapsed_parents() {
+        let results = vec![make_result(&["Data", "Map", "Strict"])];
+        let mut state = ModuleBrowserState::new(&results);
+        state.move_down();
+
+        assert_eq!(state.selected_module(), Some("Data.Map"));
+        assert!(!state.entries.iter().any(|entry| {
+            entry.full_path == "Data.Map.Strict"
+                && state
+                    .visible_indices()
+                    .any(|idx| state.entries[idx].full_path == entry.full_path)
+        }));
+
+        for c in "strict".chars() {
+            state.add_filter_char(c);
+        }
+
+        assert_eq!(state.selected_module(), Some("Data.Map.Strict"));
     }
 
     #[test]
