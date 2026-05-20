@@ -387,3 +387,23 @@ fn doc_view_browser_url_uses_current_doc_url() {
 
     assert_eq!(app.browser_url(), Some(current_url.to_string()));
 }
+
+#[test]
+fn doc_view_deep_link_uses_current_doc_url() {
+    let mut app = app_with_doc();
+    let stale_result_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Stale.html").unwrap();
+    let current_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Current.html").unwrap();
+    let mut stale_result = result("stale");
+    stale_result.doc_url = Some(stale_result_url);
+    app.results.set_items(vec![stale_result]);
+    app.doc_state.current_url = Some(current_url);
+
+    let (doc, decl) = app.current_doc_and_declaration().unwrap();
+
+    assert_eq!(
+        app.decl_deep_link_url(doc, decl).as_deref(),
+        Some("https://hackage.haskell.org/package/demo/docs/Current.html#v:first")
+    );
+}

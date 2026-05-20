@@ -25,6 +25,7 @@
 - Source views now jump to the loaded declaration when its name appears in the source.
 - Source view `y` now copies the loaded source text as documented.
 - Doc view `Ctrl-o` now opens the current document URL after internal navigation.
+- Doc view deep-link copying now uses the current document URL after internal navigation.
 - Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
 - Verification now rejects `#[allow(dead_code)]` in shipped Rust code.
 - Extracted shared popup centering layout for TUI popups.

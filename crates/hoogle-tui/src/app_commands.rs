@@ -1,3 +1,5 @@
+use hoogle_core::haddock::types::{Declaration, HaddockDoc};
+
 use crate::app::{App, AppMode};
 use crate::bookmarks::Bookmark;
 use crate::clipboard;
@@ -189,22 +191,31 @@ impl App {
             return;
         };
 
+        if let Some(url) = self.decl_deep_link_url(doc, decl) {
+            match clipboard::copy_to_clipboard(&url) {
+                Ok(()) => self.show_info("Copied deep link to clipboard"),
+                Err(e) => self.show_error(&e),
+            }
+            return;
+        }
+
+        self.show_info("No declaration at cursor");
+    }
+
+    pub(crate) fn decl_deep_link_url(
+        &self,
+        doc: &HaddockDoc,
+        decl: &Declaration,
+    ) -> Option<String> {
         if let Some(ref anchor) = decl.anchor {
-            let base = self
-                .results
-                .selected_result()
-                .and_then(|r| r.doc_url.as_ref())
-                .map(|u| {
-                    let mut u = u.clone();
-                    u.set_fragment(Some(anchor));
-                    u.to_string()
-                });
-            if let Some(url) = base {
-                match clipboard::copy_to_clipboard(&url) {
-                    Ok(()) => self.show_info("Copied deep link to clipboard"),
-                    Err(e) => self.show_error(&e),
-                }
-                return;
+            if let Some(url) = self.doc_state.current_url.as_ref().or_else(|| {
+                self.results
+                    .selected_result()
+                    .and_then(|r| r.doc_url.as_ref())
+            }) {
+                let mut url = url.clone();
+                url.set_fragment(Some(anchor));
+                return Some(url.to_string());
             }
         }
 
@@ -218,16 +229,12 @@ impl App {
         } else {
             "v"
         };
-        let url = format!(
+        Some(format!(
             "https://hackage.haskell.org/package/{}/docs/{}.html#{kind_prefix}:{}",
             doc.package,
             doc.module.replace('.', "-"),
             decl.name
-        );
-        match clipboard::copy_to_clipboard(&url) {
-            Ok(()) => self.show_info("Copied deep link to clipboard"),
-            Err(e) => self.show_error(&e),
-        }
+        ))
     }
 
     pub(crate) fn detect_and_apply_project(&mut self) {
