@@ -745,6 +745,19 @@ fn doc_navigation_prefers_search_matches_when_present() {
 }
 
 #[test]
+fn doc_declaration_navigation_reports_when_no_declarations_are_available() {
+    let mut app = test_app();
+    app.mode = AppMode::DocView;
+
+    app.move_doc_declaration_or_match(true);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No declarations available"
+    ));
+}
+
+#[test]
 fn doc_back_returns_to_results_when_history_is_empty() {
     let mut app = app_with_doc();
 

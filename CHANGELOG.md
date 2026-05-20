@@ -78,6 +78,7 @@
 - Results-mode preview scroll-up now scrolls the preview pane instead of moving result selection when previews are enabled.
 - Half-page and page scroll actions now target the active scrollable view instead of always mutating the document view.
 - Help now closes back to the mode it was opened from, and edge navigation scrolls help instead of moving hidden results.
+- Declaration navigation now reports when no declarations are available instead of silently doing nothing.
 - Direct view switches now clear stale help restore state.
 - Clearing pins now reports when there are no pins to clear instead of claiming success.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.

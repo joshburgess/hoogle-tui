@@ -95,6 +95,9 @@ impl App {
         match (self.doc_state.search_matches.is_empty(), forward) {
             (false, true) => self.doc_state.next_match(),
             (false, false) => self.doc_state.prev_match(),
+            (true, _) if self.doc_state.declaration_offsets.is_empty() => {
+                self.show_info("No declarations available");
+            }
             (true, true) => self.doc_state.next_declaration(),
             (true, false) => self.doc_state.prev_declaration(),
         }
