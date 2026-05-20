@@ -31,7 +31,7 @@ This document tracks the implementation state of the workspace.
 - Render-level `TestBackend` coverage exercises result list, status bar, source viewer, and filter popup output without launching a real terminal.
 - Checked-in render golden snapshots cover result list, status bar, source viewer, and filter popup output.
 - CLI integration tests cover help, version, shell completions, and invalid flag handling.
-- `scripts/verify.sh` runs formatting, unit tests, clippy, shipped-code panic checks, prose style scans, and app-module import checks. CI runs the same script. Set `RUN_SMOKE_TESTS=1` to include ignored live backend smoke tests.
+- `scripts/verify.sh` runs formatting, unit tests, clippy, shipped-code panic and unfinished-placeholder checks, prose style scans, dead-code allowance scans, and app-module import checks. CI runs the same script. Set `RUN_SMOKE_TESTS=1` to include ignored live backend smoke tests.
 - `app.rs` is now mostly state and message type definitions. Construction and initial-query setup live in `app_init.rs`, action dispatch lives in `app_actions.rs`, popup handling lives in `app_popups.rs`, result-mode helpers live in `app_results.rs`, doc/source helpers live in `app_docs.rs`, input handling lives in `app_input.rs`, mouse handling lives in `app_mouse.rs`, navigation helpers live in `app_navigation.rs`, rendering lives in `app_render.rs`, tick/async response handling lives in `app_runtime.rs`, search/filter/pagination helpers live in `app_search.rs`, and clipboard/bookmark/browser/project commands live in `app_commands.rs`.
 
 ## Suggested Next Work

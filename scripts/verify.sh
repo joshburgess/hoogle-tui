@@ -28,6 +28,11 @@ if scan "use super::\\*" crates/hoogle-tui/src/app_*.rs; then
   exit 1
 fi
 
+if scan "#\\[allow(dead_code)\\]" crates/hoogle-core/src crates/hoogle-tui/src crates/hoogle-syntax/src; then
+  echo "dead-code allowance found in shipped Rust code" >&2
+  exit 1
+fi
+
 if [ "${RUN_SMOKE_TESTS:-0}" = "1" ]; then
   cargo test -p hoogle-core integration_local_search -- --ignored
   cargo test -p hoogle-core integration_web_search -- --ignored
