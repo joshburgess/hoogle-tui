@@ -84,3 +84,16 @@ fn invalid_log_level_exits_with_error() {
     assert!(stderr.contains("warn"));
     assert!(stderr.contains("trace"));
 }
+
+#[test]
+fn zero_max_results_exits_with_error() {
+    let output = hoogle_tui()
+        .args(["--max-results", "0"])
+        .output()
+        .expect("failed to run hoogle-tui with zero max results");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("invalid value"));
+    assert!(stderr.contains("--max-results"));
+}

@@ -29,7 +29,7 @@ pub struct CliArgs {
     pub no_cache: bool,
 
     /// Max results
-    #[arg(long)]
+    #[arg(long, value_parser = parse_positive_usize)]
     pub max_results: Option<usize>,
 
     /// Log level (error, warn, info, debug, trace)
@@ -47,6 +47,17 @@ pub struct CliArgs {
     /// Run 'hoogle generate' to build/update the local database, then exit
     #[arg(long)]
     pub generate: bool,
+}
+
+fn parse_positive_usize(value: &str) -> Result<usize, String> {
+    let parsed = value
+        .parse::<usize>()
+        .map_err(|err| format!("invalid positive integer: {err}"))?;
+    if parsed == 0 {
+        Err("value must be greater than 0".to_string())
+    } else {
+        Ok(parsed)
+    }
 }
 
 impl CliArgs {
@@ -292,6 +303,13 @@ mod tests {
         let err = CliArgs::try_parse_from(["hoogle-tui", "--log-level", "verbose"])
             .expect_err("invalid log level should fail to parse");
         assert_eq!(err.kind(), clap::error::ErrorKind::InvalidValue);
+    }
+
+    #[test]
+    fn zero_max_results_is_rejected() {
+        let err = CliArgs::try_parse_from(["hoogle-tui", "--max-results", "0"])
+            .expect_err("zero max results should fail to parse");
+        assert_eq!(err.kind(), clap::error::ErrorKind::ValueValidation);
     }
 
     #[test]
