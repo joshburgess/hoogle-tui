@@ -71,21 +71,45 @@ impl App {
         }
     }
 
-    pub(crate) fn scroll_doc_by_fraction(&mut self, divisor: usize, down: bool) {
-        let amount = (self.doc_state.viewport_height / divisor).max(1);
-        if down {
-            self.doc_state.scroll_down(amount);
-        } else {
-            self.doc_state.scroll_up(amount);
-        }
+    pub(crate) fn scroll_active_view_by_fraction(&mut self, divisor: usize, down: bool) {
+        let viewport_height = match self.mode {
+            AppMode::DocView => self.doc_state.viewport_height,
+            AppMode::SourceView => self.source_state.viewport_height,
+            AppMode::Help => self.help_state.viewport_height,
+            AppMode::Results if self.preview_enabled => self.preview_state.viewport_height,
+            AppMode::Search | AppMode::Results => return,
+        };
+        let amount = (viewport_height / divisor).max(1);
+        self.scroll_active_view_by(amount, down);
     }
 
-    pub(crate) fn scroll_doc_page(&mut self, down: bool) {
-        let amount = self.doc_state.viewport_height.saturating_sub(2).max(1);
-        if down {
-            self.doc_state.scroll_down(amount);
-        } else {
-            self.doc_state.scroll_up(amount);
+    pub(crate) fn scroll_active_view_page(&mut self, down: bool) {
+        let viewport_height = match self.mode {
+            AppMode::DocView => self.doc_state.viewport_height,
+            AppMode::SourceView => self.source_state.viewport_height,
+            AppMode::Help => self.help_state.viewport_height,
+            AppMode::Results if self.preview_enabled => self.preview_state.viewport_height,
+            AppMode::Search | AppMode::Results => return,
+        };
+        let amount = viewport_height.saturating_sub(2).max(1);
+        self.scroll_active_view_by(amount, down);
+    }
+
+    fn scroll_active_view_by(&mut self, amount: usize, down: bool) {
+        match (self.mode, down) {
+            (AppMode::DocView, true) => self.doc_state.scroll_down(amount),
+            (AppMode::DocView, false) => self.doc_state.scroll_up(amount),
+            (AppMode::SourceView, true) => self.source_state.scroll_down(amount),
+            (AppMode::SourceView, false) => self.source_state.scroll_up(amount),
+            (AppMode::Help, true) => self.help_state.scroll_down(amount),
+            (AppMode::Help, false) => self.help_state.scroll_up(amount),
+            (AppMode::Results, true) if self.preview_enabled => {
+                self.preview_state.scroll_down(amount);
+            }
+            (AppMode::Results, false) if self.preview_enabled => {
+                self.preview_state.scroll_up(amount);
+            }
+            (AppMode::Search | AppMode::Results, _) => {}
         }
     }
 }

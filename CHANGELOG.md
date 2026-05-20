@@ -76,6 +76,7 @@
 - Tightened extracted TUI app helper methods to crate-private visibility.
 - Source view status hints now advertise help and quit bindings.
 - Results-mode preview scroll-up now scrolls the preview pane instead of moving result selection when previews are enabled.
+- Half-page and page scroll actions now target the active scrollable view instead of always mutating the document view.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
 - Keybinding overrides now accept `delete_entry` and `redraw` action names.
 - CLI backend selection now rejects values outside `auto`, `local`, and `web`.

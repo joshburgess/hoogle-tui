@@ -335,6 +335,41 @@ fn scroll_up_in_results_mode_scrolls_preview_when_enabled() {
 }
 
 #[test]
+fn page_scroll_actions_target_active_scrollable_view() {
+    let mut app = test_app();
+    app.mode = AppMode::SourceView;
+    app.doc_state.viewport_height = 10;
+    app.source_state.viewport_height = 8;
+    app.source_state.rendered_lines = vec![ratatui::text::Line::from(""); 20];
+
+    app.handle_action(Action::ScrollPageDown);
+
+    assert_eq!(app.source_state.scroll_offset, 6);
+    assert_eq!(app.doc_state.scroll_offset, 0);
+
+    app.mode = AppMode::Help;
+    app.help_state.viewport_height = 12;
+    app.handle_action(Action::ScrollHalfDown);
+
+    assert_eq!(app.help_state.scroll_offset, 6);
+    assert_eq!(app.doc_state.scroll_offset, 0);
+}
+
+#[test]
+fn page_scroll_actions_target_results_preview_when_enabled() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.preview_enabled = true;
+    app.preview_state.total_lines = 30;
+    app.preview_state.viewport_height = 10;
+
+    app.handle_action(Action::ScrollPageDown);
+
+    assert_eq!(app.preview_state.scroll_offset, 8);
+    assert_eq!(app.doc_state.scroll_offset, 0);
+}
+
+#[test]
 fn current_doc_and_declaration_tracks_scroll_position() {
     let mut app = app_with_doc();
 
