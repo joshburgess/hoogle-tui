@@ -187,9 +187,10 @@ impl ResultListState {
 
     /// Get all multi-selected results.
     pub fn selected_results(&self) -> Vec<&SearchResult> {
-        self.multi_selected
-            .iter()
-            .filter_map(|&idx| self.items.get(idx))
+        (0..self.visible_count())
+            .filter_map(|pos| self.visible_index(pos))
+            .filter(|idx| self.multi_selected.contains(idx))
+            .filter_map(|idx| self.items.get(idx))
             .collect()
     }
 
@@ -638,6 +639,50 @@ mod tests {
 
         assert!(!state.multi_select_mode);
         assert!(state.multi_selected.is_empty());
+    }
+
+    #[test]
+    fn selected_results_follow_visible_order() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![
+            make_result("alpha"),
+            make_result("beta"),
+            make_result("gamma"),
+        ]);
+        state.multi_selected.insert(2);
+        state.multi_selected.insert(0);
+
+        let names: Vec<&str> = state
+            .selected_results()
+            .iter()
+            .map(|result| result.name.as_str())
+            .collect();
+
+        assert_eq!(names, vec!["alpha", "gamma"]);
+    }
+
+    #[test]
+    fn selected_results_follow_filtered_visible_order() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![
+            make_result("alpha"),
+            make_result("beta"),
+            make_result("gamma"),
+        ]);
+        state.multi_selected.insert(0);
+        state.multi_selected.insert(2);
+        state.start_fuzzy_filter();
+        for c in "gamm".chars() {
+            state.fuzzy_add_char(c);
+        }
+
+        let names: Vec<&str> = state
+            .selected_results()
+            .iter()
+            .map(|result| result.name.as_str())
+            .collect();
+
+        assert_eq!(names, vec!["gamma"]);
     }
 
     #[test]

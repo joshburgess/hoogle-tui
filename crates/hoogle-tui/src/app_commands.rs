@@ -136,8 +136,8 @@ impl App {
         let imports: Vec<String> = results
             .iter()
             .filter_map(|r| {
-                let module = r.module.as_ref().map(|m| m.to_string())?;
-                Some(format!("import {} ({})", module, r.name))
+                let module = r.module.as_ref().map(|m| m.to_string());
+                clipboard::generate_import(&r.name, module.as_deref())
             })
             .collect();
 
