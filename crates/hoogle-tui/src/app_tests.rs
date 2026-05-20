@@ -127,6 +127,26 @@ fn result_helpers_update_selection_state() {
 }
 
 #[test]
+fn tab_complete_rebuilds_candidates_for_narrowed_query() {
+    let mut app = test_app();
+    app.results.set_items(vec![
+        result("map"),
+        result("mconcat"),
+        result("mapMaybe"),
+        result("map"),
+    ]);
+    app.textarea = search_textarea_with_query("m");
+    app.tab_complete();
+    assert_eq!(app.query_text(), "map");
+
+    app.textarea = search_textarea_with_query("ma");
+    app.tab_complete();
+
+    assert_eq!(app.query_text(), "map");
+    assert_eq!(app.completion_candidates, vec!["map", "mapMaybe"]);
+}
+
+#[test]
 fn appended_search_results_preserve_result_view_state() {
     let mut app = test_app();
     app.all_results = vec![result("alpha")];

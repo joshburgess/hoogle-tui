@@ -1,4 +1,5 @@
 use hoogle_core::models::SearchResult;
+use std::collections::HashSet;
 
 use crate::app::{App, SearchResponse};
 use crate::ui::{sort_popup, status_bar};
@@ -162,25 +163,27 @@ impl App {
         }
         let partial_lower = partial.to_lowercase();
 
-        if self.completion_candidates.is_empty()
-            || !self.completion_candidates[0]
-                .to_lowercase()
-                .starts_with(&partial_lower)
-        {
-            self.completion_candidates = self
-                .results
-                .items
-                .iter()
-                .filter_map(|r| {
-                    if r.name.to_lowercase().starts_with(&partial_lower) {
-                        Some(r.name.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-            self.completion_candidates.dedup();
+        let mut seen = HashSet::new();
+        let candidates: Vec<String> = self
+            .results
+            .items
+            .iter()
+            .filter_map(|r| {
+                if r.name.to_lowercase().starts_with(&partial_lower) && seen.insert(r.name.clone())
+                {
+                    Some(r.name.clone())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if candidates != self.completion_candidates {
+            self.completion_candidates = candidates;
             self.completion_index = 0;
+        } else {
+            self.completion_index = self
+                .completion_index
+                .min(self.completion_candidates.len().saturating_sub(1));
         }
 
         if self.completion_candidates.is_empty() {
