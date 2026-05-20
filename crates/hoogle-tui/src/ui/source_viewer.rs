@@ -89,8 +89,23 @@ impl SourceViewState {
         self.scroll_offset = max;
     }
 
+    pub fn scroll_to_first_match(&mut self, needle: &str) -> bool {
+        if needle.is_empty() {
+            return false;
+        }
+
+        let Some(source) = self.source.as_ref() else {
+            return false;
+        };
+        let Some(line_index) = source.lines().position(|line| line.contains(needle)) else {
+            return false;
+        };
+
+        self.scroll_to_line(line_index + 1);
+        true
+    }
+
     /// Scroll to a specific line number (1-based).
-    #[allow(dead_code)]
     pub fn scroll_to_line(&mut self, line: usize) {
         self.scroll_offset = line.saturating_sub(1);
     }

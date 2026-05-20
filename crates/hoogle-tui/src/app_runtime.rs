@@ -82,6 +82,7 @@ impl App {
                 Ok(source) => {
                     self.source_state
                         .set_source(source, &response.decl_name, &self.theme);
+                    self.source_state.scroll_to_first_match(&response.decl_name);
                     self.status.clear_message();
                 }
                 Err(e) => {

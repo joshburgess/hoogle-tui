@@ -8,7 +8,7 @@ use hoogle_core::models::{ResultKind, SearchResult};
 use ratatui::layout::Rect;
 use url::Url;
 
-use crate::app::{App, AppMode, DocResponse, PopupMode};
+use crate::app::{App, AppMode, DocResponse, PopupMode, SourceResponse};
 use crate::ui::{history_popup, toc_popup};
 
 #[derive(Debug)]
@@ -346,4 +346,19 @@ async fn open_source_for_current_decl_sets_source_loading_state() {
     assert_eq!(app.mode, AppMode::SourceView);
     assert!(app.source_state.loading);
     assert_eq!(app.source_state.error, None);
+}
+
+#[test]
+fn source_response_scrolls_to_declaration_name() {
+    let mut app = app_with_doc();
+    app.source_tx
+        .send(SourceResponse {
+            decl_name: "targetDecl".to_string(),
+            result: Ok("before\nmore before\ntargetDecl = 1\nafter".to_string()),
+        })
+        .unwrap();
+
+    app.on_tick();
+
+    assert_eq!(app.source_state.scroll_offset, 2);
 }

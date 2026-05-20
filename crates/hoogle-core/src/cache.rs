@@ -76,7 +76,6 @@ impl DiskCache {
         self.put(key, data.as_bytes()).await
     }
 
-    #[allow(dead_code)]
     pub async fn invalidate(&self, key: &str) -> Result<(), std::io::Error> {
         let path = self.cache_path(key);
         let meta_path = self.meta_path(key);
@@ -85,7 +84,6 @@ impl DiskCache {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub async fn clear(&self) -> Result<(), std::io::Error> {
         if self.base_dir.exists() {
             fs::remove_dir_all(&self.base_dir).await?;
@@ -94,7 +92,6 @@ impl DiskCache {
         Ok(())
     }
 
-    #[allow(dead_code)]
     pub async fn prune(&self) -> Result<(), std::io::Error> {
         let mut total_size: u64 = 0;
         let mut entries: Vec<(PathBuf, SystemTime, u64)> = Vec::new();
