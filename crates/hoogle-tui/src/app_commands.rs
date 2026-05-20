@@ -6,20 +6,23 @@ use crate::clipboard;
 
 impl App {
     pub(crate) fn bookmark_selected(&mut self) {
-        if let Some(result) = self.results.selected_result() {
-            let bookmark = Bookmark {
-                name: result.name.clone(),
-                module: result.module.as_ref().map(|m| m.to_string()),
-                package: result.package.as_ref().map(|p| p.to_string()),
-                signature: result.signature.clone(),
-                doc_url: result.doc_url.clone(),
-                added: chrono::Utc::now(),
-            };
-            self.bookmark_store.add(bookmark);
-            match self.bookmark_store.try_save() {
-                Ok(()) => self.show_info("Bookmarked!"),
-                Err(e) => self.show_error(&format!("Failed to save bookmark: {e}")),
-            }
+        let Some(result) = self.results.selected_result() else {
+            self.show_info("No result selected");
+            return;
+        };
+
+        let bookmark = Bookmark {
+            name: result.name.clone(),
+            module: result.module.as_ref().map(|m| m.to_string()),
+            package: result.package.as_ref().map(|p| p.to_string()),
+            signature: result.signature.clone(),
+            doc_url: result.doc_url.clone(),
+            added: chrono::Utc::now(),
+        };
+        self.bookmark_store.add(bookmark);
+        match self.bookmark_store.try_save() {
+            Ok(()) => self.show_info("Bookmarked!"),
+            Err(e) => self.show_error(&format!("Failed to save bookmark: {e}")),
         }
     }
 
@@ -32,6 +35,8 @@ impl App {
             None => {
                 if self.mode == AppMode::SourceView {
                     self.show_info("No source loaded");
+                } else {
+                    self.show_info("No signature available");
                 }
             }
         }
@@ -56,25 +61,37 @@ impl App {
     }
 
     pub(crate) fn yank_import(&mut self) {
-        if let Some(result) = self.results.selected_result() {
-            let module_str = result.module.as_ref().map(|m| m.to_string());
-            if let Some(import) = clipboard::generate_import(&result.name, module_str.as_deref()) {
-                match clipboard::copy_to_clipboard(&import) {
-                    Ok(()) => self.show_info("Copied import to clipboard"),
-                    Err(e) => self.show_error(&e),
-                }
-            }
+        let Some(result) = self.results.selected_result() else {
+            self.show_info("No result selected");
+            return;
+        };
+
+        let module_str = result.module.as_ref().map(|m| m.to_string());
+        let Some(import) = clipboard::generate_import(&result.name, module_str.as_deref()) else {
+            self.show_info("No import available");
+            return;
+        };
+
+        match clipboard::copy_to_clipboard(&import) {
+            Ok(()) => self.show_info("Copied import to clipboard"),
+            Err(e) => self.show_error(&e),
         }
     }
 
     pub(crate) fn yank_url(&mut self) {
-        if let Some(result) = self.results.selected_result() {
-            if let Some(ref url) = result.doc_url {
-                match clipboard::copy_to_clipboard(url.as_str()) {
-                    Ok(()) => self.show_info("Copied URL to clipboard"),
-                    Err(e) => self.show_error(&e),
-                }
-            }
+        let Some(result) = self.results.selected_result() else {
+            self.show_info("No result selected");
+            return;
+        };
+
+        let Some(ref url) = result.doc_url else {
+            self.show_info("No URL available");
+            return;
+        };
+
+        match clipboard::copy_to_clipboard(url.as_str()) {
+            Ok(()) => self.show_info("Copied URL to clipboard"),
+            Err(e) => self.show_error(&e),
         }
     }
 

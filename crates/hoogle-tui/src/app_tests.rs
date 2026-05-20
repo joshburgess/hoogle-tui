@@ -308,6 +308,37 @@ fn clearing_empty_pins_reports_noop() {
 }
 
 #[test]
+fn unavailable_yank_and_bookmark_commands_report_noop() {
+    let mut app = test_app();
+
+    app.bookmark_selected();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
+
+    app.results.set_items(vec![result("map")]);
+
+    app.yank_signature();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No signature available"
+    ));
+
+    app.yank_import();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No import available"
+    ));
+
+    app.yank_url();
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No URL available"
+    ));
+}
+
+#[test]
 fn mouse_wheel_scrolls_pinned_panel_independently() {
     let mut app = test_app();
     app.mode = AppMode::Results;
