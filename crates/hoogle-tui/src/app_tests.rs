@@ -207,6 +207,21 @@ fn result_helpers_update_selection_state() {
 }
 
 #[test]
+fn multi_select_without_result_reports_noop() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+
+    app.toggle_multi_select_current();
+
+    assert!(!app.results.multi_select_mode);
+    assert!(app.results.multi_selected.is_empty());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
+}
+
+#[test]
 fn focus_results_reports_when_results_are_empty() {
     let mut app = test_app();
 

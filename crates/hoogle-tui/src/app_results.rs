@@ -69,6 +69,10 @@ impl App {
     }
 
     pub(crate) fn toggle_multi_select_current(&mut self) {
+        if self.results.selected_result().is_none() {
+            self.show_info("No result selected");
+            return;
+        }
         if !self.results.multi_select_mode {
             self.results.multi_select_mode = true;
         }

@@ -81,6 +81,7 @@
 - Declaration navigation now reports when no declarations are available instead of silently doing nothing.
 - Direct view switches now clear stale help restore state.
 - Clearing pins now reports when there are no pins to clear instead of claiming success.
+- Multi-select now reports when no result is selected instead of entering an empty selection mode.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
