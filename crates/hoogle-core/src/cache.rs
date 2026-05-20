@@ -68,6 +68,7 @@ impl DiskCache {
         fs::write(&path, data).await?;
         // Write meta file (just touch it for timestamp)
         fs::write(&meta_path, key.as_bytes()).await?;
+        self.prune_to_size().await?;
 
         Ok(())
     }
@@ -132,20 +133,63 @@ impl DiskCache {
 
         // If still over max size, remove oldest first
         if total_size > self.max_size_bytes {
-            let mut remaining: Vec<_> =
-                entries.into_iter().filter(|(p, _, _)| p.exists()).collect();
-            remaining.sort_by_key(|(_, modified, _)| *modified);
+            self.remove_oldest_until_within_limit(total_size, entries)
+                .await?;
+        }
 
-            for (path, _, size) in remaining {
-                if total_size <= self.max_size_bytes {
-                    break;
+        Ok(())
+    }
+
+    async fn prune_to_size(&self) -> Result<(), std::io::Error> {
+        let mut total_size: u64 = 0;
+        let mut entries: Vec<(PathBuf, SystemTime, u64)> = Vec::new();
+
+        let mut stack = vec![self.base_dir.clone()];
+        while let Some(dir) = stack.pop() {
+            let mut read_dir = match fs::read_dir(&dir).await {
+                Ok(rd) => rd,
+                Err(_) => continue,
+            };
+            while let Ok(Some(entry)) = read_dir.next_entry().await {
+                let path = entry.path();
+                if path.is_dir() {
+                    stack.push(path);
+                } else if path.extension().is_none() {
+                    if let Ok(meta) = fs::metadata(&path).await {
+                        let size = meta.len();
+                        let modified = meta.modified().unwrap_or(SystemTime::UNIX_EPOCH);
+                        total_size += size;
+                        entries.push((path, modified, size));
+                    }
                 }
-                let _ = fs::remove_file(&path).await;
-                let mut meta = path;
-                meta.set_extension("meta");
-                let _ = fs::remove_file(&meta).await;
-                total_size = total_size.saturating_sub(size);
             }
+        }
+
+        if total_size > self.max_size_bytes {
+            self.remove_oldest_until_within_limit(total_size, entries)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    async fn remove_oldest_until_within_limit(
+        &self,
+        mut total_size: u64,
+        entries: Vec<(PathBuf, SystemTime, u64)>,
+    ) -> Result<(), std::io::Error> {
+        let mut remaining: Vec<_> = entries.into_iter().filter(|(p, _, _)| p.exists()).collect();
+        remaining.sort_by_key(|(_, modified, _)| *modified);
+
+        for (path, _, size) in remaining {
+            if total_size <= self.max_size_bytes {
+                break;
+            }
+            let _ = fs::remove_file(&path).await;
+            let mut meta = path;
+            meta.set_extension("meta");
+            let _ = fs::remove_file(&meta).await;
+            total_size = total_size.saturating_sub(size);
         }
 
         Ok(())
@@ -219,6 +263,16 @@ mod tests {
         // get_stale() should still return the data
         let data = cache.get_stale("key").await.unwrap();
         assert_eq!(data, b"stale data");
+    }
+
+    #[tokio::test]
+    async fn put_enforces_max_size_without_removing_stale_by_ttl() {
+        let dir = TempDir::new().unwrap();
+        let cache = DiskCache::new(dir.path().to_path_buf(), 0, 0);
+
+        cache.put("key", b"data").await.unwrap();
+
+        assert!(cache.get_stale("key").await.is_none());
     }
 
     #[test]
