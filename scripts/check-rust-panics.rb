@@ -49,9 +49,10 @@ rust_files.each do |path|
     cfg_test_pending = true if stripped == "#[cfg(test)]"
 
     if test_depth.nil? && cfg_test_pending && stripped.match?(/\bmod\s+tests\b/)
-      test_depth = depth + brace_delta(line)
+      test_depth = depth
       cfg_test_pending = false
       depth += brace_delta(line)
+      test_depth = nil if depth <= test_depth && line.include?("}")
       next
     end
 
@@ -62,7 +63,7 @@ rust_files.each do |path|
     end
 
     depth += brace_delta(line)
-    test_depth = nil if !test_depth.nil? && depth < test_depth
+    test_depth = nil if !test_depth.nil? && depth <= test_depth
   end
 end
 

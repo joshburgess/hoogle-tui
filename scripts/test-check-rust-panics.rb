@@ -96,6 +96,26 @@ assert_passes(
   RUST
 )
 
+assert_fails(
+  "production code after next-line test module brace is scanned",
+  <<~RUST,
+    #[cfg(test)]
+    mod tests
+    {
+        #[test]
+        fn allows_test_panics() {
+            let value = Some(1).unwrap();
+            assert_eq!(value, 1);
+        }
+    }
+
+    fn production() {
+        Some(1).unwrap();
+    }
+  RUST
+  "Some(1).unwrap()",
+)
+
 assert_passes(
   "safe production code",
   "fn main() -> Result<(), String> { Some(1).ok_or_else(|| \"missing\".to_string())?; Ok(()) }\n",

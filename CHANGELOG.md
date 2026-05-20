@@ -53,6 +53,7 @@
 - Popup and result-list truncation limits now account for terminal display width.
 - Documentation and help underlines now account for terminal display width.
 - Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
+- Shipped-code panic scanning now resumes correctly after next-line-braced `#[cfg(test)] mod tests` blocks.
 - Verification now rejects `#[allow(dead_code)]` in shipped Rust code.
 - Extracted shared popup centering layout for TUI popups.
 - Moved TUI action dispatch into a dedicated `app_actions.rs` module.
