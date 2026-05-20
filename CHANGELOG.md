@@ -19,6 +19,7 @@
 - Verification now rejects mismatched workspace, Nix flake, and Homebrew formula versions.
 - Package-version verification now has deterministic regression coverage.
 - Updated the packaged Homebrew formula version to match the workspace version.
+- Homebrew installs now generate shell completions from the installed binary.
 - Ignored backend smoke tests now include explicit ignore reasons.
 - Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.
 - Table-of-contents and history popups now accept typed filters instead of carrying unused filtering state.

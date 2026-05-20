@@ -35,17 +35,7 @@ class HoogleTui < Formula
 
   def install
     bin.install "hoogle-tui"
-
-    # Install shell completions if present
-    if File.exist?("completions/hoogle-tui.bash")
-      bash_completion.install "completions/hoogle-tui.bash" => "hoogle-tui"
-    end
-    if File.exist?("completions/hoogle-tui.zsh")
-      zsh_completion.install "completions/hoogle-tui.zsh" => "_hoogle-tui"
-    end
-    if File.exist?("completions/hoogle-tui.fish")
-      fish_completion.install "completions/hoogle-tui.fish"
-    end
+    generate_completions_from_executable(bin/"hoogle-tui", "--completions")
   end
 
   def caveats
