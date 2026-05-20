@@ -48,13 +48,11 @@ impl TocState {
         Some(self.items[idx].line_offset)
     }
 
-    #[allow(dead_code)]
     pub fn add_filter_char(&mut self, c: char) {
         self.filter.push(c);
         self.apply_filter();
     }
 
-    #[allow(dead_code)]
     pub fn delete_filter_char(&mut self) {
         self.filter.pop();
         self.apply_filter();

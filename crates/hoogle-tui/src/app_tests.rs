@@ -7,6 +7,7 @@ use hoogle_core::models::{ResultKind, SearchResult};
 use url::Url;
 
 use crate::app::{App, AppMode, DocResponse, PopupMode};
+use crate::ui::{history_popup, toc_popup};
 
 #[derive(Debug)]
 struct TestBackend;
@@ -256,6 +257,55 @@ fn doc_response_records_current_url() {
     app.on_tick();
 
     assert_eq!(app.doc_state.current_url, Some(url));
+}
+
+#[test]
+fn toc_popup_filter_methods_update_visible_entries() {
+    let mut app = test_app();
+    app.toc_state = Some(toc_popup::TocState::new(vec![
+        toc_popup::TocEntry {
+            name: "lookup".to_string(),
+            signature: None,
+            line_offset: 2,
+        },
+        toc_popup::TocEntry {
+            name: "insert".to_string(),
+            signature: None,
+            line_offset: 8,
+        },
+    ]));
+    app.popup = Some(PopupMode::Toc);
+
+    app.add_toc_filter_char('l');
+    let toc = app.toc_state.as_ref().unwrap();
+    assert_eq!(toc.filter, "l");
+    assert_eq!(toc.filtered_indices, vec![0]);
+
+    app.delete_toc_filter_char();
+    let toc = app.toc_state.as_ref().unwrap();
+    assert!(toc.filter.is_empty());
+    assert_eq!(toc.filtered_indices, vec![0, 1]);
+}
+
+#[test]
+fn history_popup_filter_methods_update_visible_entries() {
+    let mut app = test_app();
+    app.history.add("map", 2);
+    app.history.add("lookup", 1);
+    app.history_popup = Some(history_popup::HistoryPopupState::new(
+        app.history.entries().len(),
+    ));
+    app.popup = Some(PopupMode::History);
+
+    app.add_history_filter_char('m');
+    let popup = app.history_popup.as_ref().unwrap();
+    assert_eq!(popup.filter, "m");
+    assert_eq!(popup.filtered_indices, vec![1]);
+
+    app.delete_history_filter_char();
+    let popup = app.history_popup.as_ref().unwrap();
+    assert!(popup.filter.is_empty());
+    assert_eq!(popup.filtered_indices, vec![0, 1]);
 }
 
 #[tokio::test]

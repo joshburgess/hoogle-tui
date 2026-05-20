@@ -7,7 +7,6 @@ use crate::actions::Action;
 use crate::app::AppMode;
 use crate::keymap::Keymap;
 
-#[allow(dead_code)]
 pub enum AppEvent {
     Key(KeyEvent),
     Resize(u16, u16),
@@ -102,7 +101,10 @@ pub fn map_event_to_action(event: &AppEvent, mode: AppMode, keymap: &Keymap) -> 
     match event {
         AppEvent::Key(key) => keymap.resolve(mode, *key),
         AppEvent::Tick => Action::Tick,
-        AppEvent::Resize(_, _) => Action::Redraw,
+        AppEvent::Resize(width, height) => {
+            let _ = (*width, *height);
+            Action::Redraw
+        }
         AppEvent::Mouse(mouse) => match mouse.kind {
             event::MouseEventKind::ScrollDown => Action::ScrollDown,
             event::MouseEventKind::ScrollUp => Action::ScrollUp,

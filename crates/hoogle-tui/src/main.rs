@@ -175,25 +175,36 @@ async fn main() -> io::Result<()> {
                 match &event {
                     AppEvent::Key(key) => {
                         use crossterm::event::KeyCode;
+                        let has_control = key
+                            .modifiers
+                            .contains(crossterm::event::KeyModifiers::CONTROL);
                         let action = match key.code {
                             KeyCode::Char('j') | KeyCode::Down => actions::Action::MoveDown,
                             KeyCode::Char('k') | KeyCode::Up => actions::Action::MoveUp,
                             KeyCode::Enter => actions::Action::Select,
                             KeyCode::Esc => actions::Action::Back,
                             KeyCode::Char('q') => actions::Action::Back,
-                            KeyCode::Char('d')
-                                if key
-                                    .modifiers
-                                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
-                            {
-                                actions::Action::DeleteEntry
+                            KeyCode::Char('d') if has_control => actions::Action::DeleteEntry,
+                            KeyCode::Char('t') if has_control => actions::Action::OpenThemeSwitcher,
+                            KeyCode::Backspace if app.popup == Some(app::PopupMode::Toc) => {
+                                app.delete_toc_filter_char();
+                                actions::Action::Tick
                             }
-                            KeyCode::Char('t')
-                                if key
-                                    .modifiers
-                                    .contains(crossterm::event::KeyModifiers::CONTROL) =>
+                            KeyCode::Backspace if app.popup == Some(app::PopupMode::History) => {
+                                app.delete_history_filter_char();
+                                actions::Action::Tick
+                            }
+                            KeyCode::Char(c)
+                                if app.popup == Some(app::PopupMode::Toc) && !has_control =>
                             {
-                                actions::Action::OpenThemeSwitcher
+                                app.add_toc_filter_char(c);
+                                actions::Action::Tick
+                            }
+                            KeyCode::Char(c)
+                                if app.popup == Some(app::PopupMode::History) && !has_control =>
+                            {
+                                app.add_history_filter_char(c);
+                                actions::Action::Tick
                             }
                             _ => actions::Action::Tick, // ignore other keys but still tick
                         };

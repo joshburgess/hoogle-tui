@@ -3,6 +3,32 @@ use crate::app::{App, AppMode, PopupMode};
 use crate::ui::{bookmarks_popup, history_popup};
 
 impl App {
+    pub(crate) fn add_toc_filter_char(&mut self, c: char) {
+        if let Some(ref mut toc) = self.toc_state {
+            toc.add_filter_char(c);
+        }
+    }
+
+    pub(crate) fn delete_toc_filter_char(&mut self) {
+        if let Some(ref mut toc) = self.toc_state {
+            toc.delete_filter_char();
+        }
+    }
+
+    pub(crate) fn add_history_filter_char(&mut self, c: char) {
+        if let Some(ref mut hp) = self.history_popup {
+            hp.filter.push(c);
+            hp.update_filter(&self.history);
+        }
+    }
+
+    pub(crate) fn delete_history_filter_char(&mut self) {
+        if let Some(ref mut hp) = self.history_popup {
+            hp.filter.pop();
+            hp.update_filter(&self.history);
+        }
+    }
+
     pub(crate) fn handle_popup_action(&mut self, popup: PopupMode, action: Action) {
         match popup {
             PopupMode::Filter => match action {
@@ -85,8 +111,12 @@ impl App {
                             }
                         }
                     }
-                    let total = self.history.entries().len();
-                    self.history_popup = Some(history_popup::HistoryPopupState::new(total));
+                    if let Some(ref mut hp) = self.history_popup {
+                        hp.update_filter(&self.history);
+                    } else {
+                        let total = self.history.entries().len();
+                        self.history_popup = Some(history_popup::HistoryPopupState::new(total));
+                    }
                 }
                 Action::Back | Action::Quit => self.close_popup(),
                 Action::Tick => self.on_tick(),

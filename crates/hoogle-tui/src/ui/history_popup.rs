@@ -38,7 +38,6 @@ impl HistoryPopupState {
         self.filtered_indices.get(self.selected).copied()
     }
 
-    #[allow(dead_code)]
     pub fn update_filter(&mut self, history: &SearchHistory) {
         let query = self.filter.to_lowercase();
         self.filtered_indices = history

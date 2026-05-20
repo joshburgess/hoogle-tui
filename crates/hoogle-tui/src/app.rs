@@ -86,7 +86,6 @@ pub struct SearchResponse {
 
 /// Message sent from async doc fetch tasks.
 pub struct DocResponse {
-    #[allow(dead_code)]
     pub url: Url,
     pub result: Result<HaddockDoc, BackendError>,
 }
