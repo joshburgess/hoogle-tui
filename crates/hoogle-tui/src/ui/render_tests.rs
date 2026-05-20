@@ -305,6 +305,26 @@ fn status_bar_render_includes_mode_backend_badges_and_message() {
 }
 
 #[test]
+fn status_bar_source_view_includes_help_and_quit_hints() {
+    let theme = Theme::dracula();
+    let state = status_bar::StatusState::new("web".to_string());
+
+    let output = render_to_text(100, 1, |frame| {
+        status_bar::render(
+            frame,
+            Rect::new(0, 0, 100, 1),
+            &state,
+            AppMode::SourceView,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("SOURCE"));
+    assert!(output.contains("? help"));
+    assert!(output.contains("q quit"));
+}
+
+#[test]
 fn source_viewer_render_includes_title_line_numbers_and_code() {
     let theme = Theme::dracula();
     let mut state = source_viewer::SourceViewState::new();
