@@ -104,9 +104,14 @@ fn clear_search_state_resets_query_results_and_pagination() {
     app.all_results = vec![result("map")];
     app.results.set_items(app.all_results.clone());
     app.status.result_count = 1;
+    app.status.search_by_type = true;
+    app.status.message = Some(StatusMessage::Loading("Searching...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
     app.has_more_results = true;
     app.loading_more = true;
     app.results.loading = true;
+    app.completion_candidates = vec!["map".to_string()];
+    app.completion_index = 1;
 
     app.clear_search_state();
 
@@ -116,9 +121,14 @@ fn clear_search_state_resets_query_results_and_pagination() {
     assert!(app.all_results.is_empty());
     assert!(app.results.items.is_empty());
     assert_eq!(app.status.result_count, 0);
+    assert!(!app.status.search_by_type);
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
     assert!(!app.has_more_results);
     assert!(!app.loading_more);
     assert!(!app.results.loading);
+    assert!(app.completion_candidates.is_empty());
+    assert_eq!(app.completion_index, 0);
 }
 
 #[test]
@@ -129,9 +139,14 @@ fn clear_search_action_resets_query_results_and_pagination() {
     app.all_results = vec![result("map")];
     app.results.set_items(app.all_results.clone());
     app.status.result_count = 1;
+    app.status.search_by_type = true;
+    app.status.message = Some(StatusMessage::Loading("Searching...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
     app.has_more_results = true;
     app.loading_more = true;
     app.results.loading = true;
+    app.completion_candidates = vec!["map".to_string()];
+    app.completion_index = 1;
 
     app.handle_action(Action::ClearSearch);
 
@@ -140,9 +155,14 @@ fn clear_search_action_resets_query_results_and_pagination() {
     assert!(app.all_results.is_empty());
     assert!(app.results.items.is_empty());
     assert_eq!(app.status.result_count, 0);
+    assert!(!app.status.search_by_type);
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
     assert!(!app.has_more_results);
     assert!(!app.loading_more);
     assert!(!app.results.loading);
+    assert!(app.completion_candidates.is_empty());
+    assert_eq!(app.completion_index, 0);
 }
 
 #[tokio::test]
