@@ -33,7 +33,11 @@ pub struct CliArgs {
     pub max_results: Option<usize>,
 
     /// Log level (error, warn, info, debug, trace)
-    #[arg(long, default_value = "warn")]
+    #[arg(
+        long,
+        default_value = "warn",
+        value_parser = ["error", "warn", "info", "debug", "trace"]
+    )]
     pub log_level: String,
 
     /// Generate shell completions and exit
@@ -280,6 +284,13 @@ mod tests {
     fn invalid_backend_is_rejected() {
         let err = CliArgs::try_parse_from(["hoogle-tui", "--backend", "foobar"])
             .expect_err("invalid backend should fail to parse");
+        assert_eq!(err.kind(), clap::error::ErrorKind::InvalidValue);
+    }
+
+    #[test]
+    fn invalid_log_level_is_rejected() {
+        let err = CliArgs::try_parse_from(["hoogle-tui", "--log-level", "verbose"])
+            .expect_err("invalid log level should fail to parse");
         assert_eq!(err.kind(), clap::error::ErrorKind::InvalidValue);
     }
 

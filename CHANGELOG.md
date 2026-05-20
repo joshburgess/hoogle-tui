@@ -74,6 +74,7 @@
 - Keybinding overrides now accept `delete_entry` and `redraw` action names.
 - CLI backend selection now rejects values outside `auto`, `local`, and `web`.
 - CLI `--backend auto` now restores auto mode when overriding a config file.
+- CLI log-level selection now rejects values outside `error`, `warn`, `info`, `debug`, and `trace`.
 
 ### Added
 - Restored `L` to load more results.
