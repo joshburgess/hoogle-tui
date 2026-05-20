@@ -10,6 +10,7 @@ use url::Url;
 
 use crate::actions::Action;
 use crate::app::{App, AppMode, DocResponse, PopupMode, SearchResponse, SourceResponse};
+use crate::bookmarks::Bookmark;
 use crate::ui::{history_popup, toc_popup};
 
 #[derive(Debug)]
@@ -185,6 +186,31 @@ fn quit_action_exits_even_when_popup_is_open() {
 
     assert!(app.should_quit);
     assert_eq!(app.popup, Some(PopupMode::PackageScope));
+}
+
+#[test]
+fn bookmark_delete_keeps_selection_near_deleted_row() {
+    let mut app = test_app();
+    for name in ["first", "second", "third"] {
+        app.bookmark_store.add(Bookmark {
+            name: name.to_string(),
+            module: None,
+            package: None,
+            signature: None,
+            doc_url: None,
+            added: chrono::Utc::now(),
+        });
+    }
+    app.handle_action(Action::OpenBookmarks);
+    app.handle_action(Action::MoveDown);
+
+    app.handle_action(Action::DeleteEntry);
+
+    assert_eq!(app.bookmark_store.bookmarks().len(), 2);
+    assert_eq!(
+        app.bookmarks_popup.as_ref().map(|popup| popup.selected),
+        Some(1)
+    );
 }
 
 #[test]

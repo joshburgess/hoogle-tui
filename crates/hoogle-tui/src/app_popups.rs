@@ -152,13 +152,17 @@ impl App {
                     self.close_popup();
                 }
                 Action::DeleteEntry => {
-                    if let Some(ref bp) = self.bookmarks_popup {
-                        self.bookmark_store.remove(bp.selected);
+                    if let Some(selected) = self.bookmarks_popup.as_ref().map(|bp| bp.selected) {
+                        self.bookmark_store.remove(selected);
                         if let Err(e) = self.bookmark_store.try_save() {
                             self.show_error(&format!("Failed to save bookmarks: {e}"));
                         }
+                        if let Some(ref mut bp) = self.bookmarks_popup {
+                            bp.clamp_selection(self.bookmark_store.bookmarks().len());
+                        }
+                    } else {
+                        self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
                     }
-                    self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
                 }
                 Action::Back | Action::Quit => self.close_popup(),
                 Action::Tick => self.on_tick(),

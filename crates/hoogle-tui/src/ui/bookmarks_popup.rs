@@ -28,6 +28,14 @@ impl BookmarksPopupState {
     pub fn move_up(&mut self) {
         self.selected = self.selected.saturating_sub(1);
     }
+
+    pub fn clamp_selection(&mut self, total: usize) {
+        if total == 0 {
+            self.selected = 0;
+        } else if self.selected >= total {
+            self.selected = total - 1;
+        }
+    }
 }
 
 pub fn render(

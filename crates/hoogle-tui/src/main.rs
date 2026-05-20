@@ -189,6 +189,9 @@ async fn main() -> io::Result<()> {
                             KeyCode::Esc => actions::Action::Back,
                             KeyCode::Char('q') => actions::Action::Back,
                             KeyCode::Char('c') if has_control => actions::Action::Quit,
+                            KeyCode::Char('d') if app.popup == Some(app::PopupMode::Bookmarks) => {
+                                actions::Action::DeleteEntry
+                            }
                             KeyCode::Char('d') if has_control => actions::Action::DeleteEntry,
                             KeyCode::Char('t') if has_control => actions::Action::OpenThemeSwitcher,
                             KeyCode::Backspace if app.popup == Some(app::PopupMode::Toc) => {
