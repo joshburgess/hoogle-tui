@@ -99,7 +99,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Th
 
     if state.pins.is_empty() {
         let empty = Paragraph::new(Line::from(Span::styled(
-            "  Pin results with 'P' to compare",
+            "  Toggle pins with 'P' to compare",
             theme.style(SemanticToken::Comment),
         )));
         frame.render_widget(empty, inner);

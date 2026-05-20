@@ -362,3 +362,15 @@ fn source_response_scrolls_to_declaration_name() {
 
     assert_eq!(app.source_state.scroll_offset, 2);
 }
+
+#[test]
+fn source_view_yank_text_uses_loaded_source() {
+    let mut app = test_app();
+    app.mode = AppMode::SourceView;
+    app.source_state.source = Some("targetDecl = 1".to_string());
+
+    let (text, label) = app.yank_signature_text().unwrap();
+
+    assert_eq!(text, "targetDecl = 1");
+    assert_eq!(label, "Copied source to clipboard");
+}

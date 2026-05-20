@@ -23,6 +23,7 @@
 - User-facing keybinding docs now list `M` for the module browser, matching the runtime keymap.
 - Project detection messages now include the detected project root.
 - Source views now jump to the loaded declaration when its name appears in the source.
+- Source view `y` now copies the loaded source text as documented.
 - Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
 - Verification now rejects `#[allow(dead_code)]` in shipped Rust code.
 - Extracted shared popup centering layout for TUI popups.

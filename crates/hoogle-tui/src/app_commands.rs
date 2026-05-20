@@ -22,14 +22,34 @@ impl App {
     }
 
     pub(crate) fn yank_signature(&mut self) {
-        if let Some(result) = self.results.selected_result() {
-            if let Some(ref sig) = result.signature {
-                let text = format!("{} :: {sig}", result.name);
-                match clipboard::copy_to_clipboard(&text) {
-                    Ok(()) => self.show_info("Copied signature to clipboard"),
-                    Err(e) => self.show_error(&e),
+        match self.yank_signature_text() {
+            Some((text, label)) => match clipboard::copy_to_clipboard(&text) {
+                Ok(()) => self.show_info(label),
+                Err(e) => self.show_error(&e),
+            },
+            None => {
+                if self.mode == AppMode::SourceView {
+                    self.show_info("No source loaded");
                 }
             }
+        }
+    }
+
+    pub(crate) fn yank_signature_text(&self) -> Option<(String, &'static str)> {
+        match self.mode {
+            AppMode::SourceView => self
+                .source_state
+                .source
+                .as_ref()
+                .map(|source| (source.clone(), "Copied source to clipboard")),
+            _ => self.results.selected_result().and_then(|result| {
+                result.signature.as_ref().map(|sig| {
+                    (
+                        format!("{} :: {sig}", result.name),
+                        "Copied signature to clipboard",
+                    )
+                })
+            }),
         }
     }
 

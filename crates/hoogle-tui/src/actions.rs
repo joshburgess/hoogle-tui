@@ -37,7 +37,6 @@ pub enum Action {
     DeleteEntry,
     Redraw,
     Tick,
-    // New actions
     OpenYankMenu,
     OpenPackageScope,
     OpenThemeSwitcher,
