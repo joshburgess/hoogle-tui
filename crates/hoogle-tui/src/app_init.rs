@@ -78,6 +78,7 @@ impl App {
             source_state: source_viewer::SourceViewState::new(),
             pending_source_decl: None,
             help_state: help_overlay::HelpState::new(),
+            help_previous_mode: None,
             history,
             bookmark_store,
             history_popup: None,

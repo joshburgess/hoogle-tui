@@ -21,8 +21,12 @@ impl App {
                 self.source_state.loading = false;
                 self.mode = AppMode::DocView;
             }
-            AppMode::Help => self.mode = AppMode::Results,
+            AppMode::Help => self.close_help(),
         }
+    }
+
+    pub(crate) fn close_help(&mut self) {
+        self.mode = self.help_previous_mode.take().unwrap_or(AppMode::Results);
     }
 
     pub(crate) fn move_selection_or_scroll(&mut self, delta: i16) {
@@ -45,6 +49,8 @@ impl App {
             (AppMode::DocView, false) => self.doc_state.scroll_to_top(),
             (AppMode::SourceView, true) => self.source_state.scroll_to_bottom(),
             (AppMode::SourceView, false) => self.source_state.scroll_to_top(),
+            (AppMode::Help, true) => self.help_state.scroll_down(usize::MAX),
+            (AppMode::Help, false) => self.help_state.scroll_up(usize::MAX),
             (_, true) => self.results.move_to_bottom(),
             (_, false) => self.results.move_to_top(),
         }

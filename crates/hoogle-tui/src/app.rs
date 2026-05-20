@@ -154,6 +154,7 @@ pub struct App {
     pub history: SearchHistory,
     pub bookmark_store: BookmarkStore,
     pub help_state: help_overlay::HelpState,
+    pub help_previous_mode: Option<AppMode>,
     pub history_popup: Option<history_popup::HistoryPopupState>,
     pub bookmarks_popup: Option<bookmarks_popup::BookmarksPopupState>,
 

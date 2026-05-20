@@ -84,7 +84,7 @@ impl App {
         }
 
         if self.mode == AppMode::Help {
-            self.mode = AppMode::Results;
+            self.close_help();
         }
     }
 

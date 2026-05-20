@@ -68,9 +68,10 @@ impl App {
             Action::YankUrl => self.yank_url(),
             Action::ToggleHelp => {
                 if self.mode == AppMode::Help {
-                    self.mode = AppMode::Results;
+                    self.close_help();
                 } else {
                     self.help_state = help_overlay::HelpState::new();
+                    self.help_previous_mode = Some(self.mode);
                     self.mode = AppMode::Help;
                 }
             }
