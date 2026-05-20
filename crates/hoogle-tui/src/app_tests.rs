@@ -214,6 +214,25 @@ fn bookmark_delete_keeps_selection_near_deleted_row() {
 }
 
 #[test]
+fn history_delete_keeps_selection_near_deleted_row() {
+    let mut app = test_app();
+    app.history.add("first", 1);
+    app.history.add("second", 2);
+    app.history.add("third", 3);
+    app.handle_action(Action::SearchHistory);
+    app.handle_action(Action::MoveDown);
+
+    app.handle_action(Action::DeleteEntry);
+
+    assert_eq!(app.history.entries().len(), 2);
+    assert_eq!(
+        app.history_popup.as_ref().map(|popup| popup.selected),
+        Some(1)
+    );
+    assert_eq!(app.history.entries()[1].query, "first");
+}
+
+#[test]
 fn pin_helpers_update_pinned_state() {
     let mut app = test_app();
     app.results.set_items(vec![result("map")]);
@@ -384,22 +403,33 @@ fn toc_popup_filter_methods_update_visible_entries() {
 #[test]
 fn history_popup_filter_methods_update_visible_entries() {
     let mut app = test_app();
-    app.history.add("map", 2);
-    app.history.add("lookup", 1);
+    app.history.add("codex-history-map-filter", 2);
+    app.history.add("codex-history-lookup-filter", 1);
     app.history_popup = Some(history_popup::HistoryPopupState::new(
         app.history.entries().len(),
     ));
     app.popup = Some(PopupMode::History);
 
-    app.add_history_filter_char('m');
+    for c in "codex-history-map-filter".chars() {
+        app.add_history_filter_char(c);
+    }
     let popup = app.history_popup.as_ref().unwrap();
-    assert_eq!(popup.filter, "m");
-    assert_eq!(popup.filtered_indices, vec![1]);
+    let expected = app
+        .history
+        .entries()
+        .iter()
+        .position(|entry| entry.query == "codex-history-map-filter")
+        .map(|idx| vec![idx])
+        .unwrap_or_default();
+    assert_eq!(popup.filter, "codex-history-map-filter");
+    assert_eq!(popup.filtered_indices, expected);
 
-    app.delete_history_filter_char();
+    for _ in "codex-history-map-filter".chars() {
+        app.delete_history_filter_char();
+    }
     let popup = app.history_popup.as_ref().unwrap();
     assert!(popup.filter.is_empty());
-    assert_eq!(popup.filtered_indices, vec![0, 1]);
+    assert_eq!(popup.filtered_indices.len(), app.history.entries().len());
 }
 
 #[tokio::test]

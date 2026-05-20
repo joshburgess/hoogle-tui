@@ -39,6 +39,21 @@ impl HistoryPopupState {
     }
 
     pub fn update_filter(&mut self, history: &SearchHistory) {
+        self.update_filter_indices(history);
+        self.selected = 0;
+    }
+
+    pub fn update_filter_preserving_selection(&mut self, history: &SearchHistory) {
+        let selected = self.selected;
+        self.update_filter_indices(history);
+        if self.filtered_indices.is_empty() {
+            self.selected = 0;
+        } else {
+            self.selected = selected.min(self.filtered_indices.len() - 1);
+        }
+    }
+
+    fn update_filter_indices(&mut self, history: &SearchHistory) {
         let query = self.filter.to_lowercase();
         self.filtered_indices = history
             .entries()
@@ -47,7 +62,6 @@ impl HistoryPopupState {
             .filter(|(_, e)| query.is_empty() || e.query.to_lowercase().contains(&query))
             .map(|(i, _)| i)
             .collect();
-        self.selected = 0;
     }
 }
 

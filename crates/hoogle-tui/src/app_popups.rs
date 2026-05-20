@@ -112,7 +112,7 @@ impl App {
                         }
                     }
                     if let Some(ref mut hp) = self.history_popup {
-                        hp.update_filter(&self.history);
+                        hp.update_filter_preserving_selection(&self.history);
                     } else {
                         let total = self.history.entries().len();
                         self.history_popup = Some(history_popup::HistoryPopupState::new(total));
