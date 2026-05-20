@@ -21,6 +21,7 @@
 - Updated the packaged Homebrew formula version to match the workspace version.
 - Homebrew installs now generate shell completions from the installed binary.
 - Verification now checks shell and Ruby script syntax, including the packaged Homebrew formula.
+- Verification now runs `actionlint` when it is available locally.
 - Ignored backend smoke tests now include explicit ignore reasons.
 - Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.
 - Table-of-contents and history popups now accept typed filters instead of carrying unused filtering state.
