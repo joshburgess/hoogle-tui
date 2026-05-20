@@ -111,6 +111,10 @@ impl App {
                 self.show_info(&format!("Link: {url}"));
             }
         } else {
+            if self.doc_state.links.is_empty() {
+                self.show_info("No links available");
+                return;
+            }
             self.doc_state.focus_next_link();
         }
     }

@@ -817,6 +817,19 @@ fn follow_doc_link_focuses_first_visible_link() {
 }
 
 #[test]
+fn follow_doc_link_reports_when_no_links_exist() {
+    let mut app = app_with_doc();
+
+    app.follow_doc_link();
+
+    assert_eq!(app.doc_state.focused_link, None);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No links available"
+    ));
+}
+
+#[test]
 fn follow_external_doc_link_reports_without_fetching() {
     let mut app = app_with_doc();
     app.doc_state.focused_link = Some(0);
