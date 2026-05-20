@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::{display_width, pad_to_width};
 
 pub struct HelpState {
     pub scroll_offset: usize,
@@ -406,12 +407,12 @@ pub fn render(frame: &mut Frame, state: &mut HelpState, theme: &Theme) {
                 .add_modifier(Modifier::BOLD),
         )));
         lines.push(Line::from(Span::styled(
-            format!("  {}", "\u{2500}".repeat(section.title.len() + 4)),
+            format!("  {}", "\u{2500}".repeat(display_width(section.title) + 4)),
             theme.style(SemanticToken::Border),
         )));
 
         for entry in section.entries {
-            let key_padded = format!("  {:<width$}", entry.key, width = key_width);
+            let key_padded = format!("  {}", pad_to_width(entry.key, key_width));
             lines.push(Line::from(vec![
                 Span::styled(key_padded, theme.style(SemanticToken::ModuleName)),
                 Span::styled(entry.desc.to_string(), theme.style(SemanticToken::DocText)),

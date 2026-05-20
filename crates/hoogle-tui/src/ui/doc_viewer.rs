@@ -683,7 +683,7 @@ fn render_blocks(
                 if *level <= 2 {
                     let underline_char = if *level == 1 { "\u{2501}" } else { "\u{2500}" };
                     lines.push(Line::from(Span::styled(
-                        underline_char.repeat(text.len().min(width)),
+                        underline_char.repeat(display_width(&text).min(width)),
                         style,
                     )));
                 }
