@@ -357,6 +357,55 @@ fn doc_back_returns_to_results_when_history_is_empty() {
 }
 
 #[test]
+fn back_from_doc_view_cancels_pending_doc_response() {
+    let mut app = app_with_doc();
+    let pending_url =
+        Url::parse("https://hackage.haskell.org/package/demo/docs/Pending.html").unwrap();
+    app.pending_doc_url = Some(pending_url.clone());
+    app.doc_state.loading = true;
+
+    app.handle_back();
+
+    assert_eq!(app.mode, AppMode::Results);
+    assert_eq!(app.pending_doc_url, None);
+    assert!(!app.doc_state.loading);
+
+    app.doc_tx
+        .send(DocResponse {
+            url: pending_url,
+            result: Ok(doc()),
+        })
+        .unwrap();
+    app.on_tick();
+
+    assert_eq!(app.doc_state.current_url, None);
+}
+
+#[test]
+fn back_from_source_view_cancels_pending_source_response() {
+    let mut app = app_with_doc();
+    app.mode = AppMode::SourceView;
+    app.pending_source_decl = Some("pendingDecl".to_string());
+    app.source_state.loading = true;
+
+    app.handle_back();
+
+    assert_eq!(app.mode, AppMode::DocView);
+    assert_eq!(app.pending_source_decl, None);
+    assert!(!app.source_state.loading);
+
+    app.source_tx
+        .send(SourceResponse {
+            decl_name: "pendingDecl".to_string(),
+            result: Ok("pendingDecl = 1".to_string()),
+        })
+        .unwrap();
+    app.on_tick();
+
+    assert!(app.source_state.source.is_none());
+}
+
+#[test]
 fn follow_doc_link_focuses_first_visible_link() {
     let mut app = app_with_doc();
     app.doc_state.viewport_height = 10;

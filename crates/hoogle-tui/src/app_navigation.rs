@@ -11,8 +11,16 @@ impl App {
                 }
             }
             AppMode::Results => self.mode = AppMode::Search,
-            AppMode::DocView => self.mode = AppMode::Results,
-            AppMode::SourceView => self.mode = AppMode::DocView,
+            AppMode::DocView => {
+                self.pending_doc_url = None;
+                self.doc_state.loading = false;
+                self.mode = AppMode::Results;
+            }
+            AppMode::SourceView => {
+                self.pending_source_decl = None;
+                self.source_state.loading = false;
+                self.mode = AppMode::DocView;
+            }
             AppMode::Help => self.mode = AppMode::Results,
         }
     }
