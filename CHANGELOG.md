@@ -91,6 +91,7 @@
 - The configured `ui.layout` mode now controls result and preview layout instead of always using auto layout.
 - Opening the module browser without available modules now reports the empty state instead of showing an unusable popup.
 - Clearing search now also clears stale results, counts, pagination state, completion state, type-search badges, and pending status messages.
+- Successful async search, documentation, and source loads now clear stale status-message deadlines.
 
 ### Added
 - Restored `L` to load more results.

@@ -13,14 +13,13 @@ impl App {
         self.all_results.clear();
         self.status.result_count = 0;
         self.status.search_by_type = false;
-        self.status.clear_message();
+        self.clear_status_message();
         self.last_searched.clear();
         self.has_more_results = false;
         self.loading_more = false;
         self.results.loading = false;
         self.completion_candidates.clear();
         self.completion_index = 0;
-        self.message_deadline = None;
     }
 
     pub(crate) fn trigger_search(&mut self) {

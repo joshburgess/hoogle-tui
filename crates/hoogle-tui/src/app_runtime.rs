@@ -31,7 +31,7 @@ impl App {
                             self.apply_filter_and_sort();
                         }
                         self.results.loading = false;
-                        self.status.message = None;
+                        self.clear_status_message();
                         self.status.offline = false;
                         if !response.append {
                             self.history.add(&self.last_searched, count);
@@ -69,7 +69,7 @@ impl App {
                     self.viewed_docs
                         .push((doc.module.clone(), doc.package.clone()));
                     self.doc_state.set_doc(doc, &self.theme, self.last_width);
-                    self.status.clear_message();
+                    self.clear_status_message();
                     self.status.offline = false;
                 }
                 Err(e) => {
@@ -92,7 +92,7 @@ impl App {
                     self.source_state
                         .set_source(source, &response.decl_name, &self.theme);
                     self.source_state.scroll_to_first_match(&response.decl_name);
-                    self.status.clear_message();
+                    self.clear_status_message();
                 }
                 Err(e) => {
                     self.source_state.loading = false;
@@ -107,9 +107,14 @@ impl App {
         if let Some(deadline) = self.message_deadline {
             if Instant::now() >= deadline {
                 self.message_deadline = None;
-                self.status.clear_message();
+                self.clear_status_message();
             }
         }
+    }
+
+    pub(crate) fn clear_status_message(&mut self) {
+        self.status.clear_message();
+        self.message_deadline = None;
     }
 
     pub(crate) fn show_info(&mut self, msg: &str) {

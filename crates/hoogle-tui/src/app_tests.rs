@@ -255,6 +255,52 @@ fn appended_search_results_preserve_result_view_state() {
 }
 
 #[test]
+fn successful_async_responses_clear_status_deadline() {
+    let mut app = app_with_doc();
+    let doc_url = Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap();
+
+    app.status.message = Some(StatusMessage::Loading("Searching...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.loading_more = true;
+    app.search_tx
+        .send(SearchResponse {
+            generation: app.search_generation,
+            append: true,
+            results: Ok(vec![result("map")]),
+        })
+        .unwrap();
+    app.on_tick();
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
+
+    app.pending_doc_url = Some(doc_url.clone());
+    app.status.message = Some(StatusMessage::Loading("Loading docs...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.doc_tx
+        .send(DocResponse {
+            url: doc_url,
+            result: Ok(doc()),
+        })
+        .unwrap();
+    app.on_tick();
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
+
+    app.pending_source_decl = Some("targetDecl".to_string());
+    app.status.message = Some(StatusMessage::Loading("Loading source...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.source_tx
+        .send(SourceResponse {
+            decl_name: "targetDecl".to_string(),
+            result: Ok("targetDecl = 1".to_string()),
+        })
+        .unwrap();
+    app.on_tick();
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
+}
+
+#[test]
 fn popup_helpers_open_expected_popup_state() {
     let mut app = test_app();
 
