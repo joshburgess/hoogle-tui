@@ -69,6 +69,8 @@
 - Moved search, fuzzy-filter, and doc-search input handlers into a dedicated `app_input.rs` module.
 - Moved app helper tests into a dedicated `app_tests.rs` module.
 - Tightened extracted TUI app helper methods to crate-private visibility.
+- Source view status hints now advertise help and quit bindings.
+- User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
 
 ### Added
 - Restored `L` to load more results.
@@ -81,6 +83,7 @@
 - Added `scripts/check-rust-panics.rb` to reject `.unwrap()` and `.expect()` in shipped Rust code.
 - Added regression tests for the shipped-code panic scanner.
 - Added `scripts/verify.sh` for one-command local verification.
+- Added render coverage for Source View status-bar help and quit hints.
 
 ### Documentation
 - Added current implementation state notes for contributors.

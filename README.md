@@ -117,7 +117,7 @@ Search  -->  Results  -->  Docs  -->  Source
 
 - **Enter** goes deeper (forward)
 - **Esc** goes back (shallower)
-- **/** jumps to search from any mode
+- **/** jumps to search from results. In docs, it searches within the document.
 - **F1** or **Ctrl-/** opens help from any mode (including while typing in search)
 
 ## Keybindings
@@ -201,7 +201,9 @@ Search  -->  Results  -->  Docs  -->  Source
 | `j`/`k` or arrows | Scroll |
 | `g` / `G` | Top / bottom |
 | `y` | Yank source |
+| `?` | Help |
 | `Esc` | Back to doc viewer |
+| `q` | Quit |
 
 ### Mouse
 
