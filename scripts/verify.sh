@@ -4,6 +4,12 @@ set -eu
 cargo fmt -- --check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+sh -n scripts/check-package-versions.sh
+sh -n scripts/verify.sh
+ruby -c scripts/check-rust-panics.rb >/dev/null
+ruby -c scripts/test-check-rust-panics.rb >/dev/null
+ruby -c scripts/test-check-package-versions.rb >/dev/null
+ruby -c packaging/homebrew-formula.rb >/dev/null
 scripts/test-check-rust-panics.rb
 scripts/check-rust-panics.rb
 scripts/test-check-package-versions.rb
