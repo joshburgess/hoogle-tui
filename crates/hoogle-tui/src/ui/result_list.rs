@@ -385,8 +385,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
             )];
             if let Some(ref sig) = result.signature {
                 let sig_text = format!("{} :: {sig}", result.name);
-                let max = available_width.saturating_sub(cached.module_str.len() + 6);
-                let truncated = if sig_text.len() > max {
+                let max = available_width.saturating_sub(display_width(&cached.module_str) + 6);
+                let truncated = if display_width(&sig_text) > max {
                     truncate_width(&sig_text, max, "\u{2026}")
                 } else {
                     sig_text
@@ -463,7 +463,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
                 .as_ref()
                 .map(|d| {
                     let max_len = available_width.saturating_sub(6);
-                    if d.len() > max_len {
+                    if display_width(d) > max_len {
                         format!("    {}", truncate_width(d, max_len, "..."))
                     } else {
                         format!("    {d}")

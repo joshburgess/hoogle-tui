@@ -41,6 +41,7 @@
 - Preview and documentation wrapping now account for terminal display width.
 - Result-list and status-bar padding now account for terminal display width.
 - Documentation table column widths now account for terminal display width.
+- Popup and result-list truncation limits now account for terminal display width.
 - Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
 - Verification now rejects `#[allow(dead_code)]` in shipped Rust code.
 - Extracted shared popup centering layout for TUI popups.
