@@ -15,6 +15,8 @@
 - Bookmark and history loads now distinguish missing, unreadable, and corrupt persistence files.
 - Cache TTL and size limit calculations now saturate instead of overflowing on extreme config values.
 - CI now runs the same `scripts/verify.sh` workflow used for local verification.
+- Release verification now runs the same `scripts/verify.sh` workflow used for CI and local checks.
+- Updated the packaged Homebrew formula version to match the workspace version.
 - Ignored backend smoke tests now include explicit ignore reasons.
 - Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.
 - Table-of-contents and history popups now accept typed filters instead of carrying unused filtering state.

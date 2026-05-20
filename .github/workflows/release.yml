@@ -18,6 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
 
       - name: Verify tag matches workspace version
@@ -30,8 +32,8 @@ jobs:
             exit 1
           fi
 
-      - name: Run tests
-        run: cargo test --workspace
+      - name: Verify
+        run: ./scripts/verify.sh
 
   publish-crates:
     name: Publish to crates.io
