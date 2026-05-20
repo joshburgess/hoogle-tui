@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::truncate_chars;
 
 pub struct TocState {
     pub items: Vec<TocEntry>,
@@ -137,7 +138,7 @@ pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
             .map(|s| {
                 let max_len = (inner.width as usize).saturating_sub(entry.name.len() + 6);
                 if s.len() > max_len {
-                    format!(" :: {}...", &s[..max_len.saturating_sub(3)])
+                    format!(" :: {}", truncate_chars(s, max_len, "..."))
                 } else {
                     format!(" :: {s}")
                 }

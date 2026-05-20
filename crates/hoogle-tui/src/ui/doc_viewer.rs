@@ -9,6 +9,8 @@ use ratatui::{
 };
 use url::Url;
 
+use super::text::truncate_chars;
+
 pub struct DocViewState {
     pub doc: Option<HaddockDoc>,
     pub rendered_lines: Vec<Line<'static>>,
@@ -819,7 +821,7 @@ fn render_table(
             let text = row.get(i).map(|c| to_text(c)).unwrap_or_default();
             let w = col_widths.get(i).copied().unwrap_or(10);
             let truncated = if text.len() > w {
-                format!("{}\u{2026}", &text[..w.saturating_sub(1)])
+                truncate_chars(&text, w, "\u{2026}")
             } else {
                 format!("{:<width$}", text, width = w)
             };

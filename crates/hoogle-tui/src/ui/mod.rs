@@ -14,6 +14,7 @@ pub mod search_bar;
 pub mod sort_popup;
 pub mod source_viewer;
 pub mod status_bar;
+pub mod text;
 pub mod theme_popup;
 pub mod toc_popup;
 pub mod yank_popup;
