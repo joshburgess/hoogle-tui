@@ -34,6 +34,7 @@
 - Project detection messages now include the detected project root.
 - Source views now jump to the loaded declaration when its name appears in the source.
 - Source view `y` now copies the loaded source text as documented.
+- Markdown session exports now escape table cells so pipes and newlines do not corrupt result rows.
 - Doc view `Ctrl-o` now opens the current document URL after internal navigation.
 - Doc view deep-link copying now uses the current document URL after internal navigation.
 - Disk cache writes now enforce the configured maximum cache size.

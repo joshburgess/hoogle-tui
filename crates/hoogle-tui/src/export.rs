@@ -23,6 +23,15 @@ fn export_session_to_dir(
     let filename = format!("hoogle-export-{timestamp}.md");
     let path = dir.join(&filename);
 
+    std::fs::write(&path, render_markdown(query, results, viewed_docs))?;
+    Ok(path)
+}
+
+fn render_markdown(
+    query: &str,
+    results: &[SearchResult],
+    viewed_docs: &[(String, String)],
+) -> String {
     let mut md = String::new();
 
     md.push_str(&format!("# Hoogle Search: {query}\n\n"));
@@ -41,7 +50,10 @@ fn export_session_to_dir(
             let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
             let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
             let sig = r.signature.as_deref().unwrap_or("");
-            let name = &r.name;
+            let name = markdown_table_cell(&r.name);
+            let module = markdown_table_cell(&module);
+            let package = markdown_table_cell(package);
+            let sig = markdown_table_cell(sig);
             md.push_str(&format!("| `{name}` | {module} | {package} | `{sig}` |\n"));
         }
         md.push('\n');
@@ -56,8 +68,13 @@ fn export_session_to_dir(
         md.push('\n');
     }
 
-    std::fs::write(&path, md)?;
-    Ok(path)
+    md
+}
+
+fn markdown_table_cell(text: &str) -> String {
+    text.replace('\\', "\\\\")
+        .replace('|', "\\|")
+        .replace('\n', " ")
 }
 
 #[cfg(test)]
@@ -87,28 +104,9 @@ mod tests {
 
     #[test]
     fn export_empty_results() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("test-export.md");
-
-        // We can't easily redirect where export_session writes, so we replicate
-        // the markdown generation logic and test the output format directly.
         let results: Vec<SearchResult> = vec![];
         let viewed_docs: Vec<(String, String)> = vec![];
-
-        let mut md = String::new();
-        md.push_str("# Hoogle Search: map\n\n");
-        md.push_str("Exported at 2026-01-01 00:00:00\n\n");
-
-        if !results.is_empty() {
-            md.push_str(&format!("## Results ({} found)\n\n", results.len()));
-        }
-
-        if !viewed_docs.is_empty() {
-            md.push_str("## Viewed Documentation\n\n");
-        }
-
-        std::fs::write(&path, &md).unwrap();
-        let content = std::fs::read_to_string(&path).unwrap();
+        let content = render_markdown("map", &results, &viewed_docs);
 
         assert!(content.contains("# Hoogle Search: map"));
         assert!(!content.contains("## Results"));
@@ -134,29 +132,7 @@ mod tests {
         let viewed_docs = vec![("Data.Map.Strict".to_string(), "containers".to_string())];
 
         let query = "map";
-
-        // Build the same markdown the function would produce
-        let mut md = String::new();
-        md.push_str(&format!("# Hoogle Search: {query}\n\n"));
-        md.push_str("Exported at test-time\n\n");
-        md.push_str(&format!("## Results ({} found)\n\n", results.len()));
-        md.push_str("| Name | Module | Package | Signature |\n");
-        md.push_str("|------|--------|---------|----------|\n");
-        for r in &results {
-            let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
-            let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
-            let sig = r.signature.as_deref().unwrap_or("");
-            md.push_str(&format!(
-                "| `{}` | {} | {} | `{}` |\n",
-                r.name, module, package, sig
-            ));
-        }
-        md.push('\n');
-        md.push_str("## Viewed Documentation\n\n");
-        for (module, package) in &viewed_docs {
-            md.push_str(&format!("- **{module}** ({package})\n"));
-        }
-        md.push('\n');
+        let md = render_markdown(query, &results, &viewed_docs);
 
         assert!(md.contains("# Hoogle Search: map"));
         assert!(md.contains("## Results (2 found)"));
@@ -177,21 +153,8 @@ mod tests {
             Some("base"),
             Some("(a -> b) -> f a -> f b"),
         )];
-        let _viewed_docs: Vec<(String, String)> = vec![];
-
-        let mut md = String::new();
-        md.push_str("## Results (1 found)\n\n");
-        md.push_str("| Name | Module | Package | Signature |\n");
-        md.push_str("|------|--------|---------|----------|\n");
-        for r in &results {
-            let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
-            let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
-            let sig = r.signature.as_deref().unwrap_or("");
-            md.push_str(&format!(
-                "| `{}` | {} | {} | `{}` |\n",
-                r.name, module, package, sig
-            ));
-        }
+        let viewed_docs: Vec<(String, String)> = vec![];
+        let md = render_markdown("fmap", &results, &viewed_docs);
 
         // Verify table header
         assert!(md.contains("| Name | Module | Package | Signature |"));
@@ -203,14 +166,24 @@ mod tests {
     #[test]
     fn export_result_with_no_module_or_package() {
         let results = [make_result("something", None, None, None)];
+        let viewed_docs: Vec<(String, String)> = vec![];
+        let md = render_markdown("something", &results, &viewed_docs);
 
-        let r = &results[0];
-        let module = r.module.as_ref().map(|m| m.to_string()).unwrap_or_default();
-        let package = r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
-        let sig = r.signature.as_deref().unwrap_or("");
+        assert!(md.contains("| `something` |  |  | `` |"));
+    }
 
-        let row = format!("| `{}` | {} | {} | `{}` |", r.name, module, package, sig);
-        assert_eq!(row, "| `something` |  |  | `` |");
+    #[test]
+    fn export_markdown_escapes_table_cells() {
+        let results = [make_result(
+            "a|b",
+            Some("Data.Pipe"),
+            Some("pkg|name"),
+            Some("a | b\nc"),
+        )];
+        let viewed_docs: Vec<(String, String)> = vec![];
+        let md = render_markdown("pipe", &results, &viewed_docs);
+
+        assert!(md.contains("| `a\\|b` | Data.Pipe | pkg\\|name | `a \\| b c` |"));
     }
 
     #[test]
