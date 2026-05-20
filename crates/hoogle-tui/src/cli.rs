@@ -9,7 +9,7 @@ pub struct CliArgs {
     pub query: Option<String>,
 
     /// Backend: auto, local, web
-    #[arg(short, long, default_value = "auto")]
+    #[arg(short, long, default_value = "auto", value_parser = ["auto", "local", "web"])]
     pub backend: String,
 
     /// Path to hoogle database
@@ -61,6 +61,7 @@ impl CliArgs {
             config.backend.database_path = Some(db.clone());
         }
         match self.backend.as_str() {
+            "auto" => config.backend.mode = hoogle_core::config::BackendMode::Auto,
             "local" => config.backend.mode = hoogle_core::config::BackendMode::Local,
             "web" => config.backend.mode = hoogle_core::config::BackendMode::Web,
             _ => {}
@@ -270,18 +271,16 @@ mod tests {
     fn apply_backend_auto_no_change() {
         let args = parse(&["hoogle-tui", "--backend", "auto"]);
         let mut config = default_config();
+        config.backend.mode = BackendMode::Web;
         args.apply_to_config(&mut config);
-        // "auto" doesn't match "local" or "web", so mode stays default (Auto)
         assert_eq!(config.backend.mode, BackendMode::Auto);
     }
 
     #[test]
-    fn apply_backend_unknown_no_change() {
-        let args = parse(&["hoogle-tui", "--backend", "foobar"]);
-        let mut config = default_config();
-        let original = config.backend.mode;
-        args.apply_to_config(&mut config);
-        assert_eq!(config.backend.mode, original);
+    fn invalid_backend_is_rejected() {
+        let err = CliArgs::try_parse_from(["hoogle-tui", "--backend", "foobar"])
+            .expect_err("invalid backend should fail to parse");
+        assert_eq!(err.kind(), clap::error::ErrorKind::InvalidValue);
     }
 
     #[test]

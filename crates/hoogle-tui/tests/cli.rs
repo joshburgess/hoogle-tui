@@ -54,3 +54,18 @@ fn invalid_flag_exits_with_error() {
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("unexpected argument"));
 }
+
+#[test]
+fn invalid_backend_exits_with_error() {
+    let output = hoogle_tui()
+        .args(["--backend", "foobar"])
+        .output()
+        .expect("failed to run hoogle-tui with invalid backend");
+
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("invalid value"));
+    assert!(stderr.contains("auto"));
+    assert!(stderr.contains("local"));
+    assert!(stderr.contains("web"));
+}

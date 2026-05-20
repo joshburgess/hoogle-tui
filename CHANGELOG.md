@@ -72,6 +72,8 @@
 - Source view status hints now advertise help and quit bindings.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
 - Keybinding overrides now accept `delete_entry` and `redraw` action names.
+- CLI backend selection now rejects values outside `auto`, `local`, and `web`.
+- CLI `--backend auto` now restores auto mode when overriding a config file.
 
 ### Added
 - Restored `L` to load more results.
