@@ -90,6 +90,7 @@
 - CLI `--max-results` now rejects zero.
 - The configured `ui.layout` mode now controls result and preview layout instead of always using auto layout.
 - Opening the module browser without available modules now reports the empty state instead of showing an unusable popup.
+- Clearing search now also clears stale results, counts, pagination state, and pending loading indicators.
 
 ### Added
 - Restored `L` to load more results.

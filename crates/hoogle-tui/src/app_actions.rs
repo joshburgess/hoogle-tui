@@ -2,8 +2,6 @@ use crate::actions::Action;
 use crate::app::{App, AppMode, PopupMode};
 use crate::ui::{bookmarks_popup, history_popup};
 
-use super::app_input::search_textarea;
-
 impl App {
     pub(crate) fn handle_action(&mut self, action: Action) {
         if action == Action::Quit {
@@ -75,9 +73,7 @@ impl App {
                     self.open_help();
                 }
             }
-            Action::ClearSearch => {
-                self.textarea = search_textarea();
-            }
+            Action::ClearSearch => self.clear_search_state(),
             Action::OpenYankMenu if self.mode == AppMode::Results => self.open_yank_menu(),
             Action::OpenPackageScope => self.open_package_scope_popup(),
             Action::OpenThemeSwitcher => self.toggle_theme_switcher(),

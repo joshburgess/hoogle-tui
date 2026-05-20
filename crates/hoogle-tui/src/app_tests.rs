@@ -121,6 +121,30 @@ fn clear_search_state_resets_query_results_and_pagination() {
     assert!(!app.results.loading);
 }
 
+#[test]
+fn clear_search_action_resets_query_results_and_pagination() {
+    let mut app = test_app();
+    app.textarea = search_textarea_with_query("map");
+    app.last_searched = "map".to_string();
+    app.all_results = vec![result("map")];
+    app.results.set_items(app.all_results.clone());
+    app.status.result_count = 1;
+    app.has_more_results = true;
+    app.loading_more = true;
+    app.results.loading = true;
+
+    app.handle_action(Action::ClearSearch);
+
+    assert!(app.query_text().is_empty());
+    assert!(app.last_searched.is_empty());
+    assert!(app.all_results.is_empty());
+    assert!(app.results.items.is_empty());
+    assert_eq!(app.status.result_count, 0);
+    assert!(!app.has_more_results);
+    assert!(!app.loading_more);
+    assert!(!app.results.loading);
+}
+
 #[tokio::test]
 async fn clear_search_state_ignores_in_flight_search_response() {
     let mut app = test_app();
