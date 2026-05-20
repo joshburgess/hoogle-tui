@@ -201,9 +201,17 @@ fn result_helpers_update_selection_state() {
 
     app.toggle_group_by_module();
     assert!(app.results.group_by_module);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "Grouped by module"
+    ));
 
     app.toggle_compact_results();
     assert!(app.results.compact);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "Compact results enabled"
+    ));
 }
 
 #[test]

@@ -34,6 +34,11 @@ impl App {
 
     pub(crate) fn toggle_compact_results(&mut self) {
         self.results.compact = !self.results.compact;
+        if self.results.compact {
+            self.show_info("Compact results enabled");
+        } else {
+            self.show_info("Compact results disabled");
+        }
     }
 
     pub(crate) fn open_module_browser(&mut self) {
@@ -82,5 +87,10 @@ impl App {
 
     pub(crate) fn toggle_group_by_module(&mut self) {
         self.results.group_by_module = !self.results.group_by_module;
+        if self.results.group_by_module {
+            self.show_info("Grouped by module");
+        } else {
+            self.show_info("Module grouping disabled");
+        }
     }
 }
