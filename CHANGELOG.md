@@ -22,6 +22,7 @@
 - Pressing `P` on an already pinned result now unpins it.
 - Project detection messages now include the detected project root.
 - Source views now jump to the loaded declaration when its name appears in the source.
+- Verification now rejects `dbg!`, `todo!`, and `unimplemented!` in shipped Rust code alongside panic-prone calls.
 - Extracted shared popup centering layout for TUI popups.
 - Moved TUI action dispatch into a dedicated `app_actions.rs` module.
 - Moved TUI app construction and initial-query setup into a dedicated `app_init.rs` module.

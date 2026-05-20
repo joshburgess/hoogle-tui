@@ -58,6 +58,24 @@ assert_fails(
   "panic!(\"bad\")",
 )
 
+assert_fails(
+  "todo in shipped code",
+  "fn main() { todo!(\"finish this\"); }\n",
+  "todo!(\"finish this\")",
+)
+
+assert_fails(
+  "unimplemented in shipped code",
+  "fn main() { unimplemented!(\"later\"); }\n",
+  "unimplemented!(\"later\")",
+)
+
+assert_fails(
+  "dbg in shipped code",
+  "fn main() { let value = dbg!(1); let _ = value; }\n",
+  "dbg!(1)",
+)
+
 assert_passes(
   "test module panics are ignored",
   <<~RUST,
@@ -70,6 +88,9 @@ assert_passes(
             let value = Some(1).unwrap();
             assert_eq!(value, 1);
             panic!("test-only panic");
+            let value = dbg!(value);
+            assert_eq!(value, 1);
+            todo!("test-only placeholder");
         }
     }
   RUST

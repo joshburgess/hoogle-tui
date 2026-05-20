@@ -266,7 +266,7 @@ Run the automated local verification suite with:
 ```
 
 Set `RUN_SMOKE_TESTS=1` to include ignored live backend smoke tests.
-The default suite also checks formatting, tests, clippy, prose style, app-module imports, and panic-prone calls in shipped Rust code.
+The default suite also checks formatting, tests, clippy, prose style, app-module imports, and panic-prone or unfinished calls in shipped Rust code.
 
 ## Themes
 

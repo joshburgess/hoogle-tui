@@ -4,7 +4,7 @@
 require "pathname"
 
 ROOT = Pathname.new(__dir__).parent
-PATTERN = /(?:\.(?:unwrap|expect)\s*\(|\bpanic!\s*\()/.freeze
+PATTERN = /(?:\.(?:unwrap|expect)\s*\(|\b(?:panic|todo|unimplemented|dbg)!\s*[\(\{])/.freeze
 
 def rust_files
   paths = ARGV.empty? ? Dir.glob(ROOT.join("crates/**/*.rs")) : ARGV
@@ -67,7 +67,7 @@ rust_files.each do |path|
 end
 
 if violations.any?
-  warn "panic-prone calls found in non-test Rust code:"
+  warn "panic-prone or unfinished calls found in non-test Rust code:"
   violations.each { |violation| warn violation }
   exit 1
 end
