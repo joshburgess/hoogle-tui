@@ -49,7 +49,7 @@ impl App {
             }
             status_bar::render(frame, chunks[1], &self.status, self.mode, &self.theme);
         } else {
-            let ly = layout::compute_layout(area, self.preview_enabled);
+            let ly = layout::compute_layout(area, self.preview_enabled, self.config.ui.layout);
 
             self.hit_search_bar = ly.search_bar;
             self.hit_result_list = ly.result_list;
