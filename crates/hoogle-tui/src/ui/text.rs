@@ -1,11 +1,15 @@
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
+pub fn display_width(text: &str) -> usize {
+    UnicodeWidthStr::width(text)
+}
+
 pub fn truncate_width(text: &str, max_width: usize, suffix: &str) -> String {
-    if UnicodeWidthStr::width(text) <= max_width {
+    if display_width(text) <= max_width {
         return text.to_string();
     }
 
-    let suffix_width = UnicodeWidthStr::width(suffix);
+    let suffix_width = display_width(suffix);
     if max_width <= suffix_width {
         return truncate_suffix_to_width(suffix, max_width);
     }
@@ -65,5 +69,10 @@ mod tests {
     #[test]
     fn truncate_width_handles_tiny_limit() {
         assert_eq!(truncate_width("containers", 2, "..."), "..");
+    }
+
+    #[test]
+    fn display_width_counts_wide_characters() {
+        assert_eq!(display_width("型a"), 3);
     }
 }

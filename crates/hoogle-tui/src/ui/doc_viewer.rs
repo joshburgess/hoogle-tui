@@ -9,7 +9,7 @@ use ratatui::{
 };
 use url::Url;
 
-use super::text::truncate_width;
+use super::text::{display_width, truncate_width};
 
 pub struct DocViewState {
     pub doc: Option<HaddockDoc>,
@@ -889,7 +889,7 @@ fn wrap_inlines(
 
         // Word wrap
         for word in text.split_inclusive(|c: char| c.is_whitespace()) {
-            let word_len = word.len();
+            let word_len = display_width(word);
             if col + word_len > width && col > 0 {
                 result_lines.push(vec![]);
                 col = 0;

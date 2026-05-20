@@ -8,6 +8,8 @@ use ratatui::{
     Frame,
 };
 
+use super::text::display_width;
+
 pub struct PreviewState {
     pub scroll_offset: usize,
     pub total_lines: usize,
@@ -219,7 +221,7 @@ fn wrap_text(text: &str, width: usize) -> Vec<String> {
     for word in text.split_whitespace() {
         if current.is_empty() {
             current = word.to_string();
-        } else if current.len() + 1 + word.len() <= width {
+        } else if display_width(&current) + 1 + display_width(word) <= width {
             current.push(' ');
             current.push_str(word);
         } else {
