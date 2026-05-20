@@ -60,7 +60,7 @@ const SECTIONS: &[HelpSection] = &[
             },
             HelpEntry {
                 key: "/",
-                desc: "Jump to search bar from any mode",
+                desc: "Focus search from results",
             },
         ],
     },
@@ -357,8 +357,8 @@ const SECTIONS: &[HelpSection] = &[
                 desc: "Select",
             },
             HelpEntry {
-                key: "d",
-                desc: "Delete entry (history/bookmarks)",
+                key: "Ctrl-d / d",
+                desc: "Delete history / bookmark entry",
             },
             HelpEntry {
                 key: "Esc",
