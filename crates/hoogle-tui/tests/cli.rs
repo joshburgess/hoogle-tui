@@ -4,6 +4,24 @@ fn hoogle_tui() -> Command {
     Command::new(env!("CARGO_BIN_EXE_hoogle-tui"))
 }
 
+fn readme_cli_options_block() -> String {
+    let readme_path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("README.md");
+    let readme = std::fs::read_to_string(readme_path).expect("failed to read README.md");
+    let section = readme
+        .split_once("## CLI Options")
+        .map(|(_, section)| section)
+        .expect("README.md is missing CLI Options section");
+    section
+        .split("```")
+        .nth(1)
+        .expect("README.md CLI Options section is missing a code block")
+        .trim()
+        .to_string()
+}
+
 #[test]
 fn help_prints_usage() {
     let output = hoogle_tui()
@@ -21,6 +39,23 @@ fn help_prints_usage() {
     assert!(stdout.contains("[possible values: error, warn, info, debug, trace]"));
     assert!(stdout.contains("[possible values: bash, elvish, fish, powershell, zsh]"));
     assert!(stdout.contains("--generate"));
+}
+
+#[test]
+fn readme_cli_options_match_generated_help() {
+    let output = hoogle_tui()
+        .arg("--help")
+        .output()
+        .expect("failed to run hoogle-tui --help");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let generated_help = stdout
+        .split_once("Usage:")
+        .map(|(_, usage)| format!("Usage:{usage}"))
+        .expect("generated help is missing Usage section");
+
+    assert_eq!(readme_cli_options_block(), generated_help.trim());
 }
 
 #[test]

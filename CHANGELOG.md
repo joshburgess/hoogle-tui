@@ -14,6 +14,7 @@
 
 ### Changed
 - Aligned the README CLI option synopsis with the generated command help.
+- CLI integration tests now guard the README CLI option synopsis against generated help drift.
 - CLI integration tests now exercise every supported shell completion generator.
 - Bookmark and history writes now report persistence errors instead of silently ignoring them.
 - Bookmark and history loads now distinguish missing, unreadable, and corrupt persistence files.
