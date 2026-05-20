@@ -1,6 +1,19 @@
 use crate::app::{App, AppMode};
 
 impl App {
+    pub(crate) fn switch_mode(&mut self, mode: AppMode) {
+        if mode != AppMode::Help {
+            self.help_previous_mode = None;
+        }
+        self.mode = mode;
+    }
+
+    pub(crate) fn open_help(&mut self) {
+        self.help_state = crate::ui::help_overlay::HelpState::new();
+        self.help_previous_mode = Some(self.mode);
+        self.mode = AppMode::Help;
+    }
+
     pub(crate) fn handle_back(&mut self) {
         match self.mode {
             AppMode::Search => {
@@ -10,16 +23,16 @@ impl App {
                     self.clear_search_state();
                 }
             }
-            AppMode::Results => self.mode = AppMode::Search,
+            AppMode::Results => self.switch_mode(AppMode::Search),
             AppMode::DocView => {
                 self.pending_doc_url = None;
                 self.doc_state.loading = false;
-                self.mode = AppMode::Results;
+                self.switch_mode(AppMode::Results);
             }
             AppMode::SourceView => {
                 self.pending_source_decl = None;
                 self.source_state.loading = false;
-                self.mode = AppMode::DocView;
+                self.switch_mode(AppMode::DocView);
             }
             AppMode::Help => self.close_help(),
         }

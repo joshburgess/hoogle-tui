@@ -1,6 +1,6 @@
 use crate::actions::Action;
 use crate::app::{App, AppMode, PopupMode};
-use crate::ui::{bookmarks_popup, help_overlay, history_popup};
+use crate::ui::{bookmarks_popup, history_popup};
 
 use super::app_input::search_textarea;
 
@@ -19,8 +19,10 @@ impl App {
         match action {
             Action::Quit => self.should_quit = true,
             Action::Back => self.handle_back(),
-            Action::FocusSearch => self.mode = AppMode::Search,
-            Action::FocusResults if !self.results.items.is_empty() => self.mode = AppMode::Results,
+            Action::FocusSearch => self.switch_mode(AppMode::Search),
+            Action::FocusResults if !self.results.items.is_empty() => {
+                self.switch_mode(AppMode::Results)
+            }
             Action::MoveDown => self.move_selection_or_scroll(1),
             Action::MoveUp => self.move_selection_or_scroll(-1),
             Action::MoveToTop => self.move_selection_or_scroll_to_edge(false),
@@ -70,9 +72,7 @@ impl App {
                 if self.mode == AppMode::Help {
                     self.close_help();
                 } else {
-                    self.help_state = help_overlay::HelpState::new();
-                    self.help_previous_mode = Some(self.mode);
-                    self.mode = AppMode::Help;
+                    self.open_help();
                 }
             }
             Action::ClearSearch => {

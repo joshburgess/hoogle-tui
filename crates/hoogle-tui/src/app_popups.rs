@@ -140,7 +140,7 @@ impl App {
                             if let Some(ref url) = bm.doc_url {
                                 let url = url.clone();
                                 self.close_popup();
-                                self.mode = AppMode::DocView;
+                                self.switch_mode(AppMode::DocView);
                                 self.doc_state.loading = true;
                                 self.doc_state.current_url = None;
                                 self.doc_state.nav_stack.clear();

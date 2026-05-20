@@ -47,13 +47,13 @@ impl App {
 
         if self.mode == AppMode::Search || self.mode == AppMode::Results {
             if rect_contains(self.hit_search_bar, col, row) {
-                self.mode = AppMode::Search;
+                self.switch_mode(AppMode::Search);
                 return;
             }
 
             if rect_contains(self.hit_result_list, col, row) {
                 if self.mode != AppMode::Results && !self.results.items.is_empty() {
-                    self.mode = AppMode::Results;
+                    self.switch_mode(AppMode::Results);
                 }
 
                 let inner_top = self.hit_result_list.y + 1;

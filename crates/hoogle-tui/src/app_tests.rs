@@ -408,6 +408,22 @@ fn move_to_edge_scrolls_help_without_moving_hidden_results() {
 }
 
 #[test]
+fn direct_mode_switches_clear_stale_help_restore_mode() {
+    let mut app = app_with_doc();
+
+    app.handle_action(Action::ToggleHelp);
+    app.handle_action(Action::FocusSearch);
+
+    assert_eq!(app.mode, AppMode::Search);
+    assert_eq!(app.help_previous_mode, None);
+
+    app.handle_action(Action::ToggleHelp);
+    app.switch_mode(AppMode::DocView);
+
+    assert_eq!(app.help_previous_mode, None);
+}
+
+#[test]
 fn current_doc_and_declaration_tracks_scroll_position() {
     let mut app = app_with_doc();
 

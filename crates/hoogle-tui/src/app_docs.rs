@@ -13,7 +13,7 @@ impl App {
             self.show_error("No documentation URL available");
             return;
         };
-        self.mode = AppMode::DocView;
+        self.switch_mode(AppMode::DocView);
         self.doc_state.loading = true;
         self.doc_state.error = None;
         self.doc_state.current_url = None;
@@ -53,7 +53,7 @@ impl App {
         };
         let decl_name = decl.name.clone();
 
-        self.mode = AppMode::SourceView;
+        self.switch_mode(AppMode::SourceView);
         self.source_state.loading = true;
         self.source_state.error = None;
         self.pending_source_decl = Some(decl_name.clone());
@@ -115,7 +115,7 @@ impl App {
         if let Some(url) = self.doc_state.pop_nav() {
             self.fetch_doc(url);
         } else {
-            self.mode = AppMode::Results;
+            self.switch_mode(AppMode::Results);
         }
     }
 
