@@ -102,14 +102,22 @@ impl App {
                     .modifiers
                     .contains(crossterm::event::KeyModifiers::CONTROL) =>
             {
-                self.doc_state.next_match();
+                if self.doc_state.search_matches.is_empty() {
+                    self.show_info("No document search matches");
+                } else {
+                    self.doc_state.next_match();
+                }
             }
             KeyCode::Char('p')
                 if key
                     .modifiers
                     .contains(crossterm::event::KeyModifiers::CONTROL) =>
             {
-                self.doc_state.prev_match();
+                if self.doc_state.search_matches.is_empty() {
+                    self.show_info("No document search matches");
+                } else {
+                    self.doc_state.prev_match();
+                }
             }
             KeyCode::Char(c) => {
                 self.doc_state.search_add_char(c);

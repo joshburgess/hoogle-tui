@@ -86,6 +86,7 @@
 - Preview toggles now report their new state.
 - Bookmark and history popups now report when there are no saved entries instead of opening empty popups.
 - Doc link cycling now reports when no links are available instead of silently doing nothing.
+- In-document search match navigation now reports when no matches are available.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.

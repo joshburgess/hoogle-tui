@@ -1,6 +1,6 @@
 use super::app_input::search_textarea_with_query;
 use async_trait::async_trait;
-use crossterm::event::{KeyModifiers, MouseEvent, MouseEventKind};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use hoogle_core::backend::{BackendError, HoogleBackend};
 use hoogle_core::config::Config;
 use hoogle_core::haddock::types::{Declaration, HaddockDoc};
@@ -925,6 +925,27 @@ fn cycle_doc_link_reports_when_no_links_exist() {
     assert!(matches!(
         app.status.message,
         Some(StatusMessage::Info(ref msg)) if msg == "No links available"
+    ));
+}
+
+#[test]
+fn doc_search_match_navigation_reports_when_no_matches_exist() {
+    let mut app = app_with_doc();
+    app.doc_state.start_search();
+
+    app.handle_doc_search_input(KeyEvent::new(KeyCode::Char('n'), KeyModifiers::CONTROL));
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No document search matches"
+    ));
+
+    app.status.message = None;
+    app.handle_doc_search_input(KeyEvent::new(KeyCode::Char('p'), KeyModifiers::CONTROL));
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No document search matches"
     ));
 }
 
