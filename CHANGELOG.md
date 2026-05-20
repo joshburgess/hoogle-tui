@@ -17,6 +17,7 @@
 - CI now runs the same `scripts/verify.sh` workflow used for local verification.
 - Release verification now runs the same `scripts/verify.sh` workflow used for CI and local checks.
 - Verification now rejects mismatched workspace, Nix flake, and Homebrew formula versions.
+- Package-version verification now has deterministic regression coverage.
 - Updated the packaged Homebrew formula version to match the workspace version.
 - Ignored backend smoke tests now include explicit ignore reasons.
 - Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.

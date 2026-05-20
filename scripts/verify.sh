@@ -6,20 +6,8 @@ cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 scripts/test-check-rust-panics.rb
 scripts/check-rust-panics.rb
-
-workspace_version="$(awk -F'"' '/^version = / {print $2; exit}' Cargo.toml)"
-flake_version="$(awk -F'"' '/version = / {print $2; exit}' flake.nix)"
-homebrew_version="$(awk -F'"' '/version / {print $2; exit}' packaging/homebrew-formula.rb)"
-
-if [ "$flake_version" != "$workspace_version" ]; then
-  echo "flake.nix version ($flake_version) does not match workspace version ($workspace_version)" >&2
-  exit 1
-fi
-
-if [ "$homebrew_version" != "$workspace_version" ]; then
-  echo "Homebrew formula version ($homebrew_version) does not match workspace version ($workspace_version)" >&2
-  exit 1
-fi
+scripts/test-check-package-versions.rb
+scripts/check-package-versions.sh
 
 scan() {
   pattern="$1"
