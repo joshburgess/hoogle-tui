@@ -116,6 +116,8 @@ impl ResultListState {
         self.scroll_offset = 0;
         self.fuzzy_filter = None;
         self.filtered_indices = None;
+        self.multi_selected.clear();
+        self.multi_select_mode = false;
     }
 
     pub fn selected_result(&self) -> Option<&SearchResult> {
@@ -554,6 +556,20 @@ mod tests {
         assert_eq!(state.selected, 1);
         state.set_items(vec![make_result("x")]);
         assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn set_items_clears_multi_select_state() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![make_result("a"), make_result("b")]);
+        state.multi_select_mode = true;
+        state.toggle_select_current();
+        assert!(!state.multi_selected.is_empty());
+
+        state.set_items(vec![make_result("x")]);
+
+        assert!(!state.multi_select_mode);
+        assert!(state.multi_selected.is_empty());
     }
 
     #[test]

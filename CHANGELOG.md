@@ -36,6 +36,7 @@
 - Source view `y` now copies the loaded source text as documented.
 - Markdown session exports now escape table cells so pipes and newlines do not corrupt result rows.
 - Empty fuzzy result filters no longer leave the first hidden result selectable.
+- Replacing result sets now clears stale multi-select state.
 - Doc view `Ctrl-o` now opens the current document URL after internal navigation.
 - Doc view deep-link copying now uses the current document URL after internal navigation.
 - Disk cache writes now enforce the configured maximum cache size.
