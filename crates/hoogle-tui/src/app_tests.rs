@@ -386,6 +386,29 @@ fn bookmark_delete_keeps_selection_near_deleted_row() {
 }
 
 #[test]
+fn bookmark_select_without_url_reports_noop() {
+    let mut app = test_app();
+    app.bookmark_store.add(Bookmark {
+        name: "map".to_string(),
+        module: None,
+        package: None,
+        signature: None,
+        doc_url: None,
+        added: chrono::Utc::now(),
+    });
+    app.handle_action(Action::OpenBookmarks);
+
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert_eq!(app.mode, AppMode::Search);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No URL available"
+    ));
+}
+
+#[test]
 fn history_delete_keeps_selection_near_deleted_row() {
     let mut app = test_app();
     app.history.add("first", 1);

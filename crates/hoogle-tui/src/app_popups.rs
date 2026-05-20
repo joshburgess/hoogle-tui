@@ -147,6 +147,9 @@ impl App {
                                 self.fetch_doc(url);
                                 return;
                             }
+                            self.close_popup();
+                            self.show_info("No URL available");
+                            return;
                         }
                     }
                     self.close_popup();
