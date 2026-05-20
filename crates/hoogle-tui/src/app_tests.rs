@@ -11,6 +11,7 @@ use url::Url;
 use crate::actions::Action;
 use crate::app::{App, AppMode, DocResponse, PopupMode, SearchResponse, SourceResponse};
 use crate::bookmarks::Bookmark;
+use crate::ui::status_bar::StatusMessage;
 use crate::ui::{history_popup, toc_popup};
 
 #[derive(Debug)]
@@ -292,6 +293,18 @@ fn pin_helpers_update_pinned_state() {
     app.pin_selected_result();
     app.clear_pinned_results();
     assert!(app.pinned.is_empty());
+}
+
+#[test]
+fn clearing_empty_pins_reports_noop() {
+    let mut app = test_app();
+
+    app.clear_pinned_results();
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No pins to clear"
+    ));
 }
 
 #[test]

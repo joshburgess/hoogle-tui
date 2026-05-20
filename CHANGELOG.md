@@ -79,6 +79,7 @@
 - Half-page and page scroll actions now target the active scrollable view instead of always mutating the document view.
 - Help now closes back to the mode it was opened from, and edge navigation scrolls help instead of moving hidden results.
 - Direct view switches now clear stale help restore state.
+- Clearing pins now reports when there are no pins to clear instead of claiming success.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
 - Keybinding overrides now accept `delete_entry` and `redraw` action names.
 - CLI backend selection now rejects values outside `auto`, `local`, and `web`.

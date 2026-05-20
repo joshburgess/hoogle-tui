@@ -52,6 +52,10 @@ impl App {
     }
 
     pub(crate) fn clear_pinned_results(&mut self) {
+        if self.pinned.is_empty() {
+            self.show_info("No pins to clear");
+            return;
+        }
         self.pinned.clear();
         self.show_info("All pins cleared");
     }
