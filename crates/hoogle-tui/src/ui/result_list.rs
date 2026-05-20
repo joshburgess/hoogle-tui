@@ -70,11 +70,11 @@ impl ResultListState {
             .unwrap_or(self.items.len())
     }
 
-    pub fn visible_index(&self, pos: usize) -> usize {
-        self.filtered_indices
-            .as_ref()
-            .and_then(|v| v.get(pos).copied())
-            .unwrap_or(pos)
+    pub fn visible_index(&self, pos: usize) -> Option<usize> {
+        match &self.filtered_indices {
+            Some(indices) => indices.get(pos).copied(),
+            None => Some(pos),
+        }
     }
 
     pub fn move_down(&mut self) {
@@ -119,17 +119,18 @@ impl ResultListState {
     }
 
     pub fn selected_result(&self) -> Option<&SearchResult> {
-        let idx = self.visible_index(self.selected);
+        let idx = self.visible_index(self.selected)?;
         self.items.get(idx)
     }
 
     /// Toggle multi-select on the current item.
     pub fn toggle_select_current(&mut self) {
-        let idx = self.visible_index(self.selected);
-        if self.multi_selected.contains(&idx) {
-            self.multi_selected.remove(&idx);
-        } else {
-            self.multi_selected.insert(idx);
+        if let Some(idx) = self.visible_index(self.selected) {
+            if self.multi_selected.contains(&idx) {
+                self.multi_selected.remove(&idx);
+            } else {
+                self.multi_selected.insert(idx);
+            }
         }
     }
 
@@ -320,7 +321,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
 
     let visible_end = (state.scroll_offset + viewport_results).min(visible_count);
     for vi in state.scroll_offset..visible_end {
-        let idx = state.visible_index(vi);
+        let Some(idx) = state.visible_index(vi) else {
+            continue;
+        };
         let result = &state.items[idx];
         let cached = &state.display_cache[idx];
         let is_selected = vi == state.selected;
@@ -566,6 +569,29 @@ mod tests {
     fn selected_result_on_empty() {
         let state = ResultListState::new();
         assert!(state.selected_result().is_none());
+    }
+
+    #[test]
+    fn selected_result_none_when_filter_has_no_matches() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![make_result("a")]);
+        state.start_fuzzy_filter();
+        state.fuzzy_add_char('z');
+
+        assert_eq!(state.visible_count(), 0);
+        assert!(state.selected_result().is_none());
+    }
+
+    #[test]
+    fn toggle_select_current_ignores_empty_filtered_view() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![make_result("a")]);
+        state.start_fuzzy_filter();
+        state.fuzzy_add_char('z');
+
+        state.toggle_select_current();
+
+        assert!(state.multi_selected.is_empty());
     }
 
     #[test]
