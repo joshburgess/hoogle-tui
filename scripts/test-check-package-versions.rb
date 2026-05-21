@@ -72,6 +72,23 @@ def write_fixture(root, workspace:, flake:, homebrew:)
       hoogle-syntax = { path = "../hoogle-syntax", version = "#{workspace}" }
     TOML
   )
+
+  File.write(
+    File.join(root, "Cargo.lock"),
+    <<~TOML,
+      [[package]]
+      name = "hoogle-core"
+      version = "#{workspace}"
+
+      [[package]]
+      name = "hoogle-syntax"
+      version = "#{workspace}"
+
+      [[package]]
+      name = "hoogle-tui"
+      version = "#{workspace}"
+    TOML
+  )
 end
 
 def run_checker(root)
@@ -181,6 +198,40 @@ Dir.mktmpdir("check-package-versions") do |dir|
   expected = "hoogle-tui/Cargo.toml path dependency version (1.2.4) does not match workspace version (1.2.3)"
   unless stderr.include?(expected)
     warn "path dependency version mismatch failed without expected output"
+    warn "expected: #{expected}"
+    warn stderr
+    exit 1
+  end
+end
+
+Dir.mktmpdir("check-package-versions") do |dir|
+  write_fixture(dir, workspace: "1.2.3", flake: "1.2.3", homebrew: "1.2.3")
+  File.write(
+    File.join(dir, "Cargo.lock"),
+    <<~TOML,
+      [[package]]
+      name = "hoogle-core"
+      version = "1.2.3"
+
+      [[package]]
+      name = "hoogle-syntax"
+      version = "1.2.4"
+
+      [[package]]
+      name = "hoogle-tui"
+      version = "1.2.3"
+    TOML
+  )
+
+  success, stderr = run_checker(dir)
+  if success
+    warn "lockfile version mismatch should have failed"
+    exit 1
+  end
+
+  expected = "Cargo.lock hoogle-syntax version (1.2.4) does not match workspace version (1.2.3)"
+  unless stderr.include?(expected)
+    warn "lockfile version mismatch failed without expected output"
     warn "expected: #{expected}"
     warn stderr
     exit 1

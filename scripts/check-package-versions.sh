@@ -9,8 +9,27 @@ homebrew_version="$(awk -F'"' '/version / {print $2; exit}' "$root/packaging/hom
 
 for manifest in "$root"/crates/*/Cargo.toml; do
   crate_version="$(awk -F'"' '/^version = / {print $2; exit}' "$manifest")"
+  crate_name="$(awk -F'"' '/^name = / {print $2; exit}' "$manifest")"
   if [ "$crate_version" != "$workspace_version" ]; then
     echo "$manifest version ($crate_version) does not match workspace version ($workspace_version)" >&2
+    exit 1
+  fi
+
+  lock_version="$(
+    awk -F'"' -v crate_name="$crate_name" '
+      /^\[\[package\]\]/ { in_package = 1; name = ""; version = ""; next }
+      in_package && /^name = / { name = $2; next }
+      in_package && /^version = / {
+        version = $2
+        if (name == crate_name) {
+          print version
+          exit
+        }
+      }
+    ' "$root/Cargo.lock"
+  )"
+  if [ "$lock_version" != "$workspace_version" ]; then
+    echo "Cargo.lock $crate_name version ($lock_version) does not match workspace version ($workspace_version)" >&2
     exit 1
   fi
 

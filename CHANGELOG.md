@@ -26,6 +26,7 @@
 - Release verification now runs the same `scripts/verify.sh` workflow used for CI and local checks.
 - Verification now rejects mismatched workspace, Nix flake, and Homebrew formula versions.
 - Verification now rejects crate package and internal path dependency versions that drift from the workspace version.
+- Verification now rejects workspace crate versions in `Cargo.lock` that drift from the workspace version.
 - Package-version verification now has deterministic regression coverage.
 - Updated the packaged Homebrew formula version to match the workspace version.
 - Homebrew installs now generate shell completions from the installed binary.
