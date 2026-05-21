@@ -23,8 +23,10 @@
 - Bookmark and history loads now distinguish missing, unreadable, and corrupt persistence files.
 - Cache TTL and size limit calculations now saturate instead of overflowing on extreme config values.
 - CI now runs the same `scripts/verify.sh` workflow used for local verification.
+- CI workflow permissions are now explicitly read-only.
 - Release verification now runs the same `scripts/verify.sh` workflow used for CI and local checks.
 - Release verification now includes the `RUN_AUDIT=1` dependency audit path.
+- Release workflow permissions are now read-only by default and scoped to write only when creating the GitHub release.
 - GitHub release creation now waits for crates.io publishing to complete.
 - Verification now rejects mismatched workspace, Nix flake, and Homebrew formula versions.
 - Verification now rejects crate package and internal path dependency versions that drift from the workspace version.
