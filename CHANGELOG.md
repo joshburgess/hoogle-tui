@@ -92,6 +92,7 @@
 - Fuzzy-filter selection now reports when no filtered result is selected.
 - Opening the yank menu now reports when no result is selected.
 - In-document search now reports when no document is loaded.
+- Package-scope confirmation now reports when there is no query to search.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.

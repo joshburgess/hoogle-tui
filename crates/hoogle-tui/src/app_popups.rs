@@ -238,7 +238,11 @@ impl App {
                         self.status.package_scope = self.package_scope.clone();
                     }
                     self.close_popup();
-                    self.trigger_search();
+                    if self.query_text().is_empty() {
+                        self.show_info("No query to search with package scope");
+                    } else {
+                        self.trigger_search();
+                    }
                 }
                 Action::ClearSearch => {
                     if let Some(ref mut pp) = self.package_popup {

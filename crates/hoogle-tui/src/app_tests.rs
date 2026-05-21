@@ -562,6 +562,21 @@ fn quit_action_exits_even_when_popup_is_open() {
 }
 
 #[test]
+fn package_scope_confirm_reports_when_query_is_empty() {
+    let mut app = test_app();
+    app.open_package_scope_popup();
+
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert!(!app.results.loading);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No query to search with package scope"
+    ));
+}
+
+#[test]
 fn bookmark_delete_keeps_selection_near_deleted_row() {
     let mut app = test_app();
     for name in ["first", "second", "third"] {
