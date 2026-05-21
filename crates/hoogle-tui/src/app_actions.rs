@@ -66,9 +66,11 @@ impl App {
             }
             Action::ClearSearch => self.clear_search_state(),
             Action::OpenYankMenu if self.mode == AppMode::Results => self.open_yank_menu(),
+            Action::OpenYankMenu => self.show_info("No results to open yank menu"),
             Action::OpenPackageScope => self.open_package_scope_popup(),
             Action::OpenThemeSwitcher => self.toggle_theme_switcher(),
             Action::ToggleCompact if self.mode == AppMode::Results => self.toggle_compact_results(),
+            Action::ToggleCompact => self.show_info("No results to compact"),
             Action::OpenInBrowser => {
                 self.open_in_browser();
             }
@@ -89,12 +91,17 @@ impl App {
             Action::ToggleMultiSelect if self.mode == AppMode::Results => {
                 self.toggle_multi_select_current()
             }
+            Action::ToggleMultiSelect => self.show_info("No result selected"),
             Action::YankSelectedImports if self.mode == AppMode::Results => {
                 self.yank_multi_imports()
+            }
+            Action::YankSelectedImports => {
+                self.show_info("No results selected (use 'x' to multi-select)");
             }
             Action::ToggleGroupByModule if self.mode == AppMode::Results => {
                 self.toggle_group_by_module()
             }
+            Action::ToggleGroupByModule => self.show_info("No results to group"),
             Action::YankGhciType => {
                 self.yank_ghci_command(":type");
             }

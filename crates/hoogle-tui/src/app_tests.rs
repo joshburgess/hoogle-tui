@@ -217,6 +217,32 @@ fn result_helpers_update_selection_state() {
 }
 
 #[test]
+fn result_only_actions_report_when_not_in_results_mode() {
+    let cases = [
+        (Action::OpenYankMenu, "No results to open yank menu"),
+        (Action::ToggleCompact, "No results to compact"),
+        (Action::ToggleMultiSelect, "No result selected"),
+        (
+            Action::YankSelectedImports,
+            "No results selected (use 'x' to multi-select)",
+        ),
+        (Action::ToggleGroupByModule, "No results to group"),
+    ];
+
+    for (action, expected) in cases {
+        let mut app = test_app();
+        app.mode = AppMode::Search;
+
+        app.handle_action(action);
+
+        assert!(matches!(
+            app.status.message,
+            Some(StatusMessage::Info(ref msg)) if msg == expected
+        ));
+    }
+}
+
+#[test]
 fn preview_toggle_reports_new_state() {
     let mut app = test_app();
     app.preview_enabled = false;
