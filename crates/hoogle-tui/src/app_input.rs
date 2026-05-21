@@ -50,6 +50,9 @@ impl App {
             KeyCode::Enter if self.results.visible_count() > 0 => {
                 self.open_doc_for_selected();
             }
+            KeyCode::Enter => {
+                self.show_info("No filtered result selected");
+            }
             KeyCode::Char(c) => {
                 let action = keymap.resolve(
                     AppMode::Results,

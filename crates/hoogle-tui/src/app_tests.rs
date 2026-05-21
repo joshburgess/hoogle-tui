@@ -12,6 +12,7 @@ use crate::actions::Action;
 use crate::app::{App, AppMode, DocResponse, PopupMode, SearchResponse, SourceResponse};
 use crate::bookmarks::{Bookmark, BookmarkStore};
 use crate::history::SearchHistory;
+use crate::keymap::Keymap;
 use crate::ui::status_bar::StatusMessage;
 use crate::ui::{history_popup, toc_popup};
 
@@ -262,6 +263,23 @@ fn focus_results_reports_when_results_are_empty() {
     assert!(matches!(
         app.status.message,
         Some(StatusMessage::Info(ref msg)) if msg == "No results to focus"
+    ));
+}
+
+#[test]
+fn fuzzy_filter_enter_reports_when_filter_has_no_matches() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.results.set_items(vec![result("map")]);
+    app.results.start_fuzzy_filter();
+    app.results.fuzzy_add_char('z');
+    let keymap = Keymap::new(&Default::default());
+
+    app.handle_fuzzy_filter_input(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE), &keymap);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No filtered result selected"
     ));
 }
 
