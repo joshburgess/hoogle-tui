@@ -304,6 +304,7 @@ impl App {
                         }
                     }
                     self.close_popup();
+                    self.show_info("No module selected");
                 }
                 Action::Back | Action::Quit => self.close_popup(),
                 Action::Tick => self.on_tick(),

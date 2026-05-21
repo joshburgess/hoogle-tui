@@ -524,6 +524,27 @@ fn open_module_browser_shows_available_modules() {
 }
 
 #[test]
+fn module_browser_select_reports_when_filter_has_no_visible_module() {
+    let mut app = test_app();
+    app.all_results = vec![module_result("map", &["Data", "Map"])];
+    app.open_module_browser();
+    if let Some(ref mut mb) = app.module_browser {
+        for c in "nomatch".chars() {
+            mb.add_filter_char(c);
+        }
+    }
+
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert!(app.module_browser.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No module selected"
+    ));
+}
+
+#[test]
 fn empty_bookmarks_and_history_report_noop() {
     let mut app = test_app();
     let temp_dir = tempfile::tempdir().unwrap();
