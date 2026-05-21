@@ -947,6 +947,24 @@ fn page_scroll_actions_target_results_preview_when_enabled() {
 }
 
 #[test]
+fn page_scroll_actions_move_results_when_preview_is_disabled() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.preview_enabled = false;
+    app.hit_result_list = Rect::new(0, 0, 40, 14);
+    app.results
+        .set_items((0..10).map(|i| result(&format!("result-{i}"))).collect());
+
+    app.handle_action(Action::ScrollPageDown);
+
+    assert_eq!(app.results.selected, 3);
+
+    app.handle_action(Action::ScrollHalfUp);
+
+    assert_eq!(app.results.selected, 2);
+}
+
+#[test]
 fn help_closes_back_to_previous_mode() {
     let mut app = app_with_doc();
 

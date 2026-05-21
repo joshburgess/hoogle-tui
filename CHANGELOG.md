@@ -99,6 +99,7 @@
 - Result-only commands now report when invoked outside results mode.
 - Document-only commands now report when invoked outside document view.
 - Select now reports when invoked without a selectable result.
+- Page-style scrolling now moves through results when the preview pane is disabled.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.

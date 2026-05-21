@@ -96,7 +96,12 @@ impl App {
             AppMode::SourceView => self.source_state.viewport_height,
             AppMode::Help => self.help_state.viewport_height,
             AppMode::Results if self.preview_enabled => self.preview_state.viewport_height,
-            AppMode::Search | AppMode::Results => return,
+            AppMode::Results => {
+                let amount = (self.results_page_step() / divisor).max(1);
+                self.move_results_by(amount, down);
+                return;
+            }
+            AppMode::Search => return,
         };
         let amount = (viewport_height / divisor).max(1);
         self.scroll_active_view_by(amount, down);
@@ -108,10 +113,30 @@ impl App {
             AppMode::SourceView => self.source_state.viewport_height,
             AppMode::Help => self.help_state.viewport_height,
             AppMode::Results if self.preview_enabled => self.preview_state.viewport_height,
-            AppMode::Search | AppMode::Results => return,
+            AppMode::Results => {
+                self.move_results_by(self.results_page_step(), down);
+                return;
+            }
+            AppMode::Search => return,
         };
         let amount = viewport_height.saturating_sub(2).max(1);
         self.scroll_active_view_by(amount, down);
+    }
+
+    fn results_page_step(&self) -> usize {
+        let visible_rows = usize::from(self.hit_result_list.height).saturating_sub(2);
+        let visible_results = visible_rows / self.results.lines_per_result();
+        visible_results.saturating_sub(1).max(1)
+    }
+
+    fn move_results_by(&mut self, amount: usize, down: bool) {
+        for _ in 0..amount {
+            if down {
+                self.results.move_down();
+            } else {
+                self.results.move_up();
+            }
+        }
     }
 
     fn scroll_active_view_by(&mut self, amount: usize, down: bool) {
