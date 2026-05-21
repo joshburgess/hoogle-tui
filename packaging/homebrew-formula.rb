@@ -8,7 +8,7 @@
 class HoogleTui < Formula
   desc "Terminal UI for Haskell's Hoogle search engine"
   homepage "https://github.com/joshburgess/hoogle-tui"
-  version "0.1.1"
+  version "0.1.2"
   license "MIT"
 
   on_macos do

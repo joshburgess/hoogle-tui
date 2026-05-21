@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Versioning
+- Bumped workspace, crate, Nix, and Homebrew package versions to `0.1.2` for the next release.
+
 ### Fixed
 - Removed a stale backend documentation-fetching method that had been superseded by `HaddockFetcher`.
 - Replaced the broken load-more path with backend pagination.
