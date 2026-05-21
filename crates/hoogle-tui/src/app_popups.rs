@@ -89,9 +89,12 @@ impl App {
                     if let Some(ref toc) = self.toc_state {
                         if let Some(offset) = toc.selected_offset() {
                             self.doc_state.scroll_offset = offset.saturating_sub(1);
+                            self.close_popup();
+                            return;
                         }
                     }
                     self.close_popup();
+                    self.show_info("No declaration selected");
                 }
                 Action::Back | Action::Quit => self.close_popup(),
                 Action::Tick => self.on_tick(),

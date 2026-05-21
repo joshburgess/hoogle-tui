@@ -299,6 +299,22 @@ fn open_toc_reports_when_document_is_missing() {
 }
 
 #[test]
+fn toc_select_reports_when_filter_has_no_visible_declaration() {
+    let mut app = app_with_doc();
+    app.open_toc();
+    app.add_toc_filter_char('z');
+
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert!(app.toc_state.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No declaration selected"
+    ));
+}
+
+#[test]
 fn doc_search_reports_when_document_is_missing() {
     let mut app = test_app();
     app.mode = AppMode::DocView;
