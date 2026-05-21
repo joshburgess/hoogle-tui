@@ -614,6 +614,25 @@ fn package_scope_confirm_reports_when_query_is_empty() {
 }
 
 #[test]
+fn history_select_reports_when_filter_has_no_visible_entry() {
+    let mut app = test_app();
+    app.history.add("map", 1);
+    app.open_history_popup();
+    for c in "nomatch".chars() {
+        app.add_history_filter_char(c);
+    }
+
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert!(app.history_popup.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No history entry selected"
+    ));
+}
+
+#[test]
 fn bookmark_delete_keeps_selection_near_deleted_row() {
     let mut app = test_app();
     for name in ["first", "second", "third"] {

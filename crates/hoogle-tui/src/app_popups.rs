@@ -123,6 +123,7 @@ impl App {
                         }
                     }
                     self.close_popup();
+                    self.show_info("No history entry selected");
                 }
                 Action::DeleteEntry => {
                     let selected = self
