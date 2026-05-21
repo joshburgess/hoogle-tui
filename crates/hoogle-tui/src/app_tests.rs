@@ -906,6 +906,25 @@ fn mouse_wheel_scrolls_pinned_panel_independently() {
 }
 
 #[test]
+fn mouse_click_uses_compact_result_row_height() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.results.compact = true;
+    app.results
+        .set_items(vec![result("a"), result("b"), result("c"), result("d")]);
+    app.hit_result_list = Rect::new(0, 0, 40, 8);
+
+    app.handle_mouse(MouseEvent {
+        kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+        column: 2,
+        row: 4,
+        modifiers: KeyModifiers::NONE,
+    });
+
+    assert_eq!(app.results.selected, 3);
+}
+
+#[test]
 fn scroll_up_in_results_mode_scrolls_preview_when_enabled() {
     let mut app = test_app();
     app.mode = AppMode::Results;

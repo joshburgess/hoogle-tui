@@ -59,7 +59,7 @@ impl App {
                 let inner_top = self.hit_result_list.y + 1;
                 if row > inner_top {
                     let relative_row = (row - inner_top) as usize;
-                    let lines_per_result = 3usize;
+                    let lines_per_result = self.results.lines_per_result();
                     let clicked_index =
                         self.results.scroll_offset + relative_row / lines_per_result;
                     let visible_count = self.results.visible_count();
