@@ -33,13 +33,13 @@ for manifest in "$root"/crates/*/Cargo.toml; do
     exit 1
   fi
 
-  path_dependency_version="$(
-    awk -F'version = "' '/path = "\.\.\// {split($2, parts, "\""); print parts[1]; exit}' "$manifest"
-  )"
-  if [ -n "$path_dependency_version" ] && [ "$path_dependency_version" != "$workspace_version" ]; then
-    echo "$manifest path dependency version ($path_dependency_version) does not match workspace version ($workspace_version)" >&2
-    exit 1
-  fi
+  awk -F'version = "' '/path = "\.\.\// {split($2, parts, "\""); print parts[1]}' "$manifest" |
+  while IFS= read -r path_dependency_version; do
+    if [ "$path_dependency_version" != "$workspace_version" ]; then
+      echo "$manifest path dependency version ($path_dependency_version) does not match workspace version ($workspace_version)" >&2
+      exit 1
+    fi
+  done
 done
 
 if [ "$flake_version" != "$workspace_version" ]; then

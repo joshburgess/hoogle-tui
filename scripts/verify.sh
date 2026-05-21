@@ -5,6 +5,8 @@ cargo fmt -- --check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
 RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+cargo package -p hoogle-core --allow-dirty --offline
+cargo package -p hoogle-syntax --allow-dirty --offline
 sh -n scripts/check-package-versions.sh
 sh -n scripts/verify.sh
 ruby -c scripts/check-rust-panics.rb >/dev/null

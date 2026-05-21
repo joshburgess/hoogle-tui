@@ -185,6 +185,36 @@ Dir.mktmpdir("check-package-versions") do |dir|
       version = "1.2.3"
 
       [dependencies]
+      hoogle-core = { path = "../hoogle-core", version = "1.2.3" }
+      hoogle-syntax = { path = "../hoogle-syntax", version = "1.2.4" }
+    TOML
+  )
+
+  success, stderr = run_checker(dir)
+  if success
+    warn "second path dependency version mismatch should have failed"
+    exit 1
+  end
+
+  expected = "hoogle-tui/Cargo.toml path dependency version (1.2.4) does not match workspace version (1.2.3)"
+  unless stderr.include?(expected)
+    warn "second path dependency version mismatch failed without expected output"
+    warn "expected: #{expected}"
+    warn stderr
+    exit 1
+  end
+end
+
+Dir.mktmpdir("check-package-versions") do |dir|
+  write_fixture(dir, workspace: "1.2.3", flake: "1.2.3", homebrew: "1.2.3")
+  File.write(
+    File.join(dir, "crates", "hoogle-tui", "Cargo.toml"),
+    <<~TOML,
+      [package]
+      name = "hoogle-tui"
+      version = "1.2.3"
+
+      [dependencies]
       hoogle-core = { path = "../hoogle-core", version = "1.2.4" }
     TOML
   )
