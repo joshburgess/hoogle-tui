@@ -102,6 +102,7 @@
 - Page-style scrolling now moves through results when the preview pane is disabled.
 - Delete-entry now reports when invoked without a deletable entry.
 - Mouse clicks now select the correct compact result row.
+- Mouse clicks now select the first visible result row.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.
