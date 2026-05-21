@@ -26,6 +26,7 @@ impl App {
             Action::MoveToTop => self.move_selection_or_scroll_to_edge(false),
             Action::MoveToBottom => self.move_selection_or_scroll_to_edge(true),
             Action::Select if self.mode == AppMode::Results => self.open_doc_for_selected(),
+            Action::Select => self.show_info("No result selected"),
             Action::ScrollDown => self.scroll_active_view(1),
             Action::ScrollUp => self.scroll_active_view(-1),
             Action::ScrollHalfDown => self.scroll_active_view_by_fraction(2, true),

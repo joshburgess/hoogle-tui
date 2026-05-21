@@ -317,6 +317,19 @@ fn focus_results_reports_when_results_are_empty() {
 }
 
 #[test]
+fn select_reports_when_not_in_results_mode() {
+    let mut app = test_app();
+    app.mode = AppMode::Search;
+
+    app.handle_action(Action::Select);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
+}
+
+#[test]
 fn fuzzy_filter_enter_reports_when_filter_has_no_matches() {
     let mut app = test_app();
     app.mode = AppMode::Results;
