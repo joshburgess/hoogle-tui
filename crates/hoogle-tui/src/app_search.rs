@@ -127,6 +127,7 @@ impl App {
     pub(crate) fn load_more_results(&mut self) {
         let query = self.query_text();
         if query.is_empty() {
+            self.show_info("No query to load more results");
             return;
         }
 

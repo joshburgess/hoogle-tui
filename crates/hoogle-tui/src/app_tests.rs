@@ -298,6 +298,15 @@ fn load_more_reports_unavailable_states() {
         app.status.message,
         Some(StatusMessage::Info(ref msg)) if msg == "Already loading more results"
     ));
+
+    app.loading_more = false;
+    app.has_more_results = true;
+    app.handle_action(Action::LoadMore);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No query to load more results"
+    ));
 }
 
 #[test]
