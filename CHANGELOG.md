@@ -32,6 +32,7 @@
 - Verification now runs `shellcheck` on shell helper scripts when it is available locally.
 - Verification can now run `cargo audit` with `RUN_AUDIT=1`.
 - Updated `rustls-webpki` in the lockfile to clear current `cargo audit` vulnerability findings.
+- Crate package metadata now points at the repository README.
 - Ignored backend smoke tests now include explicit ignore reasons.
 - Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.
 - Table-of-contents and history popups now accept typed filters instead of carrying unused filtering state.
