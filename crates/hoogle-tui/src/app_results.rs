@@ -3,6 +3,10 @@ use crate::ui::{module_browser, package_popup, theme_popup, yank_popup};
 
 impl App {
     pub(crate) fn open_yank_menu(&mut self) {
+        if self.results.selected_result().is_none() {
+            self.show_info("No result selected");
+            return;
+        }
         self.yank_popup = Some(yank_popup::YankPopupState::new());
         self.popup = Some(PopupMode::YankMenu);
     }

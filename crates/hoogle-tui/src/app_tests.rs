@@ -447,6 +447,7 @@ fn successful_async_responses_clear_status_deadline() {
 #[test]
 fn popup_helpers_open_expected_popup_state() {
     let mut app = test_app();
+    app.results.set_items(vec![result("map")]);
 
     app.open_yank_menu();
     assert_eq!(app.popup, Some(PopupMode::YankMenu));
@@ -465,6 +466,21 @@ fn popup_helpers_open_expected_popup_state() {
     app.toggle_theme_switcher();
     assert_eq!(app.popup, None);
     assert!(app.theme_popup.is_none());
+}
+
+#[test]
+fn open_yank_menu_reports_when_no_result_is_selected() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+
+    app.open_yank_menu();
+
+    assert_eq!(app.popup, None);
+    assert!(app.yank_popup.is_none());
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No result selected"
+    ));
 }
 
 #[test]
