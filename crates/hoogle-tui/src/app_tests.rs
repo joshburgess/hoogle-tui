@@ -299,6 +299,20 @@ fn open_toc_reports_when_document_is_missing() {
 }
 
 #[test]
+fn doc_search_reports_when_document_is_missing() {
+    let mut app = test_app();
+    app.mode = AppMode::DocView;
+
+    app.handle_action(Action::SearchInDoc);
+
+    assert!(!app.doc_state.search_active);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No document loaded"
+    ));
+}
+
+#[test]
 fn load_more_reports_unavailable_states() {
     let mut app = test_app();
 

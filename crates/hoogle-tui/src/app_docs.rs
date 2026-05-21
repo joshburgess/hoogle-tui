@@ -91,6 +91,14 @@ impl App {
         self.popup = Some(PopupMode::Toc);
     }
 
+    pub(crate) fn start_doc_search(&mut self) {
+        if self.doc_state.doc.is_none() {
+            self.show_info("No document loaded");
+            return;
+        }
+        self.doc_state.start_search();
+    }
+
     pub(crate) fn move_doc_declaration_or_match(&mut self, forward: bool) {
         match (self.doc_state.search_matches.is_empty(), forward) {
             (false, true) => self.doc_state.next_match(),

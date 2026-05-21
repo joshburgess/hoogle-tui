@@ -37,7 +37,7 @@ impl App {
             Action::OpenTOC if self.mode == AppMode::DocView => self.open_toc(),
             Action::FollowLink if self.mode == AppMode::DocView => self.follow_doc_link(),
             Action::CycleLink if self.mode == AppMode::DocView => self.cycle_doc_link(),
-            Action::SearchInDoc if self.mode == AppMode::DocView => self.doc_state.start_search(),
+            Action::SearchInDoc if self.mode == AppMode::DocView => self.start_doc_search(),
             Action::NavBack if self.mode == AppMode::DocView => self.navigate_doc_back(),
             Action::ViewSource if self.mode == AppMode::DocView => {
                 self.open_source_for_current_decl()
