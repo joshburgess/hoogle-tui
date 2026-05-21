@@ -13,6 +13,9 @@ ruby -c packaging/homebrew-formula.rb >/dev/null
 if command -v actionlint >/dev/null 2>&1; then
   actionlint
 fi
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck scripts/verify.sh scripts/check-package-versions.sh
+fi
 scripts/test-check-rust-panics.rb
 scripts/check-rust-panics.rb
 scripts/test-check-package-versions.rb

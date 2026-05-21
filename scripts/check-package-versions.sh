@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-root="${1:-$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)}"
+root="${1:-$(unset CDPATH; cd -- "$(dirname -- "$0")/.." && pwd)}"
 
 workspace_version="$(awk -F'"' '/^version = / {print $2; exit}' "$root/Cargo.toml")"
 flake_version="$(awk -F'"' '/version = / {print $2; exit}' "$root/flake.nix")"

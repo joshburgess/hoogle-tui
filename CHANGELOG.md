@@ -29,6 +29,7 @@
 - Keybinding overrides now accept uppercase modifier prefixes and named keys.
 - Verification now checks shell and Ruby script syntax, including the packaged Homebrew formula.
 - Verification now runs `actionlint` when it is available locally.
+- Verification now runs `shellcheck` on shell helper scripts when it is available locally.
 - Ignored backend smoke tests now include explicit ignore reasons.
 - Documentation navigation now tracks the current page URL so internal-link back navigation returns to the previous document.
 - Table-of-contents and history popups now accept typed filters instead of carrying unused filtering state.
