@@ -51,3 +51,11 @@ if [ "${RUN_SMOKE_TESTS:-0}" = "1" ]; then
   cargo test -p hoogle-core integration_local_search -- --ignored
   cargo test -p hoogle-core integration_web_search -- --ignored
 fi
+
+if [ "${RUN_AUDIT:-0}" = "1" ]; then
+  if ! command -v cargo-audit >/dev/null 2>&1; then
+    echo "RUN_AUDIT=1 requires cargo-audit to be installed" >&2
+    exit 1
+  fi
+  cargo audit
+fi
