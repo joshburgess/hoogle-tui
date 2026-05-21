@@ -103,6 +103,8 @@
 - Delete-entry now reports when invoked without a deletable entry.
 - Mouse clicks now select the correct compact result row.
 - Mouse clicks now select the first visible result row.
+- Mouse clicks now ignore grouped result headers instead of selecting a result.
+- Double-click handling now requires the same row and column.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.

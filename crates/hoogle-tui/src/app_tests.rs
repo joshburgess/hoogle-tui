@@ -928,7 +928,6 @@ fn mouse_click_uses_compact_result_row_height() {
 fn mouse_click_selects_first_visible_result_row() {
     let mut app = test_app();
     app.mode = AppMode::Results;
-    app.results.selected = 1;
     app.results
         .set_items(vec![result("a"), result("b"), result("c")]);
     app.results.selected = 1;
@@ -942,6 +941,62 @@ fn mouse_click_selects_first_visible_result_row() {
     });
 
     assert_eq!(app.results.selected, 0);
+}
+
+#[test]
+fn mouse_click_ignores_grouped_result_headers() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.results.group_by_module = true;
+    app.results.set_items(vec![
+        module_result("map", &["Data", "Map"]),
+        module_result("set", &["Data", "Set"]),
+    ]);
+    app.results.selected = 1;
+    app.hit_result_list = Rect::new(0, 0, 40, 12);
+
+    app.handle_mouse(MouseEvent {
+        kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+        column: 2,
+        row: 1,
+        modifiers: KeyModifiers::NONE,
+    });
+
+    assert_eq!(app.results.selected, 1);
+
+    app.handle_mouse(MouseEvent {
+        kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+        column: 2,
+        row: 2,
+        modifiers: KeyModifiers::NONE,
+    });
+
+    assert_eq!(app.results.selected, 0);
+}
+
+#[test]
+fn double_click_requires_same_column_and_row() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.results.set_items(vec![result("a")]);
+    app.hit_result_list = Rect::new(0, 0, 40, 8);
+    app.hit_preview_pane = Some(Rect::new(45, 0, 20, 8));
+
+    app.handle_mouse(MouseEvent {
+        kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+        column: 50,
+        row: 2,
+        modifiers: KeyModifiers::NONE,
+    });
+    app.handle_mouse(MouseEvent {
+        kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+        column: 2,
+        row: 2,
+        modifiers: KeyModifiers::NONE,
+    });
+
+    assert_eq!(app.results.selected, 0);
+    assert!(app.status.message.is_none());
 }
 
 #[test]

@@ -100,6 +100,7 @@ impl App {
             hit_pinned_panel: None,
             hit_doc_area: Rect::default(),
             last_click_time: None,
+            last_click_col: 0,
             last_click_row: 0,
         })
     }

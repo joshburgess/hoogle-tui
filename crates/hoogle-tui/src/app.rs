@@ -192,6 +192,7 @@ pub struct App {
 
     // Double-click tracking
     pub last_click_time: Option<Instant>,
+    pub last_click_col: u16,
     pub last_click_row: u16,
 }
 

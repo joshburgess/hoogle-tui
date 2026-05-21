@@ -33,11 +33,13 @@ impl App {
             .last_click_time
             .map(|t| {
                 now.duration_since(t) < std::time::Duration::from_millis(400)
+                    && self.last_click_col == col
                     && self.last_click_row == row
             })
             .unwrap_or(false);
 
         self.last_click_time = Some(now);
+        self.last_click_col = col;
         self.last_click_row = row;
 
         if self.popup.is_some() {
@@ -59,11 +61,12 @@ impl App {
                 let inner_top = self.hit_result_list.y + 1;
                 if row >= inner_top {
                     let relative_row = (row - inner_top) as usize;
-                    let lines_per_result = self.results.lines_per_result();
-                    let clicked_index =
-                        self.results.scroll_offset + relative_row / lines_per_result;
-                    let visible_count = self.results.visible_count();
-                    if clicked_index < visible_count {
+                    let viewport_height =
+                        usize::from(self.hit_result_list.height.saturating_sub(2));
+                    if let Some(clicked_index) = self
+                        .results
+                        .visible_result_at_render_row(relative_row, viewport_height)
+                    {
                         self.results.selected = clicked_index;
                         if is_double_click {
                             self.open_doc_for_selected();

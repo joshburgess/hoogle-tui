@@ -78,6 +78,53 @@ impl ResultListState {
         }
     }
 
+    pub fn visible_result_at_render_row(
+        &self,
+        row: usize,
+        viewport_height: usize,
+    ) -> Option<usize> {
+        if viewport_height == 0 {
+            return None;
+        }
+
+        let visible_count = self.visible_count();
+        let lpr = self.lines_per_result();
+
+        if !self.group_by_module || self.compact {
+            let visible_pos = self.scroll_offset + row / lpr;
+            let visible_end = (self.scroll_offset + viewport_height / lpr).min(visible_count);
+            return (visible_pos < visible_end).then_some(visible_pos);
+        }
+
+        let viewport_results = viewport_height / lpr.max(1);
+        let visible_end = (self.scroll_offset + viewport_results).min(visible_count);
+        let mut rendered_row = 0;
+        let mut last_module: Option<&str> = None;
+
+        for visible_pos in self.scroll_offset..visible_end {
+            let idx = self.visible_index(visible_pos)?;
+            let current_module = self.display_cache.get(idx)?.module_str.as_str();
+            let show_header = !current_module.is_empty() && last_module != Some(current_module);
+
+            if show_header {
+                last_module = Some(current_module);
+                if rendered_row + 2 < viewport_height {
+                    if row == rendered_row {
+                        return None;
+                    }
+                    rendered_row += 1;
+                }
+            }
+
+            if row >= rendered_row && row < rendered_row + lpr {
+                return Some(visible_pos);
+            }
+            rendered_row += lpr;
+        }
+
+        None
+    }
+
     pub fn move_down(&mut self) {
         let count = self.visible_count();
         if count > 0 && self.selected < count - 1 {
@@ -580,6 +627,14 @@ mod tests {
         }
     }
 
+    fn make_module_result(name: &str, module: &[&str]) -> SearchResult {
+        let mut result = make_result(name);
+        result.module = Some(ModulePath(
+            module.iter().map(|segment| (*segment).into()).collect(),
+        ));
+        result
+    }
+
     #[test]
     fn new_state_is_empty() {
         let state = ResultListState::new();
@@ -683,6 +738,36 @@ mod tests {
             .collect();
 
         assert_eq!(names, vec!["gamma"]);
+    }
+
+    #[test]
+    fn visible_result_at_render_row_ignores_group_headers() {
+        let mut state = ResultListState::new();
+        state.group_by_module = true;
+        state.set_items(vec![
+            make_module_result("map", &["Data", "Map"]),
+            make_module_result("set", &["Data", "Set"]),
+        ]);
+
+        assert_eq!(state.visible_result_at_render_row(0, 12), None);
+        assert_eq!(state.visible_result_at_render_row(1, 12), Some(0));
+        assert_eq!(state.visible_result_at_render_row(4, 12), None);
+        assert_eq!(state.visible_result_at_render_row(5, 12), Some(1));
+    }
+
+    #[test]
+    fn visible_result_at_render_row_uses_compact_row_height() {
+        let mut state = ResultListState::new();
+        state.compact = true;
+        state.group_by_module = true;
+        state.set_items(vec![
+            make_module_result("map", &["Data", "Map"]),
+            make_module_result("set", &["Data", "Set"]),
+        ]);
+
+        assert_eq!(state.visible_result_at_render_row(0, 2), Some(0));
+        assert_eq!(state.visible_result_at_render_row(1, 2), Some(1));
+        assert_eq!(state.visible_result_at_render_row(2, 2), None);
     }
 
     #[test]
