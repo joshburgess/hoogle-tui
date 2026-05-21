@@ -330,6 +330,18 @@ fn select_reports_when_not_in_results_mode() {
 }
 
 #[test]
+fn delete_entry_reports_when_no_deletable_entry_is_open() {
+    let mut app = test_app();
+
+    app.handle_action(Action::DeleteEntry);
+
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "No entry selected"
+    ));
+}
+
+#[test]
 fn fuzzy_filter_enter_reports_when_filter_has_no_matches() {
     let mut app = test_app();
     app.mode = AppMode::Results;

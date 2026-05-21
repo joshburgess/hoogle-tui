@@ -60,6 +60,7 @@ impl App {
             }
             Action::Bookmark => self.bookmark_selected(),
             Action::OpenBookmarks => self.open_bookmarks_popup(),
+            Action::DeleteEntry => self.show_info("No entry selected"),
             Action::SearchHistory => self.open_history_popup(),
             Action::YankSignature => self.yank_signature(),
             Action::YankImport => self.yank_import(),
