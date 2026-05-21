@@ -35,13 +35,19 @@ impl App {
             Action::NextDeclaration => self.move_doc_declaration_or_match(true),
             Action::PrevDeclaration => self.move_doc_declaration_or_match(false),
             Action::OpenTOC if self.mode == AppMode::DocView => self.open_toc(),
+            Action::OpenTOC => self.show_info("No document loaded"),
             Action::FollowLink if self.mode == AppMode::DocView => self.follow_doc_link(),
+            Action::FollowLink => self.show_info("No document loaded"),
             Action::CycleLink if self.mode == AppMode::DocView => self.cycle_doc_link(),
+            Action::CycleLink => self.show_info("No document loaded"),
             Action::SearchInDoc if self.mode == AppMode::DocView => self.start_doc_search(),
+            Action::SearchInDoc => self.show_info("No document loaded"),
             Action::NavBack if self.mode == AppMode::DocView => self.navigate_doc_back(),
+            Action::NavBack => self.show_info("No document navigation history"),
             Action::ViewSource if self.mode == AppMode::DocView => {
                 self.open_source_for_current_decl()
             }
+            Action::ViewSource => self.show_info("No declaration selected"),
             Action::TogglePreview => self.toggle_preview(),
             Action::OpenFilter => {
                 self.filter_state.sync_selection();

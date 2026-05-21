@@ -97,6 +97,7 @@
 - Table-of-contents confirmation now reports when no filtered declaration is selected.
 - History confirmation now reports when no filtered history entry is selected.
 - Result-only commands now report when invoked outside results mode.
+- Document-only commands now report when invoked outside document view.
 - Bookmark and yank commands now explain unavailable result, signature, import, and URL cases instead of silently doing nothing.
 - Pin, qualified-name yank, and open-document actions now report when no result is selected.
 - User-facing keybinding docs now describe `/` as result-mode search focus and doc-mode document search.

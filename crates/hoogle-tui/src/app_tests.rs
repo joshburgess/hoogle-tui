@@ -243,6 +243,30 @@ fn result_only_actions_report_when_not_in_results_mode() {
 }
 
 #[test]
+fn doc_only_actions_report_when_not_in_doc_view() {
+    let cases = [
+        (Action::OpenTOC, "No document loaded"),
+        (Action::FollowLink, "No document loaded"),
+        (Action::CycleLink, "No document loaded"),
+        (Action::SearchInDoc, "No document loaded"),
+        (Action::NavBack, "No document navigation history"),
+        (Action::ViewSource, "No declaration selected"),
+    ];
+
+    for (action, expected) in cases {
+        let mut app = test_app();
+        app.mode = AppMode::Search;
+
+        app.handle_action(action);
+
+        assert!(matches!(
+            app.status.message,
+            Some(StatusMessage::Info(ref msg)) if msg == expected
+        ));
+    }
+}
+
+#[test]
 fn preview_toggle_reports_new_state() {
     let mut app = test_app();
     app.preview_enabled = false;
