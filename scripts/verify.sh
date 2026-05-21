@@ -4,6 +4,7 @@ set -eu
 cargo fmt -- --check
 cargo test
 cargo clippy --all-targets --all-features -- -D warnings
+RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
 sh -n scripts/check-package-versions.sh
 sh -n scripts/verify.sh
 ruby -c scripts/check-rust-panics.rb >/dev/null

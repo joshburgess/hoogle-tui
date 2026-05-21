@@ -28,6 +28,7 @@
 - Release verification now includes the `RUN_AUDIT=1` dependency audit path.
 - Release workflow permissions are now read-only by default and scoped to write only when creating the GitHub release.
 - GitHub release creation now waits for crates.io publishing to complete.
+- Verification now builds workspace rustdoc with warnings treated as errors.
 - Verification now rejects mismatched workspace, Nix flake, and Homebrew formula versions.
 - Verification now rejects crate package and internal path dependency versions that drift from the workspace version.
 - Verification now rejects workspace crate versions in `Cargo.lock` that drift from the workspace version.
