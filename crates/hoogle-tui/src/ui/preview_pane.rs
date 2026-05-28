@@ -57,10 +57,13 @@ pub fn render(
         .title(" Preview ")
         .border_style(theme.style(SemanticToken::Border));
 
+    let inner_width = area.width.saturating_sub(2) as usize;
+
     let Some(result) = result else {
         state.last_result_name.clear();
+        let message = truncate_width("  Select a result to preview", inner_width, "...");
         let empty = Paragraph::new(Line::from(Span::styled(
-            "  Select a result to preview",
+            message,
             theme.style(SemanticToken::Comment),
         )))
         .block(block);
@@ -71,7 +74,6 @@ pub fn render(
     state.reset_if_changed(&result.name);
 
     let inner = block.inner(area);
-    let inner_width = area.width.saturating_sub(2) as usize;
     state.viewport_height = inner.height as usize;
 
     let mut lines: Vec<Line> = Vec::new();
@@ -104,12 +106,14 @@ pub fn render(
     // Type signature (syntax-highlighted)
     if let Some(ref sig) = result.signature {
         let full_sig = format!("{} :: {sig}", result.name);
-        let highlighted = hoogle_syntax::highlight_signature(&full_sig, theme);
+        let signature = truncate_width(&full_sig, inner_width, "\u{2026}");
+        let highlighted = hoogle_syntax::highlight_signature(&signature, theme);
         lines.push(highlighted);
         lines.push(Line::from(""));
     } else {
+        let name = truncate_width(&result.name, inner_width, "\u{2026}");
         lines.push(Line::from(Span::styled(
-            &result.name,
+            name,
             theme
                 .style(SemanticToken::TypeConstructor)
                 .add_modifier(Modifier::BOLD),
@@ -175,8 +179,9 @@ pub fn render(
             }
         }
     } else {
+        let message = truncate_width("No documentation available.", inner_width, "...");
         lines.push(Line::from(Span::styled(
-            "No documentation available.",
+            message,
             theme.style(SemanticToken::Comment),
         )));
     }

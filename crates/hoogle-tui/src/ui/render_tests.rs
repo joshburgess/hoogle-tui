@@ -454,6 +454,45 @@ fn preview_pane_truncates_metadata_and_url() {
 }
 
 #[test]
+fn preview_pane_truncates_state_messages_and_signature() {
+    let theme = Theme::dracula();
+    let mut empty_state = preview_pane::PreviewState::new();
+
+    let empty_output = render_to_text(18, 5, |frame| {
+        preview_pane::render(
+            frame,
+            Rect::new(0, 0, 18, 5),
+            None,
+            &mut empty_state,
+            &theme,
+        );
+    });
+    assert!(empty_output.contains("Select a re..."), "{empty_output}");
+    assert_lines_fit(&empty_output, 18);
+
+    let mut state = preview_pane::PreviewState::new();
+    let mut result = search_result(
+        "lookupWithAnIntentionallyLongName",
+        "Ord k => k -> Map k a -> Maybe a",
+    );
+    result.short_doc = None;
+
+    let output = render_to_text(24, 12, |frame| {
+        preview_pane::render(
+            frame,
+            Rect::new(0, 0, 24, 12),
+            Some(&result),
+            &mut state,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert!(output.contains("No documentation av..."), "{output}");
+    assert_lines_fit(&output, 24);
+}
+
+#[test]
 fn doc_viewer_table_wide_text_fits_render_width() {
     let theme = Theme::dracula();
     let doc = HaddockDoc {
