@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::{display_width, truncate_width};
 
 pub struct PackageScopeState {
     pub input: String,
@@ -31,12 +32,17 @@ impl PackageScopeState {
     }
 
     pub fn confirm(&mut self) -> Vec<String> {
-        self.packages = self
+        self.packages.clear();
+        for package in self
             .input
             .split(',')
-            .map(|s| s.trim().to_string())
+            .map(str::trim)
             .filter(|s| !s.is_empty())
-            .collect();
+        {
+            if !self.packages.iter().any(|existing| existing == package) {
+                self.packages.push(package.to_string());
+            }
+        }
         self.packages.clone()
     }
 
@@ -69,6 +75,14 @@ pub fn render(frame: &mut Frame, state: &PackageScopeState, theme: &Theme) {
     let hint_style = theme.style(SemanticToken::Comment);
     let input_style = theme.style(SemanticToken::SearchInput);
 
+    let input_width = inner.width.saturating_sub(3) as usize;
+    let input = truncate_width(&state.input, input_width, "...");
+    let cursor = if display_width(&input) < input_width {
+        "\u{2588}"
+    } else {
+        ""
+    };
+
     let lines = vec![
         Line::from(Span::styled("Comma-separated package names:", hint_style)),
         Line::from(""),
@@ -79,8 +93,8 @@ pub fn render(frame: &mut Frame, state: &PackageScopeState, theme: &Theme) {
                     .style(SemanticToken::ModuleName)
                     .add_modifier(Modifier::BOLD),
             ),
-            Span::styled(state.input.as_str(), input_style),
-            Span::styled("\u{2588}", input_style),
+            Span::styled(input, input_style),
+            Span::styled(cursor, input_style),
         ]),
         Line::from(""),
         Line::from(Span::styled("e.g.: base, containers, text", hint_style)),
@@ -162,6 +176,14 @@ mod tests {
     fn confirm_filters_empty_entries() {
         let mut state = PackageScopeState::new(&[]);
         state.input = "base,,, containers, ,text".to_string();
+        let result = state.confirm();
+        assert_eq!(result, vec!["base", "containers", "text"]);
+    }
+
+    #[test]
+    fn confirm_deduplicates_packages_preserving_order() {
+        let mut state = PackageScopeState::new(&[]);
+        state.input = "base, containers, base, text, containers".to_string();
         let result = state.confirm();
         assert_eq!(result, vec!["base", "containers", "text"]);
     }

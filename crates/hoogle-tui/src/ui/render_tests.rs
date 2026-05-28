@@ -478,6 +478,22 @@ fn module_browser_long_filter_line_fits_render_width() {
 }
 
 #[test]
+fn package_popup_long_input_fits_render_width() {
+    let theme = Theme::dracula();
+    let mut state = package_popup::PackageScopeState::new(&[]);
+    state.input = "base, containers, text, bytestring, vector, unordered-containers, transformers"
+        .to_string();
+
+    let output = render_to_text(36, 8, |frame| {
+        package_popup::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("base, containers"), "{output}");
+    assert!(output.contains("..."), "{output}");
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
 fn popups_render_on_tiny_terminal() {
     let theme = Theme::dracula();
     let dir = tempfile::tempdir().expect("failed to create temp dir");
