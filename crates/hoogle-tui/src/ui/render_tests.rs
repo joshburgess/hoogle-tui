@@ -1128,6 +1128,27 @@ fn status_bar_truncates_backend_and_large_result_count() {
 }
 
 #[test]
+fn status_bar_omits_hints_when_space_is_exhausted() {
+    let theme = Theme::dracula();
+    let mut state = status_bar::StatusState::new("local".to_string());
+    state.set_info("Ready");
+
+    let output = render_to_text(18, 1, |frame| {
+        status_bar::render(
+            frame,
+            Rect::new(0, 0, 18, 1),
+            &state,
+            AppMode::Search,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("SEARCH"), "{output}");
+    assert!(!output.contains("Ctrl-k"), "{output}");
+    assert_lines_fit(&output, 18);
+}
+
+#[test]
 fn source_viewer_render_includes_title_line_numbers_and_code() {
     let theme = Theme::dracula();
     let mut state = source_viewer::SourceViewState::new();

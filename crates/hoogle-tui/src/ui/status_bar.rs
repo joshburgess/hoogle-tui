@@ -200,8 +200,13 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     }
     right_spans.push(Span::styled(" ", status_style));
 
-    // Combine: fill middle with spaces
     let left_len = spans_width(left_spans.iter());
+    let right_len = spans_width(right_spans.iter());
+    if area_width < 40 && left_len + right_len > area_width {
+        right_spans.clear();
+    }
+
+    // Combine: fill middle with spaces
     let right_len = spans_width(right_spans.iter());
     let padding = area_width.saturating_sub(left_len + right_len);
 
