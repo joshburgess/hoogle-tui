@@ -8,6 +8,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::truncate_width;
 
 #[derive(Debug, Clone)]
 pub struct FilterState {
@@ -78,6 +79,7 @@ pub fn render(frame: &mut Frame, state: &FilterState, theme: &Theme) {
     let inner = block.inner(popup);
     frame.render_widget(block, popup);
 
+    let label_width = inner.width.saturating_sub(2) as usize;
     let lines: Vec<Line> = FILTER_OPTIONS
         .iter()
         .enumerate()
@@ -97,7 +99,7 @@ pub fn render(frame: &mut Frame, state: &FilterState, theme: &Theme) {
 
             Line::from(vec![
                 Span::styled(bullet, style),
-                Span::styled(*label, style),
+                Span::styled(truncate_width(label, label_width, "..."), style),
             ])
         })
         .collect();

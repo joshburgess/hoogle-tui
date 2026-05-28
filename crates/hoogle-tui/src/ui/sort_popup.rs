@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::truncate_width;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SortMode {
@@ -79,6 +80,7 @@ pub fn render(frame: &mut Frame, state: &SortState, theme: &Theme) {
     let inner = block.inner(popup);
     frame.render_widget(block, popup);
 
+    let label_width = inner.width.saturating_sub(2) as usize;
     let lines: Vec<Line> = SORT_OPTIONS
         .iter()
         .enumerate()
@@ -98,7 +100,7 @@ pub fn render(frame: &mut Frame, state: &SortState, theme: &Theme) {
 
             Line::from(vec![
                 Span::styled(bullet, style),
-                Span::styled(*label, style),
+                Span::styled(truncate_width(label, label_width, "..."), style),
             ])
         })
         .collect();

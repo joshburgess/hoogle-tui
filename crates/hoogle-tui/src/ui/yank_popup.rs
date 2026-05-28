@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::truncate_width;
 
 const YANK_OPTIONS: &[&str] = &[
     "Type signature",
@@ -54,6 +55,7 @@ pub fn render(frame: &mut Frame, state: &YankPopupState, theme: &Theme) {
     let inner = block.inner(popup);
     frame.render_widget(block, popup);
 
+    let label_width = inner.width.saturating_sub(2) as usize;
     let lines: Vec<Line> = YANK_OPTIONS
         .iter()
         .enumerate()
@@ -69,7 +71,7 @@ pub fn render(frame: &mut Frame, state: &YankPopupState, theme: &Theme) {
             };
             Line::from(vec![
                 Span::styled(marker, style),
-                Span::styled(*label, style),
+                Span::styled(truncate_width(label, label_width, "..."), style),
             ])
         })
         .collect();
