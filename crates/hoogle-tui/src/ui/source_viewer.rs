@@ -6,6 +6,8 @@ use ratatui::{
     Frame,
 };
 
+use super::text::truncate_width;
+
 pub struct SourceViewState {
     pub source: Option<String>,
     pub rendered_lines: Vec<Line<'static>>,
@@ -112,11 +114,12 @@ impl SourceViewState {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme: &Theme) {
-    let title = if state.title.is_empty() {
+    let raw_title = if state.title.is_empty() {
         " Source ".to_string()
     } else {
         format!(" Source: {} ", state.title)
     };
+    let title = truncate_width(&raw_title, area.width.saturating_sub(2) as usize, "...");
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -127,8 +130,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme:
     state.viewport_height = inner.height as usize;
 
     if state.loading {
+        let message = truncate_width("  Loading source code...", inner.width as usize, "...");
         let loading = Paragraph::new(Line::from(Span::styled(
-            "  Loading source code...",
+            message,
             theme.style(SemanticToken::Spinner),
         )))
         .block(block);
@@ -137,17 +141,13 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme:
     }
 
     if let Some(ref err) = state.error {
+        let message = truncate_width(&format!("  {err}"), inner.width as usize, "...");
+        let hint = truncate_width("  Press Esc to go back.", inner.width as usize, "...");
         let error = Paragraph::new(vec![
             Line::from(""),
-            Line::from(Span::styled(
-                format!("  {err}"),
-                theme.style(SemanticToken::Error),
-            )),
+            Line::from(Span::styled(message, theme.style(SemanticToken::Error))),
             Line::from(""),
-            Line::from(Span::styled(
-                "  Press Esc to go back.",
-                theme.style(SemanticToken::Comment),
-            )),
+            Line::from(Span::styled(hint, theme.style(SemanticToken::Comment))),
         ])
         .block(block);
         frame.render_widget(error, area);
@@ -155,8 +155,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme:
     }
 
     if state.rendered_lines.is_empty() {
+        let message = truncate_width("  No source loaded.", inner.width as usize, "...");
         let empty = Paragraph::new(Line::from(Span::styled(
-            "  No source loaded.",
+            message,
             theme.style(SemanticToken::Comment),
         )))
         .block(block);
@@ -169,16 +170,19 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme:
     let end = (start + inner.height as usize).min(total);
     let visible: Vec<Line> = state.rendered_lines[start..end].to_vec();
 
-    // Line count indicator
+    let range = truncate_width(
+        &format!(" {}-{}/{} ", start + 1, end, total),
+        area.width.saturating_sub(2) as usize,
+        "...",
+    );
     let block = block.title_bottom(Line::from(vec![Span::styled(
-        format!(" {}-{}/{} ", start + 1, end, total),
+        range,
         theme.style(SemanticToken::Comment),
     )]));
 
     let paragraph = Paragraph::new(visible).block(block);
     frame.render_widget(paragraph, area);
 
-    // Scrollbar
     if total > inner.height as usize {
         let mut scrollbar_state = ScrollbarState::new(total.saturating_sub(inner.height as usize))
             .position(state.scroll_offset);

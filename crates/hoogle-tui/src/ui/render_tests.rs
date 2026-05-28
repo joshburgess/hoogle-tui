@@ -725,6 +725,29 @@ fn source_viewer_render_includes_title_line_numbers_and_code() {
 }
 
 #[test]
+fn source_viewer_truncates_narrow_title_and_error() {
+    let theme = Theme::dracula();
+    let mut state = source_viewer::SourceViewState::new();
+    state.title = "Data.Map.Strict.Internal.lookupWithAReallyLongDeclarationName".to_string();
+    state.error =
+        Some("Could not fetch source because the remote package index timed out".to_string());
+
+    let output = render_to_text(34, 8, |frame| {
+        source_viewer::render(frame, Rect::new(0, 0, 34, 8), &mut state, &theme);
+    });
+
+    assert!(
+        output.contains("Source: Data.Map.Strict.Inte..."),
+        "{output}"
+    );
+    assert!(
+        output.contains("Could not fetch source beca..."),
+        "{output}"
+    );
+    assert_lines_fit(&output, 34);
+}
+
+#[test]
 fn filter_popup_render_includes_all_options() {
     let theme = Theme::dracula();
     let state = filter_popup::FilterState::new();
