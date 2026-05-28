@@ -13,8 +13,8 @@ use crate::bookmarks::{Bookmark, BookmarkStore};
 use crate::history::SearchHistory;
 use crate::ui::{
     bookmarks_popup, command_palette, doc_viewer, filter_popup, help_overlay, history_popup,
-    module_browser, package_popup, result_list, sort_popup, source_viewer, status_bar, theme_popup,
-    toc_popup, yank_popup,
+    module_browser, package_popup, result_list, search_bar, sort_popup, source_viewer, status_bar,
+    theme_popup, toc_popup, yank_popup,
 };
 
 #[derive(Debug)]
@@ -774,6 +774,26 @@ fn pinned_panel_truncates_wide_rows() {
     assert!(output.contains("Data."), "{output}");
     assert!(output.contains("contain..."), "{output}");
     assert_lines_fit(&output, 34);
+}
+
+#[test]
+fn search_bar_truncates_narrow_hints() {
+    let theme = Theme::dracula();
+    let mut textarea = tui_textarea::TextArea::default();
+
+    let output = render_to_text(28, 3, |frame| {
+        search_bar::render(
+            frame,
+            Rect::new(0, 0, 28, 3),
+            &mut textarea,
+            AppMode::Results,
+            false,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("name │ :: a -> b │ +pk..."), "{output}");
+    assert_lines_fit(&output, 28);
 }
 
 #[test]

@@ -10,6 +10,8 @@ use tui_textarea::TextArea;
 
 use crate::app::AppMode;
 
+use super::text::truncate_width;
+
 pub fn render(
     frame: &mut Frame,
     area: Rect,
@@ -28,21 +30,25 @@ pub fn render(
         theme.style(SemanticToken::Border)
     };
 
-    let title = if focused {
+    let raw_title = if focused {
         " \u{1f50d} Search Hoogle "
     } else {
         " Search (/ to focus) "
     };
+    let title = truncate_width(raw_title, area.width.saturating_sub(2) as usize, "...");
 
-    // Bottom hint: context-sensitive
-    let bottom_hint = if focused {
+    let raw_bottom_hint = if focused {
         " Enter:results \u{2502} Tab:complete \u{2502} Esc:back \u{2502} F1:help "
     } else if !has_query {
-        // Syntax cheatsheet when empty and unfocused
         " name \u{2502} :: a -> b \u{2502} +pkg name \u{2502} module:Data.Map "
     } else {
         " /:focus \u{2502} ?:help "
     };
+    let bottom_hint = truncate_width(
+        raw_bottom_hint,
+        area.width.saturating_sub(2) as usize,
+        "...",
+    );
 
     let block = Block::default()
         .borders(Borders::ALL)
