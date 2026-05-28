@@ -86,13 +86,18 @@ impl PinnedState {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Theme) {
+    let title_width = area.width.saturating_sub(2) as usize;
+    let title = truncate_width(
+        &format!(" Pinned ({}) ", state.pins.len()),
+        title_width,
+        "...",
+    );
+    let footer = truncate_width(" Ctrl-x:unpin all ", title_width, "...");
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(format!(" Pinned ({}) ", state.pins.len()))
-        .title_bottom(Span::styled(
-            " Ctrl-x:unpin all ",
-            theme.style(SemanticToken::Comment),
-        ))
+        .title(title)
+        .title_bottom(Span::styled(footer, theme.style(SemanticToken::Comment)))
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(area);
@@ -101,8 +106,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Th
     frame.render_widget(block, area);
 
     if state.pins.is_empty() {
+        let message = truncate_width("  Toggle pins with 'P' to compare", inner_width, "...");
         let empty = Paragraph::new(Line::from(Span::styled(
-            "  Toggle pins with 'P' to compare",
+            message,
             theme.style(SemanticToken::Comment),
         )));
         frame.render_widget(empty, inner);

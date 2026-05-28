@@ -884,6 +884,21 @@ fn pinned_panel_truncates_wide_rows() {
 }
 
 #[test]
+fn pinned_panel_truncates_narrow_chrome_and_empty_state() {
+    let theme = Theme::dracula();
+    let mut state = crate::ui::pinned_panel::PinnedState::new();
+
+    let output = render_to_text(18, 5, |frame| {
+        crate::ui::pinned_panel::render(frame, Rect::new(0, 0, 18, 5), &mut state, &theme);
+    });
+
+    assert!(output.contains("Pinned (0)"), "{output}");
+    assert!(output.contains("Ctrl-x:unpin..."), "{output}");
+    assert!(output.contains("Toggle pins..."), "{output}");
+    assert_lines_fit(&output, 18);
+}
+
+#[test]
 fn search_bar_truncates_narrow_hints() {
     let theme = Theme::dracula();
     let mut textarea = tui_textarea::TextArea::default();
