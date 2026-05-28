@@ -973,6 +973,48 @@ fn doc_viewer_search_bar_truncates_long_query() {
 }
 
 #[test]
+fn doc_viewer_truncates_narrow_state_messages() {
+    let theme = Theme::dracula();
+    let mut loading = doc_viewer::DocViewState::new();
+    loading.loading = true;
+
+    let loading_output = render_to_text(24, 5, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 24, 5), &mut loading, &theme);
+    });
+
+    assert!(
+        loading_output.contains("Loading documenta..."),
+        "{loading_output}"
+    );
+    assert_lines_fit(&loading_output, 24);
+
+    let mut error = doc_viewer::DocViewState::new();
+    error.error = Some("documentation request timed out after following redirect".to_string());
+
+    let error_output = render_to_text(30, 7, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 30, 7), &mut error, &theme);
+    });
+
+    assert!(
+        error_output.contains("Error: documentation re..."),
+        "{error_output}"
+    );
+    assert!(
+        error_output.contains("Press Esc to go back."),
+        "{error_output}"
+    );
+    assert_lines_fit(&error_output, 30);
+
+    let mut empty = doc_viewer::DocViewState::new();
+    let empty_output = render_to_text(20, 5, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 20, 5), &mut empty, &theme);
+    });
+
+    assert!(empty_output.contains("No documentat..."), "{empty_output}");
+    assert_lines_fit(&empty_output, 20);
+}
+
+#[test]
 fn filter_popup_render_includes_all_options() {
     let theme = Theme::dracula();
     let state = filter_popup::FilterState::new();

@@ -310,11 +310,13 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &T
     };
 
     let inner = block.inner(doc_area);
+    let inner_width = inner.width as usize;
     state.viewport_height = inner.height as usize;
 
     if state.loading {
+        let message = truncate_width("  Loading documentation...", inner_width, "...");
         let loading = Paragraph::new(Line::from(Span::styled(
-            "  Loading documentation...",
+            message,
             theme.style(SemanticToken::Spinner),
         )))
         .block(block);
@@ -324,17 +326,13 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &T
     }
 
     if let Some(ref err) = state.error {
+        let message = truncate_width(&format!("  Error: {err}"), inner_width, "...");
+        let hint = truncate_width("  Press Esc to go back.", inner_width, "...");
         let error = Paragraph::new(vec![
             Line::from(""),
-            Line::from(Span::styled(
-                format!("  Error: {err}"),
-                theme.style(SemanticToken::Error),
-            )),
+            Line::from(Span::styled(message, theme.style(SemanticToken::Error))),
             Line::from(""),
-            Line::from(Span::styled(
-                "  Press Esc to go back.",
-                theme.style(SemanticToken::Comment),
-            )),
+            Line::from(Span::styled(hint, theme.style(SemanticToken::Comment))),
         ])
         .block(block);
         frame.render_widget(error, doc_area);
@@ -343,8 +341,9 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &T
     }
 
     if state.rendered_lines.is_empty() {
+        let message = truncate_width("  No documentation loaded.", inner_width, "...");
         let empty = Paragraph::new(Line::from(Span::styled(
-            "  No documentation loaded.",
+            message,
             theme.style(SemanticToken::Comment),
         )))
         .block(block);
