@@ -9,7 +9,7 @@ use ratatui::{
 
 use crate::app::AppMode;
 
-use super::text::spans_width;
+use super::text::{spans_width, truncate_width};
 
 const SPINNER_FRAMES: &[char] = &[
     '\u{280b}', '\u{2819}', '\u{2839}', '\u{2838}', '\u{283c}', '\u{2834}', '\u{2826}', '\u{2827}',
@@ -101,7 +101,8 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     }
 
     if !state.package_scope.is_empty() {
-        let scope = state.package_scope.join(",");
+        let max_scope_width = (area.width as usize / 4).clamp(8, 28);
+        let scope = truncate_width(&state.package_scope.join(","), max_scope_width, "...");
         left_spans.push(Span::styled(
             format!("[{scope}] "),
             theme.style(SemanticToken::ModuleName),
@@ -113,18 +114,27 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     match &state.message {
         Some(StatusMessage::Loading(msg)) => {
             let spinner = SPINNER_FRAMES[state.spinner_tick];
+            let max_message_width =
+                message_width(area.width as usize, spans_width(left_spans.iter()) + 2);
+            let msg = truncate_width(msg, max_message_width, "...");
             left_spans.push(Span::styled(
                 format!("{spinner} {msg} "),
                 theme.style(SemanticToken::Spinner),
             ));
         }
         Some(StatusMessage::Error(msg)) => {
+            let max_message_width =
+                message_width(area.width as usize, spans_width(left_spans.iter()));
+            let msg = truncate_width(msg, max_message_width, "...");
             left_spans.push(Span::styled(
                 format!("{msg} "),
                 theme.style(SemanticToken::Error),
             ));
         }
         Some(StatusMessage::Info(msg)) => {
+            let max_message_width =
+                message_width(area.width as usize, spans_width(left_spans.iter()));
+            let msg = truncate_width(msg, max_message_width, "...");
             left_spans.push(Span::styled(format!("{msg} "), status_style));
         }
         None => {
@@ -197,4 +207,10 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
 
     let bar = Paragraph::new(Line::from(all_spans)).style(status_style);
     frame.render_widget(bar, area);
+}
+
+fn message_width(area_width: usize, used_width: usize) -> usize {
+    area_width
+        .saturating_sub(used_width + 1)
+        .min((area_width / 2).clamp(8, 48))
 }

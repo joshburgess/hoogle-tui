@@ -663,6 +663,33 @@ fn status_bar_source_view_includes_help_and_quit_hints() {
 }
 
 #[test]
+fn status_bar_truncates_long_scope_and_message() {
+    let theme = Theme::dracula();
+    let mut state = status_bar::StatusState::new("local".to_string());
+    state.package_scope = vec![
+        "base".to_string(),
+        "containers".to_string(),
+        "unordered-containers".to_string(),
+        "transformers".to_string(),
+    ];
+    state.set_error("Could not load documentation because the cached response was unreadable");
+
+    let output = render_to_text(54, 1, |frame| {
+        status_bar::render(
+            frame,
+            Rect::new(0, 0, 54, 1),
+            &state,
+            AppMode::Results,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("[base,conta...]"), "{output}");
+    assert!(output.contains("Could not load ..."), "{output}");
+    assert_lines_fit(&output, 54);
+}
+
+#[test]
 fn source_viewer_render_includes_title_line_numbers_and_code() {
     let theme = Theme::dracula();
     let mut state = source_viewer::SourceViewState::new();
