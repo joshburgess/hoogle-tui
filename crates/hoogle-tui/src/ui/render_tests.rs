@@ -867,6 +867,20 @@ fn help_overlay_truncates_narrow_rows() {
 }
 
 #[test]
+fn help_overlay_truncates_narrow_chrome() {
+    let theme = Theme::dracula();
+    let mut state = help_overlay::HelpState::new();
+
+    let output = render_to_text(12, 8, |frame| {
+        help_overlay::render(frame, &mut state, &theme);
+    });
+
+    assert!(output.contains(" ho..."), "{output}");
+    assert!(output.contains(" ? ..."), "{output}");
+    assert_lines_fit(&output, 12);
+}
+
+#[test]
 fn fixed_list_popups_truncate_labels_on_narrow_terminal() {
     let theme = Theme::dracula();
 

@@ -389,10 +389,14 @@ pub fn render(frame: &mut Frame, state: &mut HelpState, theme: &Theme) {
 
     frame.render_widget(Clear, popup);
 
+    let chrome_width = popup.width.saturating_sub(2) as usize;
+    let title = truncate_width(" hoogle-tui Help ", chrome_width, "...");
+    let footer = truncate_width(" ? or Esc to close ", chrome_width, "...");
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" hoogle-tui Help ")
-        .title_bottom(" ? or Esc to close ")
+        .title(title)
+        .title_bottom(footer)
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);
