@@ -493,6 +493,28 @@ fn preview_pane_truncates_state_messages_and_signature() {
 }
 
 #[test]
+fn preview_pane_truncates_long_doc_words() {
+    let theme = Theme::dracula();
+    let mut state = preview_pane::PreviewState::new();
+    let mut result = search_result("map", "(a -> b) -> [a] -> [b]");
+    result.short_doc =
+        Some("SupercalifragilisticexpialidociousIdentifierWithoutSpaces".to_string());
+
+    let output = render_to_text(24, 12, |frame| {
+        preview_pane::render(
+            frame,
+            Rect::new(0, 0, 24, 12),
+            Some(&result),
+            &mut state,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 24);
+}
+
+#[test]
 fn doc_viewer_table_wide_text_fits_render_width() {
     let theme = Theme::dracula();
     let doc = HaddockDoc {

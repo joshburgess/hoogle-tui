@@ -228,6 +228,16 @@ fn wrap_text(text: &str, width: usize) -> Vec<String> {
     let mut current = String::new();
 
     for word in text.split_whitespace() {
+        let word_width = display_width(word);
+        if word_width > width {
+            if !current.is_empty() {
+                lines.push(current);
+                current = String::new();
+            }
+            lines.push(truncate_width(word, width, "\u{2026}"));
+            continue;
+        }
+
         if current.is_empty() {
             current = word.to_string();
         } else if display_width(&current) + 1 + display_width(word) <= width {
