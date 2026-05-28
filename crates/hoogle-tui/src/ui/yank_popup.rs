@@ -47,9 +47,15 @@ pub fn render(frame: &mut Frame, state: &YankPopupState, theme: &Theme) {
 
     frame.render_widget(Clear, popup);
 
+    let title = truncate_width(
+        " Copy to Clipboard ",
+        popup.width.saturating_sub(2) as usize,
+        "...",
+    );
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Copy to Clipboard ")
+        .title(title)
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);

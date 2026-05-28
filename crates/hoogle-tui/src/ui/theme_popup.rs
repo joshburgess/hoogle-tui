@@ -59,9 +59,15 @@ pub fn render(frame: &mut Frame, state: &ThemePopupState, theme: &Theme) {
 
     frame.render_widget(Clear, popup);
 
+    let title = truncate_width(
+        " Switch Theme ",
+        popup.width.saturating_sub(2) as usize,
+        "...",
+    );
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Switch Theme ")
+        .title(title)
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);

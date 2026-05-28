@@ -71,9 +71,15 @@ pub fn render(frame: &mut Frame, state: &FilterState, theme: &Theme) {
     // Clear background
     frame.render_widget(Clear, popup);
 
+    let title = truncate_width(
+        " Filter Results ",
+        popup.width.saturating_sub(2) as usize,
+        "...",
+    );
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Filter Results ")
+        .title(title)
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);

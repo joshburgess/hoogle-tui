@@ -639,6 +639,32 @@ fn fixed_list_popups_truncate_labels_on_narrow_terminal() {
 }
 
 #[test]
+fn fixed_list_popups_truncate_titles_on_narrow_terminal() {
+    let theme = Theme::dracula();
+
+    let filter_output = render_to_text(10, 10, |frame| {
+        filter_popup::render(frame, &filter_popup::FilterState::new(), &theme);
+    });
+    let sort_output = render_to_text(10, 8, |frame| {
+        sort_popup::render(frame, &sort_popup::SortState::new(), &theme);
+    });
+    let theme_output = render_to_text(10, 8, |frame| {
+        theme_popup::render(frame, &theme_popup::ThemePopupState::new("dracula"), &theme);
+    });
+    let yank_output = render_to_text(10, 9, |frame| {
+        yank_popup::render(frame, &yank_popup::YankPopupState::new(), &theme);
+    });
+
+    assert!(filter_output.contains(" Filt..."), "{filter_output}");
+    assert!(sort_output.contains(" Sort..."), "{sort_output}");
+    assert!(theme_output.contains(" Swit..."), "{theme_output}");
+    assert!(yank_output.contains(" Copy..."), "{yank_output}");
+    for output in [&filter_output, &sort_output, &theme_output, &yank_output] {
+        assert_lines_fit(output, 10);
+    }
+}
+
+#[test]
 fn popups_render_on_tiny_terminal() {
     let theme = Theme::dracula();
     let dir = tempfile::tempdir().expect("failed to create temp dir");

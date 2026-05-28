@@ -72,9 +72,15 @@ pub fn render(frame: &mut Frame, state: &SortState, theme: &Theme) {
 
     frame.render_widget(Clear, popup);
 
+    let title = truncate_width(
+        " Sort Results ",
+        popup.width.saturating_sub(2) as usize,
+        "...",
+    );
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Sort Results ")
+        .title(title)
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);
