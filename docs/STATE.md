@@ -17,6 +17,7 @@ This document tracks the implementation state of the workspace.
 - Haddock parser fixture coverage includes representative value and type declaration pages, constructor and record-field documentation, source links, since annotations, warning blocks, tables, details, definition lists, module links, anchor links, and rich inline markup.
 - Documentation and source viewers with navigation, in-document search, link following, table of contents, and source fetching.
 - Copy/yank flows, multi-select import copying, pinned results, export, history, bookmarks, themes, help, mouse support, and shell completions.
+- Grouped, ranked command palette with multi-word search, project-scope toggling, and pinned-result import copying.
 
 ## Known Gaps
 
@@ -29,7 +30,7 @@ This document tracks the implementation state of the workspace.
 - Local backend command construction has deterministic coverage for offset-adjusted fetch counts, type-signature queries, and custom database paths.
 - Backend factory selection has deterministic coverage for explicit web mode, missing local Hoogle errors, and auto-mode fallback to the web backend.
 - Render-level `TestBackend` coverage exercises result list, status bar, source viewer, and filter popup output without launching a real terminal.
-- Checked-in render golden snapshots cover result list, status bar, source viewer, and filter popup output.
+- Checked-in render golden snapshots cover result list, status bar, source viewer, filter popup, command palette, and full app results/docs surfaces.
 - CLI integration tests cover help, README help drift, version, every supported shell completion generator, invalid flags, invalid backend values, invalid log levels, and zero `--max-results`.
 - `scripts/verify.sh` runs formatting, unit tests, clippy, rustdoc, offline package checks for the library crates, shipped-code panic and unfinished-placeholder checks, prose style scans, dead-code allowance scans, and app-module import checks. CI runs the same script. Set `RUN_SMOKE_TESTS=1` to include ignored live backend smoke tests, and `RUN_AUDIT=1` to include a RustSec dependency audit with `cargo-audit`.
 - `app.rs` is now mostly state and message type definitions. Construction and initial-query setup live in `app_init.rs`, action dispatch lives in `app_actions.rs`, popup handling lives in `app_popups.rs`, result-mode helpers live in `app_results.rs`, doc/source helpers live in `app_docs.rs`, input handling lives in `app_input.rs`, mouse handling lives in `app_mouse.rs`, navigation helpers live in `app_navigation.rs`, rendering lives in `app_render.rs`, tick/async response handling lives in `app_runtime.rs`, search/filter/pagination helpers live in `app_search.rs`, and clipboard/bookmark/browser/project commands live in `app_commands.rs`.
@@ -37,5 +38,5 @@ This document tracks the implementation state of the workspace.
 ## Suggested Next Work
 
 1. Re-check local Hoogle offset support when upgrading Hoogle beyond 5.0.19.0.
-2. Extend parser output if constructor/record-field subdocumentation should become separate navigable UI entries instead of content within the parent declaration.
+2. Extend parser output if constructor/record-field documentation needs typed navigation entries beyond the declaration-subheading TOC entries already surfaced in the TUI.
 3. Keep the ignored backend smoke tests as the live end-to-end check for local Hoogle and the public web API.

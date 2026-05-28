@@ -79,6 +79,10 @@ const SECTIONS: &[HelpSection] = &[
                 key: "Ctrl-l",
                 desc: "Force redraw",
             },
+            HelpEntry {
+                key: "Ctrl-k",
+                desc: "Open command palette",
+            },
         ],
     },
     HelpSection {

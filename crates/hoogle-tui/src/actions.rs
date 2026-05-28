@@ -50,10 +50,13 @@ pub enum Action {
     UnpinAll,
     ToggleMultiSelect,
     YankSelectedImports,
+    YankPinnedImports,
     ToggleGroupByModule,
     YankGhciType,
     YankGhciInfo,
     YankDeclLink,
     DetectProject,
+    ToggleProjectScope,
+    OpenCommandPalette,
     None,
 }

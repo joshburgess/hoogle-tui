@@ -64,6 +64,8 @@ impl App {
             theme_popup: None,
             package_scope: Vec::new(),
             module_browser: None,
+            command_palette: None,
+            project_scope_enabled: true,
             pinned: pinned_panel::PinnedState::new(),
             preview_state: preview_pane::PreviewState::new(),
             completion_candidates: Vec::new(),

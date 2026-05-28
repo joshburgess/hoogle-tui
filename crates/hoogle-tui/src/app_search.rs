@@ -54,12 +54,14 @@ impl App {
         let max_results = self.config.ui.max_results;
         let tx = self.search_tx.clone();
         let full_query = self.build_scoped_query(&query);
+        let started_at = tokio::time::Instant::now();
 
         tokio::spawn(async move {
             let results = backend.search(&full_query, 0, max_results).await;
             let _ = tx.send(SearchResponse {
                 generation,
                 append: false,
+                started_at,
                 results,
             });
         });
@@ -142,19 +144,21 @@ impl App {
         let tx = self.search_tx.clone();
         let generation = self.search_generation;
         let full_query = self.build_scoped_query(&query);
+        let started_at = tokio::time::Instant::now();
 
         tokio::spawn(async move {
             let results = backend.search(&full_query, offset, max_results).await;
             let _ = tx.send(SearchResponse {
                 generation,
                 append: true,
+                started_at,
                 results,
             });
         });
     }
 
     pub(crate) fn build_scoped_query(&self, query: &str) -> String {
-        if self.package_scope.is_empty() {
+        if self.package_scope.is_empty() || !self.project_scope_enabled {
             query.to_string()
         } else {
             let prefix: String = self

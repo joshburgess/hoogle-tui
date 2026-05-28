@@ -1,4 +1,6 @@
 use hoogle_core::{
+    backend::{BackendError, HoogleBackend},
+    config::Config,
     haddock::types::{DocBlock, HaddockDoc, Inline},
     models::{ModulePath, PackageInfo, ResultKind, SearchResult},
 };
@@ -6,14 +8,33 @@ use hoogle_syntax::theme::Theme;
 use ratatui::{backend::TestBackend, layout::Rect, Terminal};
 use std::path::PathBuf;
 
-use crate::app::AppMode;
+use crate::app::{App, AppMode, PopupMode};
 use crate::bookmarks::{Bookmark, BookmarkStore};
 use crate::history::SearchHistory;
 use crate::ui::{
-    bookmarks_popup, doc_viewer, filter_popup, help_overlay, history_popup, module_browser,
-    package_popup, result_list, sort_popup, source_viewer, status_bar, theme_popup, toc_popup,
-    yank_popup,
+    bookmarks_popup, command_palette, doc_viewer, filter_popup, help_overlay, history_popup,
+    module_browser, package_popup, result_list, sort_popup, source_viewer, status_bar, theme_popup,
+    toc_popup, yank_popup,
 };
+
+#[derive(Debug)]
+struct RenderBackend;
+
+#[async_trait::async_trait]
+impl HoogleBackend for RenderBackend {
+    async fn search(
+        &self,
+        _query: &str,
+        _offset: usize,
+        _count: usize,
+    ) -> Result<Vec<SearchResult>, BackendError> {
+        Ok(Vec::new())
+    }
+
+    fn name(&self) -> &str {
+        "test"
+    }
+}
 
 fn buffer_text(backend: &TestBackend) -> String {
     backend
@@ -98,6 +119,37 @@ fn search_result(name: &str, signature: &str) -> SearchResult {
     )
 }
 
+fn render_app_to_text(mut app: App, width: u16, height: u16) -> String {
+    render_to_text(width, height, |frame| app.draw(frame))
+}
+
+fn test_app() -> App {
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let mut config = Config::default();
+    config.cache.dir = Some(dir.path().join("cache"));
+    App::new(config, Box::new(RenderBackend)).expect("failed to create app")
+}
+
+fn demo_doc() -> HaddockDoc {
+    HaddockDoc {
+        module: "Data.Map.Strict".to_string(),
+        package: "containers-0.6.7".to_string(),
+        description: vec![DocBlock::Paragraph(vec![Inline::Text(
+            "Finite maps with strict values.".to_string(),
+        )])],
+        declarations: vec![hoogle_core::haddock::types::Declaration {
+            name: "lookup".to_string(),
+            signature: Some("lookup :: Ord k => k -> Map k a -> Maybe a".to_string()),
+            doc: vec![DocBlock::Paragraph(vec![Inline::Text(
+                "Lookup the value at a key in the map.".to_string(),
+            )])],
+            since: None,
+            source_url: None,
+            anchor: Some("v:lookup".to_string()),
+        }],
+    }
+}
+
 #[test]
 fn result_list_render_includes_selected_result_metadata() {
     let theme = Theme::dracula();
@@ -117,6 +169,128 @@ fn result_list_render_includes_selected_result_metadata() {
     assert!(output.contains("Map k a -> Maybe a"));
     assert!(output.contains("Look up a key in the map."));
     assert_snapshot("result_list_selected", &output);
+}
+
+#[test]
+fn full_app_results_snapshot_with_preview_and_pins() {
+    let mut app = test_app();
+    let lookup = search_result("lookup", "Ord k => k -> Map k a -> Maybe a");
+    let insert = search_result("insert", "Ord k => k -> a -> Map k a -> Map k a");
+    app.mode = AppMode::Results;
+    app.last_searched = "map".to_string();
+    app.all_results = vec![lookup.clone(), insert.clone()];
+    app.results.set_items(app.all_results.clone());
+    app.pinned.pin(&lookup);
+    app.status.result_count = app.all_results.len();
+
+    let output = render_app_to_text(app, 100, 28);
+
+    assert!(output.contains("lookup"), "{output}");
+    assert!(output.contains("Pinned (1)"), "{output}");
+    assert_snapshot("full_app_results_preview_pins", &output);
+}
+
+#[test]
+fn full_app_doc_snapshot() {
+    let mut app = test_app();
+    app.mode = AppMode::DocView;
+    app.doc_state.set_doc(demo_doc(), &app.theme, 90);
+
+    let output = render_app_to_text(app, 90, 24);
+
+    assert!(output.contains("Data.Map.Strict"), "{output}");
+    assert!(output.contains("lookup"), "{output}");
+    assert_snapshot("full_app_doc_view", &output);
+}
+
+#[test]
+fn command_palette_snapshot() {
+    let mut app = test_app();
+    app.mode = AppMode::Results;
+    app.open_command_palette();
+    if let Some(ref mut palette) = app.command_palette {
+        palette.add_filter_char('p');
+        palette.add_filter_char('i');
+        palette.add_filter_char('n');
+        palette.add_filter_char('n');
+        palette.add_filter_char('e');
+        palette.add_filter_char('d');
+        palette.add_filter_char(' ');
+        palette.add_filter_char('i');
+        palette.add_filter_char('m');
+        palette.add_filter_char('p');
+        palette.add_filter_char('o');
+        palette.add_filter_char('r');
+        palette.add_filter_char('t');
+        palette.add_filter_char('s');
+    }
+    app.popup = Some(PopupMode::CommandPalette);
+
+    let output = render_app_to_text(app, 90, 24);
+
+    assert!(output.contains("Commands: pinned imports"), "{output}");
+    assert!(output.contains("Copy pinned imports"), "{output}");
+    assert_snapshot("command_palette", &output);
+}
+
+#[test]
+fn command_palette_long_filter_title_fits_render_width() {
+    let theme = Theme::dracula();
+    let mut state =
+        command_palette::CommandPaletteState::new(vec![command_palette::CommandEntry {
+            group: "Project",
+            label: "Toggle project scope",
+            hint: "project packages",
+            action: crate::actions::Action::ToggleProjectScope,
+        }]);
+    for c in "scope toggle with a deliberately very long trailing query".chars() {
+        state.add_filter_char(c);
+    }
+
+    let output = render_to_text(36, 10, |frame| {
+        command_palette::render(frame, &state, &theme);
+    });
+
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
+fn command_palette_long_row_fits_render_width() {
+    let theme = Theme::dracula();
+    let state = command_palette::CommandPaletteState::new(vec![command_palette::CommandEntry {
+        group: "VeryLongCommandGroupName",
+        label: "Toggle an exceptionally long command palette action label",
+        hint: "Ctrl-Shift-Alt-Super-P",
+        action: crate::actions::Action::ToggleProjectScope,
+    }]);
+
+    let output = render_to_text(36, 10, |frame| {
+        command_palette::render(frame, &state, &theme);
+    });
+
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
+fn command_palette_title_trims_filter_whitespace() {
+    let theme = Theme::dracula();
+    let mut state =
+        command_palette::CommandPaletteState::new(vec![command_palette::CommandEntry {
+            group: "Pins",
+            label: "Copy pinned imports",
+            hint: "pins",
+            action: crate::actions::Action::YankPinnedImports,
+        }]);
+    for c in "  pins  ".chars() {
+        state.add_filter_char(c);
+    }
+
+    let output = render_to_text(60, 10, |frame| {
+        command_palette::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("Commands: pins (1)"), "{output}");
+    assert!(!output.contains("Commands:   pins"), "{output}");
 }
 
 #[test]
@@ -180,6 +354,7 @@ fn toc_popup_wide_signature_fits_render_width() {
         name: "型型lookup".to_string(),
         signature: Some("型型型型型型型型型型型型型型 -> Maybe 型".to_string()),
         line_offset: 0,
+        level: 1,
     }]);
 
     let output = render_to_text(42, 8, |frame| {
@@ -224,6 +399,13 @@ fn popups_render_on_tiny_terminal() {
     let results = vec![search_result("lookup", "Ord k => k -> Map k a -> Maybe a")];
     let mut module_state = module_browser::ModuleBrowserState::new(&results);
     let mut help_state = help_overlay::HelpState::new();
+    let command_state =
+        command_palette::CommandPaletteState::new(vec![command_palette::CommandEntry {
+            group: "Global",
+            label: "Focus search",
+            hint: "/",
+            action: crate::actions::Action::FocusSearch,
+        }]);
 
     let renders = [
         render_to_text(8, 4, |frame| {
@@ -266,6 +448,9 @@ fn popups_render_on_tiny_terminal() {
         }),
         render_to_text(8, 4, |frame| {
             module_browser::render(frame, &mut module_state, &theme);
+        }),
+        render_to_text(8, 4, |frame| {
+            command_palette::render(frame, &command_state, &theme);
         }),
         render_to_text(8, 4, |frame| {
             help_overlay::render(frame, &mut help_state, &theme);

@@ -71,7 +71,8 @@ impl App {
                     | Action::Select
                     | Action::TogglePreview
                     | Action::YankSignature
-                    | Action::OpenYankMenu => {
+                    | Action::OpenYankMenu
+                    | Action::OpenCommandPalette => {
                         self.results.clear_fuzzy_filter();
                         self.handle_action(action);
                     }

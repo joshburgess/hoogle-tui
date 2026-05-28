@@ -15,9 +15,9 @@ use url::Url;
 use crate::bookmarks::BookmarkStore;
 use crate::history::SearchHistory;
 use crate::ui::{
-    bookmarks_popup, doc_viewer, filter_popup, help_overlay, history_popup, module_browser,
-    package_popup, pinned_panel, preview_pane, result_list, sort_popup, source_viewer, status_bar,
-    theme_popup, toc_popup, yank_popup,
+    bookmarks_popup, command_palette, doc_viewer, filter_popup, help_overlay, history_popup,
+    module_browser, package_popup, pinned_panel, preview_pane, result_list, sort_popup,
+    source_viewer, status_bar, theme_popup, toc_popup, yank_popup,
 };
 
 #[path = "app_actions.rs"]
@@ -75,23 +75,27 @@ pub enum PopupMode {
     PackageScope,
     ThemeSwitcher,
     ModuleBrowser,
+    CommandPalette,
 }
 
 /// Message sent from async search tasks back to the app.
 pub struct SearchResponse {
     pub generation: u64,
     pub append: bool,
+    pub started_at: Instant,
     pub results: Result<Vec<SearchResult>, BackendError>,
 }
 
 /// Message sent from async doc fetch tasks.
 pub struct DocResponse {
     pub url: Url,
+    pub started_at: Instant,
     pub result: Result<HaddockDoc, BackendError>,
 }
 
 pub struct SourceResponse {
     pub decl_name: String,
+    pub started_at: Instant,
     pub result: Result<String, BackendError>,
 }
 
@@ -120,6 +124,8 @@ pub struct App {
     pub theme_popup: Option<theme_popup::ThemePopupState>,
     pub package_scope: Vec<String>,
     pub module_browser: Option<module_browser::ModuleBrowserState>,
+    pub command_palette: Option<command_palette::CommandPaletteState>,
+    pub project_scope_enabled: bool,
 
     // Pinned results
     pub pinned: pinned_panel::PinnedState,

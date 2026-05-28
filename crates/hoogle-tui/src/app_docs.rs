@@ -1,4 +1,4 @@
-use hoogle_core::haddock::types::{Declaration, HaddockDoc};
+use hoogle_core::haddock::types::{Declaration, DocBlock, HaddockDoc, Inline};
 use url::Url;
 
 use crate::app::{App, AppMode, DocResponse, PopupMode, SourceResponse};
@@ -32,11 +32,13 @@ impl App {
         let fetcher = self.fetcher.clone();
         let tx = self.doc_tx.clone();
         let fetch_url = url.clone();
+        let started_at = tokio::time::Instant::now();
 
         tokio::spawn(async move {
             let result = fetcher.fetch_doc(&fetch_url).await;
             let _ = tx.send(DocResponse {
                 url: fetch_url,
+                started_at,
                 result,
             });
         });
@@ -64,10 +66,15 @@ impl App {
 
         let fetcher = self.fetcher.clone();
         let tx = self.source_tx.clone();
+        let started_at = tokio::time::Instant::now();
 
         tokio::spawn(async move {
             let result = fetcher.fetch_source(&source_url).await;
-            let _ = tx.send(SourceResponse { decl_name, result });
+            let _ = tx.send(SourceResponse {
+                decl_name,
+                started_at,
+                result,
+            });
         });
     }
 
@@ -77,16 +84,35 @@ impl App {
             return;
         };
 
-        let entries: Vec<toc_popup::TocEntry> = doc
+        let mut entries = Vec::new();
+        for (decl, (_, offset)) in doc
             .declarations
             .iter()
             .zip(self.doc_state.declaration_offsets.iter())
-            .map(|(decl, (_, offset))| toc_popup::TocEntry {
+        {
+            entries.push(toc_popup::TocEntry {
                 name: decl.name.clone(),
                 signature: decl.signature.clone(),
                 line_offset: *offset,
-            })
-            .collect();
+                level: 1,
+            });
+            for block in &decl.doc {
+                if let DocBlock::Header { content, .. } = block {
+                    let name = inline_plain_text(content);
+                    if !name.is_empty() {
+                        let line_offset =
+                            rendered_line_offset(&self.doc_state.rendered_lines, *offset, &name)
+                                .unwrap_or(*offset);
+                        entries.push(toc_popup::TocEntry {
+                            name,
+                            signature: None,
+                            line_offset,
+                            level: 2,
+                        });
+                    }
+                }
+            }
+        }
         self.toc_state = Some(toc_popup::TocState::new(entries));
         self.popup = Some(PopupMode::Toc);
     }
@@ -169,4 +195,40 @@ impl App {
         let (doc, decl) = self.current_doc_and_declaration()?;
         Some(format!("{}.{}", doc.module, decl.name))
     }
+}
+
+fn inline_plain_text(inlines: &[Inline]) -> String {
+    inlines
+        .iter()
+        .map(|inline| match inline {
+            Inline::Text(text)
+            | Inline::Code(text)
+            | Inline::ModuleLink(text)
+            | Inline::Emphasis(text)
+            | Inline::Bold(text)
+            | Inline::Math(text) => text.as_str(),
+            Inline::Link { text, .. } => text.as_str(),
+        })
+        .collect()
+}
+
+fn rendered_line_offset(
+    lines: &[ratatui::text::Line<'static>],
+    start: usize,
+    needle: &str,
+) -> Option<usize> {
+    let needle = needle.to_lowercase();
+    lines
+        .iter()
+        .enumerate()
+        .skip(start)
+        .find(|(_, line)| {
+            let text: String = line
+                .spans
+                .iter()
+                .map(|span| span.content.as_ref())
+                .collect();
+            text.to_lowercase().contains(&needle)
+        })
+        .map(|(index, _)| index)
 }

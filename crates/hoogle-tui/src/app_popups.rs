@@ -239,6 +239,7 @@ impl App {
                 Action::Select => {
                     if let Some(ref mut pp) = self.package_popup {
                         self.package_scope = pp.confirm();
+                        self.project_scope_enabled = true;
                         self.status.package_scope = self.package_scope.clone();
                     }
                     self.close_popup();
@@ -314,6 +315,33 @@ impl App {
                 Action::Tick => self.on_tick(),
                 _ => {}
             },
+            PopupMode::CommandPalette => match action {
+                Action::MoveDown => {
+                    if let Some(ref mut cp) = self.command_palette {
+                        cp.move_down();
+                    }
+                }
+                Action::MoveUp => {
+                    if let Some(ref mut cp) = self.command_palette {
+                        cp.move_up();
+                    }
+                }
+                Action::Select => {
+                    let selected = self
+                        .command_palette
+                        .as_ref()
+                        .and_then(|cp| cp.selected_action());
+                    self.close_popup();
+                    if let Some(action) = selected {
+                        self.handle_action(action);
+                    } else {
+                        self.show_info("No command selected");
+                    }
+                }
+                Action::Back | Action::Quit => self.close_popup(),
+                Action::Tick => self.on_tick(),
+                _ => {}
+            },
         }
     }
 
@@ -326,6 +354,7 @@ impl App {
             Some(PopupMode::PackageScope) => self.package_popup = None,
             Some(PopupMode::ThemeSwitcher) => self.theme_popup = None,
             Some(PopupMode::ModuleBrowser) => self.module_browser = None,
+            Some(PopupMode::CommandPalette) => self.command_palette = None,
             Some(PopupMode::Filter | PopupMode::Sort) | None => {}
         }
         self.popup = None;

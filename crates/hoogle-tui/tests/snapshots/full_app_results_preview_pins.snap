@@ -1,0 +1,28 @@
+┌ Search (/ to focus) ─────────────────────────────────────────────────────────────────────────────┐
+│ Type to search Hoogle...                                                                         │
+└ /:focus │ ?:help ────────────────────────────────────────────────────────────────────────────────┘
+┌ Results (2) ───────────────────────────────────┐┌ Preview ───────────────────────────────────────┐
+│> Data.Map.Strict             containers-0.6.7  ││Data.Map.Strict  containers-0.6.7               │
+│    Ord k => k -> Map k a -> Maybe a            ││                                                │
+│    Look up a key in the map.                   ││lookup :: Ord k => k -> Map k a -> Maybe a      │
+│  Data.Map.Strict             containers-0.6.7  ││                                                │
+│    Ord k => k -> a -> Map k a -> Map k a       ││────────────────────────────────────────────────│
+│    Look up a key in the map.                   ││                                                │
+│                                                ││Kind: function                                  │
+│                                                ││                                                │
+│                                                ││Look up a key in the map.                       │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                │└────────────────────────────────────────────────┘
+│                                                │┌ Pinned (1) ────────────────────────────────────┐
+│                                                ││lookup :: Ord k => k -> Map k a -> Maybe a      │
+│                                                ││  Data.Map.Strict  containers                   │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+│                                                ││                                                │
+└────────────────────────────────────────────────┘└ Ctrl-x:unpin all ──────────────────────────────┘
+ RESULTS │ test │ 2 results ↑↓/jk navigate │ Enter open docs │ Tab preview │ Ctrl-k commands │ / sea

@@ -94,6 +94,7 @@ impl App {
                 }
             }
             Action::OpenModuleBrowser => self.open_module_browser(),
+            Action::OpenCommandPalette => self.open_command_palette(),
             Action::PinResult => self.pin_selected_result(),
             Action::UnpinAll => self.clear_pinned_results(),
             Action::ToggleMultiSelect if self.mode == AppMode::Results => {
@@ -106,6 +107,7 @@ impl App {
             Action::YankSelectedImports => {
                 self.show_info("No results selected (use 'x' to multi-select)");
             }
+            Action::YankPinnedImports => self.yank_pinned_imports(),
             Action::ToggleGroupByModule if self.mode == AppMode::Results => {
                 self.toggle_group_by_module()
             }
@@ -122,6 +124,7 @@ impl App {
             Action::DetectProject => {
                 self.detect_and_apply_project();
             }
+            Action::ToggleProjectScope => self.toggle_project_scope(),
             Action::Tick => self.on_tick(),
             _ => {}
         }

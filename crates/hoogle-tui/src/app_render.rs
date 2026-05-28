@@ -2,9 +2,9 @@ use ratatui::Frame;
 
 use crate::app::{App, AppMode, PopupMode};
 use crate::ui::{
-    bookmarks_popup, doc_viewer, filter_popup, help_overlay, history_popup, layout, module_browser,
-    package_popup, pinned_panel, preview_pane, result_list, search_bar, sort_popup, source_viewer,
-    status_bar, theme_popup, toc_popup, yank_popup,
+    bookmarks_popup, command_palette, doc_viewer, filter_popup, help_overlay, history_popup,
+    layout, module_browser, package_popup, pinned_panel, preview_pane, result_list, search_bar,
+    sort_popup, source_viewer, status_bar, theme_popup, toc_popup, yank_popup,
 };
 
 impl App {
@@ -140,6 +140,11 @@ impl App {
             Some(PopupMode::ModuleBrowser) => {
                 if let Some(ref mut mb) = self.module_browser {
                     module_browser::render(frame, mb, &self.theme);
+                }
+            }
+            Some(PopupMode::CommandPalette) => {
+                if let Some(ref cp) = self.command_palette {
+                    command_palette::render(frame, cp, &self.theme);
                 }
             }
             None => {}

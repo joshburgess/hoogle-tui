@@ -21,6 +21,7 @@ pub struct TocEntry {
     pub name: String,
     pub signature: Option<String>,
     pub line_offset: usize,
+    pub level: u8,
 }
 
 impl TocState {
@@ -132,11 +133,13 @@ pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
             theme.style(SemanticToken::Comment)
         };
 
+        let indent = "  ".repeat(entry.level.saturating_sub(1) as usize);
         let sig_text = entry
             .signature
             .as_ref()
             .map(|s| {
-                let max_len = (inner.width as usize).saturating_sub(display_width(&entry.name) + 6);
+                let max_len = (inner.width as usize)
+                    .saturating_sub(display_width(&entry.name) + display_width(&indent) + 6);
                 if display_width(s) > max_len {
                     format!(" :: {}", truncate_width(s, max_len, "..."))
                 } else {
@@ -147,6 +150,7 @@ pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
 
         lines.push(Line::from(vec![
             Span::styled(marker.to_string(), style),
+            Span::styled(indent, style),
             Span::styled(entry.name.clone(), style),
             Span::styled(sig_text, sig_style),
         ]));
@@ -175,6 +179,7 @@ mod tests {
                 name: name.to_string(),
                 signature: Some("Int -> Int".to_string()),
                 line_offset: i * 10,
+                level: 1,
             })
             .collect()
     }

@@ -18,9 +18,16 @@ impl App {
 
         while let Ok(response) = self.search_rx.try_recv() {
             if response.generation == self.search_generation {
+                let elapsed = response.started_at.elapsed();
                 match response.results {
                     Ok(items) => {
                         let count = items.len();
+                        tracing::info!(
+                            result_count = count,
+                            append = response.append,
+                            elapsed_ms = elapsed.as_millis(),
+                            "search completed"
+                        );
                         self.has_more_results = count >= self.config.ui.max_results;
                         if response.append {
                             self.all_results.extend(items);
@@ -44,6 +51,12 @@ impl App {
                         }
                     }
                     Err(e) => {
+                        tracing::warn!(
+                            append = response.append,
+                            elapsed_ms = elapsed.as_millis(),
+                            error = %e,
+                            "search failed"
+                        );
                         self.results.loading = false;
                         self.loading_more = false;
                         let err_str = format!("{e}");
@@ -63,8 +76,14 @@ impl App {
                 continue;
             }
             self.pending_doc_url = None;
+            let elapsed = response.started_at.elapsed();
             match response.result {
                 Ok(doc) => {
+                    tracing::info!(
+                        module = %doc.module,
+                        elapsed_ms = elapsed.as_millis(),
+                        "doc fetch completed"
+                    );
                     self.doc_state.current_url = Some(response.url);
                     self.viewed_docs
                         .push((doc.module.clone(), doc.package.clone()));
@@ -73,6 +92,12 @@ impl App {
                     self.status.offline = false;
                 }
                 Err(e) => {
+                    tracing::warn!(
+                        url = %response.url,
+                        elapsed_ms = elapsed.as_millis(),
+                        error = %e,
+                        "doc fetch failed"
+                    );
                     self.doc_state.loading = false;
                     self.doc_state.error = Some(format!("{e}"));
                     self.status.set_error(format!("Doc fetch failed: {e}"));
@@ -87,14 +112,27 @@ impl App {
                 continue;
             }
             self.pending_source_decl = None;
+            let elapsed = response.started_at.elapsed();
             match response.result {
                 Ok(source) => {
+                    tracing::info!(
+                        decl = %response.decl_name,
+                        bytes = source.len(),
+                        elapsed_ms = elapsed.as_millis(),
+                        "source fetch completed"
+                    );
                     self.source_state
                         .set_source(source, &response.decl_name, &self.theme);
                     self.source_state.scroll_to_first_match(&response.decl_name);
                     self.clear_status_message();
                 }
                 Err(e) => {
+                    tracing::warn!(
+                        decl = %response.decl_name,
+                        elapsed_ms = elapsed.as_millis(),
+                        error = %e,
+                        "source fetch failed"
+                    );
                     self.source_state.loading = false;
                     self.source_state.error = Some(format!("{e}"));
                     self.status.set_error(format!("Source fetch failed: {e}"));

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- Added a ranked, searchable command palette on `Ctrl-k`.
+- Added command-palette actions for toggling detected project scope and copying imports from pinned results.
+- Added command-palette categories and match counts to make filtered command lists easier to scan.
+- Added multi-word command-palette matching across command labels, hints, and groups.
+- Added full-app render snapshots for results, documentation, and command-palette surfaces.
+- Added timing logs for search, documentation fetch, and source fetch completion paths.
+
+### Changed
+- Table-of-contents entries now include declaration subheadings from parsed documentation.
+- Status-bar and help hints now surface `Ctrl-k` as the command-palette shortcut.
+
 ## 0.1.2 - 2026-05-21
 
 ### Versioning

@@ -264,6 +264,7 @@ impl App {
                 let root = info.root.display().to_string();
                 self.package_scope = info.dependencies;
                 self.status.package_scope = self.package_scope.clone();
+                self.project_scope_enabled = true;
                 let proj_type = match info.project_type {
                     crate::project::ProjectType::Cabal => "cabal",
                     crate::project::ProjectType::Stack => "stack",
@@ -278,6 +279,26 @@ impl App {
             None => {
                 self.show_info("No Haskell project detected in current directory");
             }
+        }
+    }
+
+    pub(crate) fn toggle_project_scope(&mut self) {
+        if self.package_scope.is_empty() {
+            self.detect_and_apply_project();
+            return;
+        }
+
+        self.project_scope_enabled = !self.project_scope_enabled;
+        if self.project_scope_enabled {
+            self.status.package_scope = self.package_scope.clone();
+            self.show_info("Project scope enabled");
+        } else {
+            self.status.package_scope.clear();
+            self.show_info("Project scope disabled");
+        }
+
+        if !self.last_searched.is_empty() {
+            self.trigger_search();
         }
     }
 }

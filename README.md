@@ -11,6 +11,7 @@ Browse Haskell APIs, read Haddock documentation, and view source code, all from 
 - **Dual backend**: works with local `hoogle` CLI or the web API (auto-detected)
 - **Type signature detection**: automatically detects `->` / `=>` queries and shows a `[type]` indicator
 - **Package scoping**: restrict search to specific packages (`Ctrl-p`), using Hoogle's `+pkg` syntax
+- **Project scope toggle**: detected Cabal/Stack dependency scope can be toggled from the command palette
 - **Tab completion**: press `Tab` in the search bar to complete from current result names
 - **Search history**: persistent across sessions, browse with `Ctrl-r`
 - **Cabal/Stack project awareness**: auto-detects your Haskell project and scopes search to its dependencies
@@ -28,6 +29,7 @@ Browse Haskell APIs, read Haddock documentation, and view source code, all from 
 - **Multi-select**: `x` toggles selection on results, auto-advances for rapid picking
 - **Batch import yanking**: `I` copies all selected results as import statements to clipboard
 - **Pinned results**: `P` toggles a result in the comparison panel below the preview pane
+- **Pinned import copy**: copy imports for pinned results from the command palette
 - **Module browser**: `M` opens a hierarchical module tree built from search results
 
 ### Documentation
@@ -52,6 +54,7 @@ Browse Haskell APIs, read Haddock documentation, and view source code, all from 
 - **Export session**: `Ctrl-e` exports search results and viewed docs to a markdown file
 
 ### UI and Themes
+- **Command palette**: `Ctrl-k` opens grouped, ranked actions with multi-word search and match counts
 - **6 built-in themes**: Dracula, Catppuccin Mocha, Gruvbox Dark, Solarized Dark, Monokai, Nord
 - **Live theme switching**: `Ctrl-t` changes theme without restarting (re-renders docs)
 - **Custom themes** via TOML files
@@ -130,6 +133,7 @@ Search  -->  Results  -->  Docs  -->  Source
 | `?` | Help (all modes except search bar) |
 | `Ctrl-c` | Quit immediately |
 | `Ctrl-l` | Force redraw |
+| `Ctrl-k` | Command palette |
 
 ### Search Bar
 
@@ -166,6 +170,7 @@ Search  -->  Results  -->  Docs  -->  Source
 | `P` | Pin/unpin result for comparison |
 | `Ctrl-x` | Clear all pins |
 | `M` | Module browser |
+| `Ctrl-k` | Command palette, including project-scope toggle and pinned-import copy |
 | `Ctrl-o` | Open in browser |
 | `Ctrl-p` | Set package scope |
 | `Ctrl-t` | Switch theme |

@@ -46,6 +46,7 @@ impl Keymap {
             self.bind_key(mode, F(1), ToggleHelp);
             self.bind(mode, Char('/'), KeyModifiers::CONTROL, ToggleHelp);
             self.bind(mode, Char('t'), KeyModifiers::CONTROL, OpenThemeSwitcher);
+            self.bind(mode, Char('k'), KeyModifiers::CONTROL, OpenCommandPalette);
         }
 
         // Search mode
@@ -278,11 +279,14 @@ fn parse_action_name(name: &str) -> Option<Action> {
         "unpin_all" => Action::UnpinAll,
         "toggle_multi_select" => Action::ToggleMultiSelect,
         "yank_selected_imports" => Action::YankSelectedImports,
+        "yank_pinned_imports" => Action::YankPinnedImports,
         "toggle_group_by_module" => Action::ToggleGroupByModule,
         "yank_ghci_type" => Action::YankGhciType,
         "yank_ghci_info" => Action::YankGhciInfo,
         "yank_decl_link" => Action::YankDeclLink,
         "detect_project" => Action::DetectProject,
+        "toggle_project_scope" => Action::ToggleProjectScope,
+        "open_command_palette" => Action::OpenCommandPalette,
         _ => return None,
     })
 }
@@ -522,6 +526,22 @@ mod tests {
                 action,
                 Action::OpenThemeSwitcher,
                 "Ctrl-t should open theme switcher in {mode:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn ctrl_k_opens_command_palette_in_all_modes() {
+        let km = default_keymap();
+        for mode in AppMode::ALL {
+            let action = km.resolve(
+                mode,
+                KeyEvent::new(KeyCode::Char('k'), KeyModifiers::CONTROL),
+            );
+            assert_eq!(
+                action,
+                Action::OpenCommandPalette,
+                "Ctrl-k should open command palette in {mode:?}"
             );
         }
     }

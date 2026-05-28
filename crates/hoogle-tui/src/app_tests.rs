@@ -3,8 +3,8 @@ use async_trait::async_trait;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent, MouseEventKind};
 use hoogle_core::backend::{BackendError, HoogleBackend};
 use hoogle_core::config::Config;
-use hoogle_core::haddock::types::{Declaration, HaddockDoc};
-use hoogle_core::models::{ModulePath, ResultKind, SearchResult};
+use hoogle_core::haddock::types::{Declaration, DocBlock, HaddockDoc, Inline};
+use hoogle_core::models::{ModulePath, PackageInfo, ResultKind, SearchResult};
 use ratatui::layout::Rect;
 use url::Url;
 
@@ -59,6 +59,19 @@ fn module_result(name: &str, module: &[&str]) -> SearchResult {
         module: Some(ModulePath(
             module.iter().map(|part| (*part).to_string()).collect(),
         )),
+        ..result(name)
+    }
+}
+
+fn importable_result(name: &str, module: &[&str]) -> SearchResult {
+    SearchResult {
+        module: Some(ModulePath(
+            module.iter().map(|part| (*part).to_string()).collect(),
+        )),
+        package: Some(PackageInfo {
+            name: "pkg".to_string(),
+            version: None,
+        }),
         ..result(name)
     }
 }
@@ -179,6 +192,7 @@ async fn clear_search_state_ignores_in_flight_search_response() {
         .send(SearchResponse {
             generation: stale_generation,
             append: false,
+            started_at: tokio::time::Instant::now(),
             results: Ok(vec![result("map")]),
         })
         .unwrap();
@@ -390,6 +404,42 @@ fn toc_select_reports_when_filter_has_no_visible_declaration() {
 }
 
 #[test]
+fn toc_includes_declaration_subheadings_with_rendered_offsets() {
+    let mut app = test_app();
+    app.mode = AppMode::DocView;
+    let doc = HaddockDoc {
+        module: "Data.Example".to_string(),
+        package: "example-0.1.0".to_string(),
+        description: Vec::new(),
+        declarations: vec![Declaration {
+            name: "Thing".to_string(),
+            signature: Some("data Thing".to_string()),
+            doc: vec![
+                DocBlock::Header {
+                    level: 3,
+                    content: vec![Inline::Text("Constructors".to_string())],
+                },
+                DocBlock::Paragraph(vec![Inline::Text("Constructor docs.".to_string())]),
+            ],
+            since: None,
+            source_url: None,
+            anchor: Some("t:Thing".to_string()),
+        }],
+    };
+    app.doc_state.set_doc(doc, &app.theme, 80);
+
+    app.open_toc();
+
+    let toc = app.toc_state.as_ref().unwrap();
+    assert_eq!(toc.items.len(), 2);
+    assert_eq!(toc.items[0].name, "Thing");
+    assert_eq!(toc.items[0].level, 1);
+    assert_eq!(toc.items[1].name, "Constructors");
+    assert_eq!(toc.items[1].level, 2);
+    assert!(toc.items[1].line_offset > toc.items[0].line_offset);
+}
+
+#[test]
 fn doc_search_reports_when_document_is_missing() {
     let mut app = test_app();
     app.mode = AppMode::DocView;
@@ -476,6 +526,23 @@ fn tab_complete_reports_unavailable_states() {
 }
 
 #[test]
+fn project_scope_toggle_controls_scoped_query() {
+    let mut app = test_app();
+    app.package_scope = vec!["base".to_string(), "containers".to_string()];
+    app.project_scope_enabled = true;
+
+    assert_eq!(app.build_scoped_query("map"), "+base +containers map");
+
+    app.toggle_project_scope();
+    assert!(!app.project_scope_enabled);
+    assert_eq!(app.build_scoped_query("map"), "map");
+
+    app.toggle_project_scope();
+    assert!(app.project_scope_enabled);
+    assert_eq!(app.build_scoped_query("map"), "+base +containers map");
+}
+
+#[test]
 fn appended_search_results_preserve_result_view_state() {
     let mut app = test_app();
     app.all_results = vec![result("alpha")];
@@ -490,6 +557,7 @@ fn appended_search_results_preserve_result_view_state() {
         .send(SearchResponse {
             generation: app.search_generation,
             append: true,
+            started_at: tokio::time::Instant::now(),
             results: Ok(vec![result("beta")]),
         })
         .unwrap();
@@ -515,6 +583,7 @@ fn successful_async_responses_clear_status_deadline() {
         .send(SearchResponse {
             generation: app.search_generation,
             append: true,
+            started_at: tokio::time::Instant::now(),
             results: Ok(vec![result("map")]),
         })
         .unwrap();
@@ -528,6 +597,7 @@ fn successful_async_responses_clear_status_deadline() {
     app.doc_tx
         .send(DocResponse {
             url: doc_url,
+            started_at: tokio::time::Instant::now(),
             result: Ok(doc()),
         })
         .unwrap();
@@ -541,6 +611,7 @@ fn successful_async_responses_clear_status_deadline() {
     app.source_tx
         .send(SourceResponse {
             decl_name: "targetDecl".to_string(),
+            started_at: tokio::time::Instant::now(),
             result: Ok("targetDecl = 1".to_string()),
         })
         .unwrap();
@@ -820,6 +891,68 @@ fn pin_helpers_update_pinned_state() {
     app.pin_selected_result();
     app.clear_pinned_results();
     assert!(app.pinned.is_empty());
+}
+
+#[test]
+fn pinned_imports_text_uses_importable_pins() {
+    let mut app = test_app();
+    app.pinned
+        .pin(&importable_result("lookup", &["Data", "Map"]));
+    app.pinned.pin(&result("noModule"));
+    app.pinned
+        .pin(&importable_result("<$>", &["Data", "Functor"]));
+
+    assert_eq!(
+        app.pinned_imports_text(),
+        Some("import Data.Map (lookup)\nimport Data.Functor (<$>)".to_string())
+    );
+}
+
+#[test]
+fn command_palette_select_executes_selected_action() {
+    let mut app = test_app();
+    app.preview_enabled = false;
+    app.open_command_palette();
+    if let Some(ref mut palette) = app.command_palette {
+        palette.add_filter_char('p');
+        palette.add_filter_char('r');
+        palette.add_filter_char('e');
+        palette.add_filter_char('v');
+        palette.add_filter_char('i');
+        palette.add_filter_char('e');
+        palette.add_filter_char('w');
+    }
+
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert!(app.preview_enabled);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Info(ref msg)) if msg == "Preview enabled"
+    ));
+}
+
+#[test]
+fn command_palette_includes_core_discovery_actions() {
+    let mut app = test_app();
+    app.open_command_palette();
+    let palette = app.command_palette.as_ref().unwrap();
+    let labels: Vec<&str> = palette.entries.iter().map(|entry| entry.label).collect();
+
+    for label in [
+        "Show help",
+        "Switch theme",
+        "Open table of contents",
+        "Toggle project scope",
+        "Copy pinned imports",
+        "Open history",
+    ] {
+        assert!(
+            labels.contains(&label),
+            "missing command palette entry: {label}"
+        );
+    }
 }
 
 #[test]
@@ -1194,6 +1327,7 @@ fn back_from_doc_view_cancels_pending_doc_response() {
     app.doc_tx
         .send(DocResponse {
             url: pending_url,
+            started_at: tokio::time::Instant::now(),
             result: Ok(doc()),
         })
         .unwrap();
@@ -1218,6 +1352,7 @@ fn back_from_source_view_cancels_pending_source_response() {
     app.source_tx
         .send(SourceResponse {
             decl_name: "pendingDecl".to_string(),
+            started_at: tokio::time::Instant::now(),
             result: Ok("pendingDecl = 1".to_string()),
         })
         .unwrap();
@@ -1328,6 +1463,7 @@ fn doc_response_records_current_url() {
     app.doc_tx
         .send(DocResponse {
             url: url.clone(),
+            started_at: tokio::time::Instant::now(),
             result: Ok(doc()),
         })
         .unwrap();
@@ -1348,6 +1484,7 @@ fn stale_doc_response_is_ignored() {
     app.doc_tx
         .send(DocResponse {
             url: stale_url,
+            started_at: tokio::time::Instant::now(),
             result: Ok(doc()),
         })
         .unwrap();
@@ -1365,11 +1502,13 @@ fn toc_popup_filter_methods_update_visible_entries() {
             name: "lookup".to_string(),
             signature: None,
             line_offset: 2,
+            level: 1,
         },
         toc_popup::TocEntry {
             name: "insert".to_string(),
             signature: None,
             line_offset: 8,
+            level: 1,
         },
     ]));
     app.popup = Some(PopupMode::Toc);
@@ -1436,6 +1575,7 @@ fn source_response_scrolls_to_declaration_name() {
     app.source_tx
         .send(SourceResponse {
             decl_name: "targetDecl".to_string(),
+            started_at: tokio::time::Instant::now(),
             result: Ok("before\nmore before\ntargetDecl = 1\nafter".to_string()),
         })
         .unwrap();
@@ -1453,6 +1593,7 @@ fn stale_source_response_is_ignored() {
     app.source_tx
         .send(SourceResponse {
             decl_name: "staleDecl".to_string(),
+            started_at: tokio::time::Instant::now(),
             result: Ok("staleDecl = 1".to_string()),
         })
         .unwrap();

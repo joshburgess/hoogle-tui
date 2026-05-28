@@ -139,6 +139,7 @@ async fn main() -> io::Result<()> {
         let root = info.root.display().to_string();
         app.package_scope = info.dependencies;
         app.status.package_scope = app.package_scope.clone();
+        app.project_scope_enabled = true;
         tracing::info!(
             "detected {:?} project at {root} with {count} deps",
             info.project_type
@@ -174,6 +175,7 @@ async fn main() -> io::Result<()> {
                         | app::PopupMode::Bookmarks
                         | app::PopupMode::YankMenu
                         | app::PopupMode::ThemeSwitcher
+                        | app::PopupMode::CommandPalette
                 )
             ) {
                 match &event {
@@ -202,6 +204,14 @@ async fn main() -> io::Result<()> {
                                 app.delete_history_filter_char();
                                 actions::Action::Tick
                             }
+                            KeyCode::Backspace
+                                if app.popup == Some(app::PopupMode::CommandPalette) =>
+                            {
+                                if let Some(ref mut cp) = app.command_palette {
+                                    cp.delete_filter_char();
+                                }
+                                actions::Action::Tick
+                            }
                             KeyCode::Char(c)
                                 if app.popup == Some(app::PopupMode::Toc) && !has_control =>
                             {
@@ -212,6 +222,15 @@ async fn main() -> io::Result<()> {
                                 if app.popup == Some(app::PopupMode::History) && !has_control =>
                             {
                                 app.add_history_filter_char(c);
+                                actions::Action::Tick
+                            }
+                            KeyCode::Char(c)
+                                if app.popup == Some(app::PopupMode::CommandPalette)
+                                    && !has_control =>
+                            {
+                                if let Some(ref mut cp) = app.command_palette {
+                                    cp.add_filter_char(c);
+                                }
                                 actions::Action::Tick
                             }
                             _ => actions::Action::Tick, // ignore other keys but still tick
@@ -323,7 +342,9 @@ async fn main() -> io::Result<()> {
                                 app.handle_action(action);
                             }
                             // F1, Ctrl-/, Ctrl-t bypass textarea
-                            actions::Action::ToggleHelp | actions::Action::OpenThemeSwitcher => {
+                            actions::Action::ToggleHelp
+                            | actions::Action::OpenThemeSwitcher
+                            | actions::Action::OpenCommandPalette => {
                                 app.handle_action(action);
                             }
                             _ => {

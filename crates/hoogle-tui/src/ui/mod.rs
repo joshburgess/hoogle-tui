@@ -1,4 +1,5 @@
 pub mod bookmarks_popup;
+pub mod command_palette;
 pub mod doc_viewer;
 pub mod filter_popup;
 pub mod help_overlay;
