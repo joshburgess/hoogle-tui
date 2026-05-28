@@ -459,6 +459,25 @@ fn history_popup_long_filter_title_fits_render_width() {
 }
 
 #[test]
+fn module_browser_long_filter_line_fits_render_width() {
+    let theme = Theme::dracula();
+    let results = vec![search_result("lookup", "Ord k => k -> Map k a -> Maybe a")];
+    let mut state = module_browser::ModuleBrowserState::new(&results);
+    for c in "  Data.Map.Strict.With.A.Deliberately.Long.Filter.Query  ".chars() {
+        state.add_filter_char(c);
+    }
+
+    let output = render_to_text(36, 8, |frame| {
+        module_browser::render(frame, &mut state, &theme);
+    });
+
+    assert!(output.contains("Data.Map"), "{output}");
+    assert!(output.contains("..."), "{output}");
+    assert!(!output.contains("  Data.Map.Strict.With.A"), "{output}");
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
 fn popups_render_on_tiny_terminal() {
     let theme = Theme::dracula();
     let dir = tempfile::tempdir().expect("failed to create temp dir");

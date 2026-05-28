@@ -10,6 +10,7 @@ use ratatui::{
 use std::collections::BTreeMap;
 
 use super::popup_layout::centered_popup;
+use super::text::{display_width, truncate_width};
 
 /// A tree node in the module hierarchy.
 #[derive(Debug)]
@@ -110,15 +111,17 @@ impl ModuleBrowserState {
     pub fn add_filter_char(&mut self, c: char) {
         self.filter.push(c);
         self.selected = 0;
+        self.scroll_offset = 0;
     }
 
     pub fn delete_filter_char(&mut self) {
         self.filter.pop();
         self.selected = 0;
+        self.scroll_offset = 0;
     }
 
     fn visible_indices(&self) -> impl Iterator<Item = usize> + '_ {
-        let filter_lower = self.filter.to_lowercase();
+        let filter_lower = self.filter.trim().to_lowercase();
         self.entries.iter().enumerate().filter_map(move |(i, e)| {
             if filter_lower.is_empty() && e.depth != 0 && !self.is_parent_expanded(i) {
                 return None;
@@ -217,6 +220,13 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
         height: inner.height.saturating_sub(1),
     };
 
+    let filter_width = filter_area.width.saturating_sub(3) as usize;
+    let display_filter = truncate_width(state.filter.trim(), filter_width, "...");
+    let cursor = if display_width(&display_filter) < filter_width {
+        "\u{2588}"
+    } else {
+        ""
+    };
     let filter_line = Line::from(vec![
         Span::styled(
             "\u{1f50d} ",
@@ -224,11 +234,8 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
                 .style(SemanticToken::ModuleName)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(
-            state.filter.as_str(),
-            theme.style(SemanticToken::SearchInput),
-        ),
-        Span::styled("\u{2588}", theme.style(SemanticToken::SearchInput)),
+        Span::styled(display_filter, theme.style(SemanticToken::SearchInput)),
+        Span::styled(cursor, theme.style(SemanticToken::SearchInput)),
     ]);
     frame.render_widget(Paragraph::new(filter_line), filter_area);
 
@@ -238,9 +245,20 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
         .map(|i| (i, &state.entries[i]))
         .collect();
     let total = visible.len();
+    if total == 0 {
+        state.scroll_offset = 0;
+    } else if state.selected >= total {
+        state.selected = total - 1;
+    }
 
     // Adjust scroll
     let vh = state.viewport_height;
+    if vh == 0 {
+        return;
+    }
+    if state.scroll_offset >= total {
+        state.scroll_offset = total.saturating_sub(1);
+    }
     if state.selected >= state.scroll_offset + vh {
         state.scroll_offset = state.selected.saturating_sub(vh) + 1;
     }
@@ -511,10 +529,27 @@ mod tests {
         let results = vec![make_result(&["Data"]), make_result(&["Control"])];
         let mut state = ModuleBrowserState::new(&results);
         state.move_down();
+        state.scroll_offset = 1;
         assert_eq!(state.selected, 1);
 
         state.add_filter_char('x');
         assert_eq!(state.selected, 0);
+        assert_eq!(state.scroll_offset, 0);
+    }
+
+    #[test]
+    fn filter_ignores_surrounding_whitespace() {
+        let results = vec![
+            make_result(&["Data", "Map"]),
+            make_result(&["Control", "Monad"]),
+        ];
+        let mut state = ModuleBrowserState::new(&results);
+
+        for c in "  map  ".chars() {
+            state.add_filter_char(c);
+        }
+
+        assert_eq!(state.selected_module(), Some("Data.Map"));
     }
 
     #[test]
