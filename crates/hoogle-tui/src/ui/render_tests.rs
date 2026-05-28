@@ -583,6 +583,29 @@ fn doc_viewer_truncates_long_inline_words() {
 }
 
 #[test]
+fn doc_viewer_truncates_wide_code_blocks() {
+    let theme = Theme::dracula();
+    let doc = HaddockDoc {
+        module: "Demo.Code".to_string(),
+        package: "demo-0.1.0".to_string(),
+        description: vec![DocBlock::CodeBlock {
+            language: Some("haskell".to_string()),
+            code: "veryLongIdentifierWithoutSpaces = veryLongIdentifierWithoutSpaces".to_string(),
+        }],
+        declarations: Vec::new(),
+    };
+    let mut state = doc_viewer::DocViewState::new();
+    state.set_doc(doc, &theme, 28);
+
+    let output = render_to_text(28, 8, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 28, 8), &mut state, &theme);
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 28);
+}
+
+#[test]
 fn toc_popup_wide_signature_fits_render_width() {
     let theme = Theme::dracula();
     let state = toc_popup::TocState::new(vec![toc_popup::TocEntry {

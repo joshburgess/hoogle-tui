@@ -624,7 +624,7 @@ fn render_blocks(
                         );
                     }
 
-                    lines.push(Line::from(spans));
+                    lines.push(truncate_line(Line::from(spans), width));
                 }
 
                 // Bottom border
@@ -915,6 +915,31 @@ fn wrap_inlines(
     }
 
     result_lines.into_iter().map(Line::from).collect()
+}
+
+fn truncate_line(line: Line<'static>, width: usize) -> Line<'static> {
+    let mut remaining = width;
+    let mut spans = Vec::new();
+
+    for span in line.spans {
+        if remaining == 0 {
+            break;
+        }
+
+        let text = span.content.as_ref();
+        let span_width = display_width(text);
+        if span_width <= remaining {
+            spans.push(span);
+            remaining -= span_width;
+            continue;
+        }
+
+        let clipped = truncate_width(text, remaining, "\u{2026}");
+        spans.push(Span::styled(clipped, span.style));
+        break;
+    }
+
+    Line::from(spans)
 }
 
 fn inlines_to_plain_text(inlines: &[Inline]) -> String {
