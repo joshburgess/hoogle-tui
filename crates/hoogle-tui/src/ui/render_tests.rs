@@ -458,6 +458,19 @@ fn preview_pane_truncates_state_messages_and_signature() {
     let theme = Theme::dracula();
     let mut empty_state = preview_pane::PreviewState::new();
 
+    let narrow_empty_output = render_to_text(8, 5, |frame| {
+        preview_pane::render(frame, Rect::new(0, 0, 8, 5), None, &mut empty_state, &theme);
+    });
+    assert!(
+        narrow_empty_output.contains(" Pr..."),
+        "{narrow_empty_output}"
+    );
+    assert!(
+        narrow_empty_output.contains("  S..."),
+        "{narrow_empty_output}"
+    );
+    assert_lines_fit(&narrow_empty_output, 8);
+
     let empty_output = render_to_text(18, 5, |frame| {
         preview_pane::render(
             frame,

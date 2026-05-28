@@ -52,9 +52,10 @@ pub fn render(
     state: &mut PreviewState,
     theme: &Theme,
 ) {
+    let title = truncate_width(" Preview ", area.width.saturating_sub(2) as usize, "...");
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Preview ")
+        .title(title)
         .border_style(theme.style(SemanticToken::Border));
 
     let inner_width = area.width.saturating_sub(2) as usize;
