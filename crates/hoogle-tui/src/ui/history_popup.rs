@@ -7,6 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
+use super::text::truncate_width;
 use crate::history::SearchHistory;
 
 pub struct HistoryPopupState {
@@ -54,7 +55,7 @@ impl HistoryPopupState {
     }
 
     fn update_filter_indices(&mut self, history: &SearchHistory) {
-        let query = self.filter.to_lowercase();
+        let query = self.filter.trim().to_lowercase();
         self.filtered_indices = history
             .entries()
             .iter()
@@ -77,11 +78,13 @@ pub fn render(
     let popup = centered_popup(area, popup_width, popup_height);
     frame.render_widget(Clear, popup);
 
-    let title = if state.filter.is_empty() {
+    let display_filter = state.filter.trim();
+    let raw_title = if display_filter.is_empty() {
         " Search History (Ctrl-d to delete) ".to_string()
     } else {
-        format!(" History: {} ", state.filter)
+        format!(" History: {display_filter} ")
     };
+    let title = truncate_width(&raw_title, popup.width.saturating_sub(2) as usize, "...");
 
     let block = Block::default()
         .borders(Borders::ALL)

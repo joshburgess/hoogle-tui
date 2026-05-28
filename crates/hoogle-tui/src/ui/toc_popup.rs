@@ -61,7 +61,7 @@ impl TocState {
     }
 
     fn apply_filter(&mut self) {
-        let query = self.filter.to_lowercase();
+        let query = self.filter.trim().to_lowercase();
         self.filtered_indices = self
             .items
             .iter()
@@ -82,11 +82,13 @@ pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
     let popup = centered_popup(area, popup_width, popup_height);
     frame.render_widget(Clear, popup);
 
-    let title = if state.filter.is_empty() {
+    let display_filter = state.filter.trim();
+    let raw_title = if display_filter.is_empty() {
         " Table of Contents ".to_string()
     } else {
-        format!(" TOC: {} ", state.filter)
+        format!(" TOC: {display_filter} ")
     };
+    let title = truncate_width(&raw_title, popup.width.saturating_sub(2) as usize, "...");
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -271,6 +273,15 @@ mod tests {
     fn filter_case_insensitive() {
         let mut state = TocState::new(make_entries(&["Lookup", "insert"]));
         state.add_filter_char('l');
+        assert_eq!(state.filtered_indices, vec![0]);
+    }
+
+    #[test]
+    fn filter_ignores_surrounding_whitespace() {
+        let mut state = TocState::new(make_entries(&["lookup", "insert"]));
+        for c in "  lookup  ".chars() {
+            state.add_filter_char(c);
+        }
         assert_eq!(state.filtered_indices, vec![0]);
     }
 

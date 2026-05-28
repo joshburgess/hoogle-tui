@@ -367,6 +367,28 @@ fn toc_popup_wide_signature_fits_render_width() {
 }
 
 #[test]
+fn toc_popup_long_filter_title_fits_render_width() {
+    let theme = Theme::dracula();
+    let mut state = toc_popup::TocState::new(vec![toc_popup::TocEntry {
+        name: "lookup".to_string(),
+        signature: None,
+        line_offset: 0,
+        level: 1,
+    }]);
+    for c in "  lookup with a deliberately very long trailing query  ".chars() {
+        state.add_filter_char(c);
+    }
+
+    let output = render_to_text(36, 8, |frame| {
+        toc_popup::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("TOC: lookup"), "{output}");
+    assert!(!output.contains("TOC:   lookup"), "{output}");
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
 fn bookmarks_popup_wide_signature_fits_render_width() {
     let theme = Theme::dracula();
     let dir = tempfile::tempdir().expect("failed to create temp dir");
@@ -388,6 +410,25 @@ fn bookmarks_popup_wide_signature_fits_render_width() {
     assert!(output.contains("Data.型 型 型"), "{output}");
     assert!(output.contains("..."), "{output}");
     assert_lines_fit(&output, 60);
+}
+
+#[test]
+fn history_popup_long_filter_title_fits_render_width() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let mut history = SearchHistory::load_with_status(dir.path().join("history.json")).0;
+    history.add("map", 12);
+    let mut state = history_popup::HistoryPopupState::new(history.entries().len());
+    state.filter = "  map with a deliberately very long trailing query  ".to_string();
+    state.update_filter(&history);
+
+    let output = render_to_text(36, 8, |frame| {
+        history_popup::render(frame, &state, &history, &theme);
+    });
+
+    assert!(output.contains("History: map"), "{output}");
+    assert!(!output.contains("History:   map"), "{output}");
+    assert_lines_fit(&output, 36);
 }
 
 #[test]
