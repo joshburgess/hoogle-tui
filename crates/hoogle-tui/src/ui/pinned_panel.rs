@@ -8,6 +8,8 @@ use ratatui::{
     Frame,
 };
 
+use super::text::{display_width, truncate_width};
+
 pub struct PinnedState {
     pub pins: Vec<SearchResult>,
     pub scroll_offset: usize,
@@ -94,6 +96,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Th
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(area);
+    let inner_width = inner.width as usize;
     state.viewport_height = inner.height as usize;
     frame.render_widget(block, area);
 
@@ -111,32 +114,36 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut PinnedState, theme: &Th
     for (i, pin) in state.pins.iter().enumerate() {
         if i > 0 {
             lines.push(Line::from(Span::styled(
-                "\u{2500}".repeat(inner.width as usize),
+                "\u{2500}".repeat(inner_width),
                 theme.style(SemanticToken::Border),
             )));
         }
 
-        // Signature line
         if let Some(ref sig) = pin.signature {
             let full = format!("{} :: {sig}", pin.name);
+            let full = truncate_width(&full, inner_width, "\u{2026}");
             let highlighted = hoogle_syntax::highlight_signature(&full, theme);
             lines.push(highlighted);
         } else {
+            let name = truncate_width(pin.name.as_str(), inner_width, "\u{2026}");
             lines.push(Line::from(Span::styled(
-                pin.name.as_str(),
+                name,
                 theme
                     .style(SemanticToken::TypeConstructor)
                     .add_modifier(Modifier::BOLD),
             )));
         }
 
-        // Module line
         let module = pin
             .module
             .as_ref()
             .map(|m| m.to_string())
             .unwrap_or_default();
         let pkg = pin.package.as_ref().map(|p| p.name.as_str()).unwrap_or("");
+        let pkg = truncate_width(pkg, inner_width / 3, "...");
+        let pkg_width = display_width(&pkg);
+        let module_width = inner_width.saturating_sub(pkg_width + 4);
+        let module = truncate_width(&module, module_width, "...");
         lines.push(Line::from(vec![
             Span::styled("  ", theme.style(SemanticToken::DocText)),
             Span::styled(module, theme.style(SemanticToken::ModuleName)),

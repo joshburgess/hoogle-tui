@@ -748,6 +748,35 @@ fn source_viewer_truncates_narrow_title_and_error() {
 }
 
 #[test]
+fn pinned_panel_truncates_wide_rows() {
+    let theme = Theme::dracula();
+    let mut state = crate::ui::pinned_panel::PinnedState::new();
+    let mut result = search_result_with_module(
+        "型型lookupWithALongName",
+        "型型型型型型型型型型型型型型 -> Maybe 型",
+        ModulePath(vec![
+            "Data".to_string(),
+            "型型型".to_string(),
+            "DeeplyNestedModuleName".to_string(),
+        ]),
+    );
+    result.package = Some(PackageInfo {
+        name: "containers-with-a-long-package-name".to_string(),
+        version: None,
+    });
+    state.pin(&result);
+
+    let output = render_to_text(34, 8, |frame| {
+        crate::ui::pinned_panel::render(frame, Rect::new(0, 0, 34, 8), &mut state, &theme);
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert!(output.contains("Data."), "{output}");
+    assert!(output.contains("contain..."), "{output}");
+    assert_lines_fit(&output, 34);
+}
+
+#[test]
 fn filter_popup_render_includes_all_options() {
     let theme = Theme::dracula();
     let state = filter_popup::FilterState::new();
