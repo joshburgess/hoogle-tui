@@ -566,6 +566,40 @@ fn module_browser_long_filter_line_fits_render_width() {
 }
 
 #[test]
+fn module_browser_truncates_chrome_empty_state_and_rows() {
+    let theme = Theme::dracula();
+    let empty_results: Vec<SearchResult> = Vec::new();
+    let mut empty_state = module_browser::ModuleBrowserState::new(&empty_results);
+
+    let empty_output = render_to_text(22, 12, |frame| {
+        module_browser::render(frame, &mut empty_state, &theme);
+    });
+
+    assert!(empty_output.contains("Module B..."), "{empty_output}");
+    assert!(empty_output.contains("Enter:se..."), "{empty_output}");
+    assert!(empty_output.contains("No modu..."), "{empty_output}");
+    assert_lines_fit(&empty_output, 22);
+
+    let results = vec![search_result_with_module(
+        "lookup",
+        "Ord k => k -> Map k a -> Maybe a",
+        ModulePath(vec![
+            "Data".to_string(),
+            "ReallyLongModuleSegmentName".to_string(),
+        ]),
+    )];
+    let mut state = module_browser::ModuleBrowserState::new(&results);
+    state.move_down();
+
+    let output = render_to_text(22, 12, |frame| {
+        module_browser::render(frame, &mut state, &theme);
+    });
+
+    assert!(output.contains("R... (1)"), "{output}");
+    assert_lines_fit(&output, 22);
+}
+
+#[test]
 fn package_popup_long_input_fits_render_width() {
     let theme = Theme::dracula();
     let mut state = package_popup::PackageScopeState::new(&[]);

@@ -193,13 +193,18 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
 
     frame.render_widget(Clear, popup);
 
+    let title_width = popup.width.saturating_sub(2) as usize;
+    let title = truncate_width(" Module Browser ", title_width, "...");
+    let footer = truncate_width(
+        " Enter:select \u{2502} Space:expand \u{2502} type to filter \u{2502} Esc:close ",
+        title_width,
+        "...",
+    );
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Module Browser ")
-        .title_bottom(Span::styled(
-            " Enter:select \u{2502} Space:expand \u{2502} type to filter \u{2502} Esc:close ",
-            theme.style(SemanticToken::Comment),
-        ))
+        .title(title)
+        .title_bottom(Span::styled(footer, theme.style(SemanticToken::Comment)))
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);
@@ -256,6 +261,17 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
     if vh == 0 {
         return;
     }
+    if total == 0 {
+        let message = truncate_width("  No modules found.", content_area.width as usize, "...");
+        frame.render_widget(
+            Paragraph::new(Line::from(Span::styled(
+                message,
+                theme.style(SemanticToken::Comment),
+            ))),
+            content_area,
+        );
+        return;
+    }
     if state.scroll_offset >= total {
         state.scroll_offset = total.saturating_sub(1);
     }
@@ -297,10 +313,16 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
             } else {
                 String::new()
             };
+            let prefix = format!("{indent}{arrow}");
+            let row_width = content_area.width as usize;
+            let name_width = row_width
+                .saturating_sub(display_width(&prefix))
+                .saturating_sub(display_width(&count_str));
+            let name = truncate_width(entry.name.as_str(), name_width, "...");
 
             Line::from(vec![
-                Span::styled(format!("{indent}{arrow}"), style),
-                Span::styled(entry.name.as_str(), style),
+                Span::styled(prefix, style),
+                Span::styled(name, style),
                 Span::styled(
                     count_str,
                     theme.style(SemanticToken::Comment).patch(if is_selected {
