@@ -9,7 +9,7 @@ use ratatui::{
 
 use crate::app::AppMode;
 
-use super::text::{spans_width, truncate_width};
+use super::text::{display_width, spans_width, truncate_width};
 
 const SPINNER_FRAMES: &[char] = &[
     '\u{280b}', '\u{2819}', '\u{2839}', '\u{2838}', '\u{283c}', '\u{2834}', '\u{2826}', '\u{2827}',
@@ -73,18 +73,21 @@ fn mode_label(mode: AppMode) -> &'static str {
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode, theme: &Theme) {
+    let area_width = area.width as usize;
     let status_style = theme.style(SemanticToken::StatusBar);
     let key_style = theme.style(SemanticToken::ModuleName);
     let mode_style = theme
         .style(SemanticToken::Keyword)
         .add_modifier(Modifier::BOLD);
     let hint_style = status_style;
+    let backend_width = (area_width / 5).clamp(3, 16);
+    let backend_name = truncate_width(&state.backend_name, backend_width, "...");
 
     // Left side: mode indicator + backend + badges + message/count
     let mut left_spans = vec![
         Span::styled(format!(" {} ", mode_label(mode)), mode_style),
         Span::styled("\u{2502} ", status_style),
-        Span::styled(format!("{} ", state.backend_name), status_style),
+        Span::styled(format!("{backend_name} "), status_style),
     ];
 
     if state.offline {
@@ -101,7 +104,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     }
 
     if !state.package_scope.is_empty() {
-        let max_scope_width = (area.width as usize / 4).clamp(8, 28);
+        let max_scope_width = (area_width / 4).clamp(8, 28);
         let scope = truncate_width(&state.package_scope.join(","), max_scope_width, "...");
         left_spans.push(Span::styled(
             format!("[{scope}] "),
@@ -114,8 +117,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     match &state.message {
         Some(StatusMessage::Loading(msg)) => {
             let spinner = SPINNER_FRAMES[state.spinner_tick];
-            let max_message_width =
-                message_width(area.width as usize, spans_width(left_spans.iter()) + 2);
+            let max_message_width = message_width(area_width, spans_width(left_spans.iter()) + 2);
             let msg = truncate_width(msg, max_message_width, "...");
             left_spans.push(Span::styled(
                 format!("{spinner} {msg} "),
@@ -123,8 +125,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
             ));
         }
         Some(StatusMessage::Error(msg)) => {
-            let max_message_width =
-                message_width(area.width as usize, spans_width(left_spans.iter()));
+            let max_message_width = message_width(area_width, spans_width(left_spans.iter()));
             let msg = truncate_width(msg, max_message_width, "...");
             left_spans.push(Span::styled(
                 format!("{msg} "),
@@ -132,17 +133,20 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
             ));
         }
         Some(StatusMessage::Info(msg)) => {
-            let max_message_width =
-                message_width(area.width as usize, spans_width(left_spans.iter()));
+            let max_message_width = message_width(area_width, spans_width(left_spans.iter()));
             let msg = truncate_width(msg, max_message_width, "...");
             left_spans.push(Span::styled(format!("{msg} "), status_style));
         }
         None => {
             if state.result_count > 0 {
-                left_spans.push(Span::styled(
-                    format!("{} results ", state.result_count),
-                    status_style,
-                ));
+                let count_value = compact_count(state.result_count);
+                let max_count_width = message_width(area_width, spans_width(left_spans.iter()));
+                let mut count = format!("{count_value} results");
+                if display_width(&count) > max_count_width {
+                    count = format!("{count_value} res");
+                }
+                let count = truncate_width(&count, max_count_width, "...");
+                left_spans.push(Span::styled(format!("{count} "), status_style));
             }
         }
     }
@@ -199,7 +203,7 @@ pub fn render(frame: &mut Frame, area: Rect, state: &StatusState, mode: AppMode,
     // Combine: fill middle with spaces
     let left_len = spans_width(left_spans.iter());
     let right_len = spans_width(right_spans.iter());
-    let padding = (area.width as usize).saturating_sub(left_len + right_len);
+    let padding = area_width.saturating_sub(left_len + right_len);
 
     let mut all_spans = left_spans;
     all_spans.push(Span::styled(" ".repeat(padding), status_style));
@@ -213,4 +217,30 @@ fn message_width(area_width: usize, used_width: usize) -> usize {
     area_width
         .saturating_sub(used_width + 1)
         .min((area_width / 2).clamp(8, 48))
+}
+
+fn compact_count(count: usize) -> String {
+    const UNITS: &[(usize, &str)] = &[
+        (1_000_000_000_000_000_000, "E"),
+        (1_000_000_000_000_000, "P"),
+        (1_000_000_000_000, "T"),
+        (1_000_000_000, "B"),
+        (1_000_000, "M"),
+        (1_000, "K"),
+    ];
+
+    for (unit, suffix) in UNITS {
+        if count >= *unit {
+            let scaled = count as f64 / *unit as f64;
+            return if scaled >= 100.0 {
+                format!("{scaled:.0}{suffix}")
+            } else if scaled >= 10.0 {
+                format!("{scaled:.1}{suffix}")
+            } else {
+                format!("{scaled:.2}{suffix}")
+            };
+        }
+    }
+
+    count.to_string()
 }

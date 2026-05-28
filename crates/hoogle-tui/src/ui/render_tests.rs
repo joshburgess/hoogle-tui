@@ -1044,6 +1044,29 @@ fn status_bar_truncates_long_scope_and_message() {
 }
 
 #[test]
+fn status_bar_truncates_backend_and_large_result_count() {
+    let theme = Theme::dracula();
+    let mut state =
+        status_bar::StatusState::new("local-backend-with-a-deliberately-long-name".to_string());
+    state.result_count = usize::MAX;
+
+    let output = render_to_text(32, 1, |frame| {
+        status_bar::render(
+            frame,
+            Rect::new(0, 0, 32, 1),
+            &state,
+            AppMode::Search,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("loc..."), "{output}");
+    assert!(output.contains("res"), "{output}");
+    assert!(output.contains("..."), "{output}");
+    assert_lines_fit(&output, 32);
+}
+
+#[test]
 fn source_viewer_render_includes_title_line_numbers_and_code() {
     let theme = Theme::dracula();
     let mut state = source_viewer::SourceViewState::new();
