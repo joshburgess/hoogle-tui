@@ -582,6 +582,22 @@ fn package_popup_long_input_fits_render_width() {
 }
 
 #[test]
+fn package_popup_truncates_prompt_and_footer_hints() {
+    let theme = Theme::dracula();
+    let state = package_popup::PackageScopeState::new(&[]);
+
+    let output = render_to_text(24, 7, |frame| {
+        package_popup::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("Package Scope"), "{output}");
+    assert!(output.contains("Comma-separated..."), "{output}");
+    assert!(output.contains("e.g.: base, con..."), "{output}");
+    assert!(output.contains("Enter:confirm ..."), "{output}");
+    assert_lines_fit(&output, 24);
+}
+
+#[test]
 fn help_overlay_truncates_narrow_rows() {
     let theme = Theme::dracula();
     let mut state = help_overlay::HelpState::new();

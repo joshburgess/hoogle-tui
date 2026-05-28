@@ -60,13 +60,18 @@ pub fn render(frame: &mut Frame, state: &PackageScopeState, theme: &Theme) {
 
     frame.render_widget(Clear, popup);
 
+    let title_width = popup.width.saturating_sub(2) as usize;
+    let title = truncate_width(" Package Scope ", title_width, "...");
+    let footer = truncate_width(
+        " Enter:confirm \u{2502} Esc:cancel \u{2502} Ctrl-u:clear ",
+        title_width,
+        "...",
+    );
+
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(" Package Scope ")
-        .title_bottom(Span::styled(
-            " Enter:confirm \u{2502} Esc:cancel \u{2502} Ctrl-u:clear ",
-            theme.style(SemanticToken::Comment),
-        ))
+        .title(title)
+        .title_bottom(Span::styled(footer, theme.style(SemanticToken::Comment)))
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);
@@ -83,8 +88,12 @@ pub fn render(frame: &mut Frame, state: &PackageScopeState, theme: &Theme) {
         ""
     };
 
+    let inner_width = inner.width as usize;
+    let prompt = truncate_width("Comma-separated package names:", inner_width, "...");
+    let example = truncate_width("e.g.: base, containers, text", inner_width, "...");
+
     let lines = vec![
-        Line::from(Span::styled("Comma-separated package names:", hint_style)),
+        Line::from(Span::styled(prompt, hint_style)),
         Line::from(""),
         Line::from(vec![
             Span::styled(
@@ -97,7 +106,7 @@ pub fn render(frame: &mut Frame, state: &PackageScopeState, theme: &Theme) {
             Span::styled(cursor, input_style),
         ]),
         Line::from(""),
-        Line::from(Span::styled("e.g.: base, containers, text", hint_style)),
+        Line::from(Span::styled(example, hint_style)),
     ];
 
     frame.render_widget(Paragraph::new(lines), inner);
