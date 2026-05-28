@@ -203,8 +203,9 @@ pub fn render(frame: &mut Frame, state: &CommandPaletteState, theme: &Theme) {
     }
 
     if state.filtered_indices.is_empty() {
+        let message = truncate_width("  No commands found.", inner.width as usize, "...");
         lines.push(Line::from(Span::styled(
-            "  No commands found.",
+            message,
             theme.style(SemanticToken::Comment),
         )));
     }

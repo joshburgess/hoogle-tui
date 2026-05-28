@@ -294,6 +294,28 @@ fn command_palette_title_trims_filter_whitespace() {
 }
 
 #[test]
+fn command_palette_truncates_empty_state_on_narrow_terminal() {
+    let theme = Theme::dracula();
+    let mut state =
+        command_palette::CommandPaletteState::new(vec![command_palette::CommandEntry {
+            group: "Docs",
+            label: "Open docs",
+            hint: "Enter",
+            action: crate::actions::Action::Select,
+        }]);
+    for c in "does-not-match-any-command".chars() {
+        state.add_filter_char(c);
+    }
+
+    let output = render_to_text(24, 8, |frame| {
+        command_palette::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("No commands..."), "{output}");
+    assert_lines_fit(&output, 24);
+}
+
+#[test]
 fn result_list_compact_wide_text_keeps_module_visible() {
     let theme = Theme::dracula();
     let mut state = result_list::ResultListState::new();
