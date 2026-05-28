@@ -517,6 +517,20 @@ fn package_popup_long_input_fits_render_width() {
 }
 
 #[test]
+fn help_overlay_truncates_narrow_rows() {
+    let theme = Theme::dracula();
+    let mut state = help_overlay::HelpState::new();
+
+    let output = render_to_text(28, 12, |frame| {
+        help_overlay::render(frame, &mut state, &theme);
+    });
+
+    assert!(output.contains("Sea..."), "{output}");
+    assert!(output.contains("Enter         Go ..."), "{output}");
+    assert_lines_fit(&output, 28);
+}
+
+#[test]
 fn fixed_list_popups_truncate_labels_on_narrow_terminal() {
     let theme = Theme::dracula();
 

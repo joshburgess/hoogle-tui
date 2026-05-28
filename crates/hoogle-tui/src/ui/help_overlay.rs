@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
-use super::text::{display_width, pad_to_width};
+use super::text::{display_width, pad_to_width, truncate_width};
 
 pub struct HelpState {
     pub scroll_offset: usize,
@@ -399,27 +399,36 @@ pub fn render(frame: &mut Frame, state: &mut HelpState, theme: &Theme) {
     state.viewport_height = inner.height as usize;
     frame.render_widget(block, popup);
 
-    let key_width = 16;
+    let inner_width = inner.width as usize;
+    let key_width = inner_width.saturating_sub(8).clamp(4, 16);
+    let desc_width = inner_width.saturating_sub(key_width + 2);
     let mut lines: Vec<Line> = Vec::new();
 
     for section in SECTIONS {
+        let section_title = truncate_width(section.title, inner_width.saturating_sub(2), "...");
+        let rule_width = display_width(&section_title)
+            .saturating_add(4)
+            .min(inner_width.saturating_sub(2));
+
         lines.push(Line::from(""));
         lines.push(Line::from(Span::styled(
-            format!("  {}", section.title),
+            format!("  {section_title}"),
             theme
                 .style(SemanticToken::DocHeading)
                 .add_modifier(Modifier::BOLD),
         )));
         lines.push(Line::from(Span::styled(
-            format!("  {}", "\u{2500}".repeat(display_width(section.title) + 4)),
+            format!("  {}", "\u{2500}".repeat(rule_width)),
             theme.style(SemanticToken::Border),
         )));
 
         for entry in section.entries {
-            let key_padded = format!("  {}", pad_to_width(entry.key, key_width));
+            let key = truncate_width(entry.key, key_width, "...");
+            let key_padded = format!("  {}", pad_to_width(&key, key_width));
+            let desc = truncate_width(entry.desc, desc_width, "...");
             lines.push(Line::from(vec![
                 Span::styled(key_padded, theme.style(SemanticToken::ModuleName)),
-                Span::styled(entry.desc.to_string(), theme.style(SemanticToken::DocText)),
+                Span::styled(desc, theme.style(SemanticToken::DocText)),
             ]));
         }
     }
