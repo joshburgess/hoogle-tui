@@ -894,6 +894,18 @@ fn help_overlay_truncates_narrow_chrome() {
 }
 
 #[test]
+fn help_overlay_clamps_tiny_key_column() {
+    let theme = Theme::dracula();
+    let mut state = help_overlay::HelpState::new();
+
+    let output = render_to_text(8, 8, |frame| {
+        help_overlay::render(frame, &mut state, &theme);
+    });
+
+    assert_lines_fit(&output, 8);
+}
+
+#[test]
 fn fixed_list_popups_truncate_labels_on_narrow_terminal() {
     let theme = Theme::dracula();
 

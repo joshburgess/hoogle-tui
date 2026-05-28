@@ -404,7 +404,10 @@ pub fn render(frame: &mut Frame, state: &mut HelpState, theme: &Theme) {
     frame.render_widget(block, popup);
 
     let inner_width = inner.width as usize;
-    let key_width = inner_width.saturating_sub(8).clamp(4, 16);
+    let key_width = inner_width
+        .saturating_sub(8)
+        .clamp(4, 16)
+        .min(inner_width.saturating_sub(2));
     let desc_width = inner_width.saturating_sub(key_width + 2);
     let mut lines: Vec<Line> = Vec::new();
 
