@@ -498,7 +498,7 @@ fn bookmarks_popup_wide_signature_fits_render_width() {
         bookmarks_popup::render(frame, &state, &store, &theme);
     });
 
-    assert!(output.contains("Data.型 型 型"), "{output}");
+    assert!(output.contains("Data.型 ..."), "{output}");
     assert!(output.contains("..."), "{output}");
     assert_lines_fit(&output, 60);
 }
@@ -527,6 +527,43 @@ fn bookmarks_popup_long_filter_title_fits_render_width() {
 
     assert!(output.contains("Bookmarks: map"), "{output}");
     assert!(!output.contains("Bookmarks:   map"), "{output}");
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
+fn bookmarks_popup_truncates_rows_and_empty_states() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let empty_store = BookmarkStore::load_with_status(dir.path().join("empty.json")).0;
+    let empty_state = bookmarks_popup::BookmarksPopupState::new(empty_store.bookmarks().len());
+
+    let empty_output = render_to_text(30, 8, |frame| {
+        bookmarks_popup::render(frame, &empty_state, &empty_store, &theme);
+    });
+
+    assert!(
+        empty_output.contains("No bookmarks. P..."),
+        "{empty_output}"
+    );
+    assert_lines_fit(&empty_output, 30);
+
+    let mut store = BookmarkStore::load_with_status(dir.path().join("bookmarks.json")).0;
+    store.add(Bookmark {
+        name: "lookupWithAnExcessivelyLongName".to_string(),
+        module: Some("Data.Map.Strict.Deeply.Nested.Module".to_string()),
+        package: Some("containers".to_string()),
+        signature: Some("Ord k => k -> Map k a -> Maybe a".to_string()),
+        doc_url: None,
+        added: chrono::Utc::now(),
+    });
+    let state = bookmarks_popup::BookmarksPopupState::new(store.bookmarks().len());
+
+    let output = render_to_text(36, 8, |frame| {
+        bookmarks_popup::render(frame, &state, &store, &theme);
+    });
+
+    assert!(output.contains("look..."), "{output}");
+    assert!(output.contains("(Da..."), "{output}");
     assert_lines_fit(&output, 36);
 }
 

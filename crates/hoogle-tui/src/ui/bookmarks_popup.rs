@@ -149,25 +149,27 @@ pub fn render(
             theme.style(SemanticToken::DocText)
         };
 
-        let module_str = bm
+        let raw_module = bm
             .module
             .as_ref()
             .map(|m| format!(" ({m})"))
             .unwrap_or_default();
-
-        let sig_str = bm
+        let raw_signature = bm
             .signature
             .as_ref()
-            .map(|s| {
-                let max = (inner.width as usize)
-                    .saturating_sub(display_width(&bm.name) + display_width(&module_str) + 8);
-                if display_width(s) > max {
-                    format!(" :: {}", truncate_width(s, max, "..."))
-                } else {
-                    format!(" :: {s}")
-                }
-            })
+            .map(|s| format!(" :: {s}"))
             .unwrap_or_default();
+
+        let row_width = inner.width as usize;
+        let content_width = row_width.saturating_sub(display_width(marker));
+        let name_budget = content_width / 3;
+        let module_budget = content_width / 3;
+        let name = truncate_width(&bm.name, name_budget, "...");
+        let module_str = truncate_width(&raw_module, module_budget, "...");
+        let sig_width = content_width
+            .saturating_sub(display_width(&name))
+            .saturating_sub(display_width(&module_str));
+        let sig_str = truncate_width(&raw_signature, sig_width, "...");
 
         let meta_style = if is_selected {
             theme.style(SemanticToken::Selected)
@@ -177,20 +179,26 @@ pub fn render(
 
         lines.push(Line::from(vec![
             Span::styled(marker.to_string(), style),
-            Span::styled(bm.name.clone(), style),
+            Span::styled(name, style),
             Span::styled(module_str, meta_style),
             Span::styled(sig_str, meta_style),
         ]));
     }
 
     if bookmarks.is_empty() {
-        lines.push(Line::from(Span::styled(
+        let message = truncate_width(
             "  No bookmarks. Press m on a result to bookmark it.",
+            inner.width as usize,
+            "...",
+        );
+        lines.push(Line::from(Span::styled(
+            message,
             theme.style(SemanticToken::Comment),
         )));
     } else if state.filtered_indices.is_empty() {
+        let message = truncate_width("  No bookmarks found.", inner.width as usize, "...");
         lines.push(Line::from(Span::styled(
-            "  No bookmarks found.",
+            message,
             theme.style(SemanticToken::Comment),
         )));
     }
