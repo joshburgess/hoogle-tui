@@ -401,7 +401,7 @@ fn bookmarks_popup_wide_signature_fits_render_width() {
         doc_url: None,
         added: chrono::Utc::now(),
     });
-    let state = bookmarks_popup::BookmarksPopupState::new();
+    let state = bookmarks_popup::BookmarksPopupState::new(store.bookmarks().len());
 
     let output = render_to_text(60, 8, |frame| {
         bookmarks_popup::render(frame, &state, &store, &theme);
@@ -410,6 +410,33 @@ fn bookmarks_popup_wide_signature_fits_render_width() {
     assert!(output.contains("Data.型 型 型"), "{output}");
     assert!(output.contains("..."), "{output}");
     assert_lines_fit(&output, 60);
+}
+
+#[test]
+fn bookmarks_popup_long_filter_title_fits_render_width() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let mut store = BookmarkStore::load_with_status(dir.path().join("bookmarks.json")).0;
+    store.add(Bookmark {
+        name: "map".to_string(),
+        module: Some("Data.Map".to_string()),
+        package: Some("containers".to_string()),
+        signature: None,
+        doc_url: None,
+        added: chrono::Utc::now(),
+    });
+    let mut state = bookmarks_popup::BookmarksPopupState::new(store.bookmarks().len());
+    for c in "  map with a deliberately very long trailing query  ".chars() {
+        state.add_filter_char(c, &store);
+    }
+
+    let output = render_to_text(36, 8, |frame| {
+        bookmarks_popup::render(frame, &state, &store, &theme);
+    });
+
+    assert!(output.contains("Bookmarks: map"), "{output}");
+    assert!(!output.contains("Bookmarks:   map"), "{output}");
+    assert_lines_fit(&output, 36);
 }
 
 #[test]
@@ -479,7 +506,7 @@ fn popups_render_on_tiny_terminal() {
         render_to_text(8, 4, |frame| {
             bookmarks_popup::render(
                 frame,
-                &bookmarks_popup::BookmarksPopupState::new(),
+                &bookmarks_popup::BookmarksPopupState::new(bookmarks.bookmarks().len()),
                 &bookmarks,
                 &theme,
             );

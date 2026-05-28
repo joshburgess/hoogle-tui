@@ -8,7 +8,9 @@ impl App {
             self.show_info("No bookmarks saved");
             return;
         }
-        self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
+        self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new(
+            self.bookmark_store.bookmarks().len(),
+        ));
         self.popup = Some(PopupMode::Bookmarks);
     }
 
@@ -45,6 +47,18 @@ impl App {
         if let Some(ref mut hp) = self.history_popup {
             hp.filter.pop();
             hp.update_filter(&self.history);
+        }
+    }
+
+    pub(crate) fn add_bookmark_filter_char(&mut self, c: char) {
+        if let Some(ref mut bp) = self.bookmarks_popup {
+            bp.add_filter_char(c, &self.bookmark_store);
+        }
+    }
+
+    pub(crate) fn delete_bookmark_filter_char(&mut self) {
+        if let Some(ref mut bp) = self.bookmarks_popup {
+            bp.delete_filter_char(&self.bookmark_store);
         }
     }
 
@@ -152,7 +166,7 @@ impl App {
             PopupMode::Bookmarks => match action {
                 Action::MoveDown => {
                     if let Some(ref mut bp) = self.bookmarks_popup {
-                        bp.move_down(self.bookmark_store.bookmarks().len());
+                        bp.move_down();
                     }
                 }
                 Action::MoveUp => {
@@ -162,27 +176,32 @@ impl App {
                 }
                 Action::Select => {
                     if let Some(ref bp) = self.bookmarks_popup {
-                        let idx = bp.selected;
-                        if let Some(bm) = self.bookmark_store.bookmarks().get(idx) {
-                            if let Some(ref url) = bm.doc_url {
-                                let url = url.clone();
+                        if let Some(idx) = bp.selected_index() {
+                            if let Some(bm) = self.bookmark_store.bookmarks().get(idx) {
+                                if let Some(ref url) = bm.doc_url {
+                                    let url = url.clone();
+                                    self.close_popup();
+                                    self.switch_mode(AppMode::DocView);
+                                    self.doc_state.loading = true;
+                                    self.doc_state.current_url = None;
+                                    self.doc_state.nav_stack.clear();
+                                    self.fetch_doc(url);
+                                    return;
+                                }
                                 self.close_popup();
-                                self.switch_mode(AppMode::DocView);
-                                self.doc_state.loading = true;
-                                self.doc_state.current_url = None;
-                                self.doc_state.nav_stack.clear();
-                                self.fetch_doc(url);
+                                self.show_info("No URL available");
                                 return;
                             }
-                            self.close_popup();
-                            self.show_info("No URL available");
-                            return;
                         }
                     }
                     self.close_popup();
                 }
                 Action::DeleteEntry => {
-                    if let Some(selected) = self.bookmarks_popup.as_ref().map(|bp| bp.selected) {
+                    if let Some(selected) = self
+                        .bookmarks_popup
+                        .as_ref()
+                        .and_then(|bp| bp.selected_index())
+                    {
                         if selected >= self.bookmark_store.bookmarks().len() {
                             self.show_info("No bookmark selected");
                             return;
@@ -192,10 +211,10 @@ impl App {
                             self.show_error(&format!("Failed to save bookmarks: {e}"));
                         }
                         if let Some(ref mut bp) = self.bookmarks_popup {
-                            bp.clamp_selection(self.bookmark_store.bookmarks().len());
+                            bp.update_filter_preserving_selection(&self.bookmark_store);
                         }
                     } else {
-                        self.bookmarks_popup = Some(bookmarks_popup::BookmarksPopupState::new());
+                        self.show_info("No bookmark selected");
                     }
                 }
                 Action::Back | Action::Quit => self.close_popup(),

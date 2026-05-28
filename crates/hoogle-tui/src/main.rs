@@ -204,6 +204,10 @@ async fn main() -> io::Result<()> {
                                 app.delete_history_filter_char();
                                 actions::Action::Tick
                             }
+                            KeyCode::Backspace if app.popup == Some(app::PopupMode::Bookmarks) => {
+                                app.delete_bookmark_filter_char();
+                                actions::Action::Tick
+                            }
                             KeyCode::Backspace
                                 if app.popup == Some(app::PopupMode::CommandPalette) =>
                             {
@@ -222,6 +226,12 @@ async fn main() -> io::Result<()> {
                                 if app.popup == Some(app::PopupMode::History) && !has_control =>
                             {
                                 app.add_history_filter_char(c);
+                                actions::Action::Tick
+                            }
+                            KeyCode::Char(c)
+                                if app.popup == Some(app::PopupMode::Bookmarks) && !has_control =>
+                            {
+                                app.add_bookmark_filter_char(c);
                                 actions::Action::Tick
                             }
                             KeyCode::Char(c)

@@ -830,7 +830,9 @@ fn bookmark_select_without_url_reports_noop() {
 fn bookmark_delete_without_selection_reports_noop() {
     let mut app = test_app();
     app.bookmarks_popup = Some(crate::ui::bookmarks_popup::BookmarksPopupState {
+        filter: String::new(),
         selected: app.bookmark_store.bookmarks().len(),
+        filtered_indices: Vec::new(),
     });
     app.popup = Some(PopupMode::Bookmarks);
 
@@ -1554,6 +1556,55 @@ fn history_popup_filter_methods_update_visible_entries() {
     let popup = app.history_popup.as_ref().unwrap();
     assert!(popup.filter.is_empty());
     assert_eq!(popup.filtered_indices.len(), app.history.entries().len());
+}
+
+#[test]
+fn bookmarks_popup_filter_methods_update_visible_entries() {
+    let mut app = test_app();
+    app.bookmark_store.add(Bookmark {
+        name: "codex-bookmark-map-filter".to_string(),
+        module: Some("Data.Map".to_string()),
+        package: Some("containers".to_string()),
+        signature: None,
+        doc_url: None,
+        added: chrono::Utc::now(),
+    });
+    app.bookmark_store.add(Bookmark {
+        name: "codex-bookmark-lookup-filter".to_string(),
+        module: Some("Data.List".to_string()),
+        package: Some("base".to_string()),
+        signature: None,
+        doc_url: None,
+        added: chrono::Utc::now(),
+    });
+    app.bookmarks_popup = Some(crate::ui::bookmarks_popup::BookmarksPopupState::new(
+        app.bookmark_store.bookmarks().len(),
+    ));
+    app.popup = Some(PopupMode::Bookmarks);
+
+    for c in "containers".chars() {
+        app.add_bookmark_filter_char(c);
+    }
+    let popup = app.bookmarks_popup.as_ref().unwrap();
+    let expected = app
+        .bookmark_store
+        .bookmarks()
+        .iter()
+        .position(|bookmark| bookmark.package.as_deref() == Some("containers"))
+        .map(|idx| vec![idx])
+        .unwrap_or_default();
+    assert_eq!(popup.filter, "containers");
+    assert_eq!(popup.filtered_indices, expected);
+
+    for _ in "containers".chars() {
+        app.delete_bookmark_filter_char();
+    }
+    let popup = app.bookmarks_popup.as_ref().unwrap();
+    assert!(popup.filter.is_empty());
+    assert_eq!(
+        popup.filtered_indices.len(),
+        app.bookmark_store.bookmarks().len()
+    );
 }
 
 #[tokio::test]
