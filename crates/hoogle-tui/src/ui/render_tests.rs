@@ -482,6 +482,25 @@ fn history_popup_long_filter_title_fits_render_width() {
 }
 
 #[test]
+fn history_popup_truncates_long_query_rows() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let mut history = SearchHistory::load_with_status(dir.path().join("history.json")).0;
+    history.add(
+        "lookup with a deliberately long search history query that should fit",
+        12345,
+    );
+    let state = history_popup::HistoryPopupState::new(history.entries().len());
+
+    let output = render_to_text(38, 8, |frame| {
+        history_popup::render(frame, &state, &history, &theme);
+    });
+
+    assert!(output.contains("look...  (12345 results)"), "{output}");
+    assert_lines_fit(&output, 38);
+}
+
+#[test]
 fn module_browser_long_filter_line_fits_render_width() {
     let theme = Theme::dracula();
     let results = vec![search_result("lookup", "Ord k => k -> Map k a -> Maybe a")];

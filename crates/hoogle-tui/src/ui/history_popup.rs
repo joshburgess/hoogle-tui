@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
-use super::text::truncate_width;
+use super::text::{display_width, truncate_width};
 use crate::history::SearchHistory;
 
 pub struct HistoryPopupState {
@@ -128,11 +128,15 @@ pub fn render(
         } else {
             theme.style(SemanticToken::Comment)
         };
+        let count = format!("  ({} results)", entry.result_count);
+        let query_width =
+            (inner.width as usize).saturating_sub(display_width(marker) + display_width(&count));
+        let query = truncate_width(&entry.query, query_width, "...");
 
         lines.push(Line::from(vec![
             Span::styled(marker.to_string(), style),
-            Span::styled(entry.query.clone(), style),
-            Span::styled(format!("  ({} results)", entry.result_count), count_style),
+            Span::styled(query, style),
+            Span::styled(count, count_style),
         ]));
     }
 
