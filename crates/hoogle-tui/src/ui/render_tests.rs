@@ -315,6 +315,29 @@ fn result_list_compact_wide_text_keeps_module_visible() {
 }
 
 #[test]
+fn result_list_long_filter_title_fits_render_width() {
+    let theme = Theme::dracula();
+    let mut state = result_list::ResultListState::new();
+    state.set_items(vec![search_result(
+        "map",
+        "Ord k => k -> Map k a -> Maybe a",
+    )]);
+    state.start_fuzzy_filter();
+    for c in "  map with a deliberately very long trailing query  ".chars() {
+        state.fuzzy_add_char(c);
+    }
+
+    let output = render_to_text(36, 5, |frame| {
+        result_list::render(frame, Rect::new(0, 0, 36, 5), &mut state, &theme);
+    });
+
+    assert!(output.contains("Filter: map"), "{output}");
+    assert!(!output.contains("Filter:   map"), "{output}");
+    assert!(output.contains("..."), "{output}");
+    assert_lines_fit(&output, 36);
+}
+
+#[test]
 fn doc_viewer_table_wide_text_fits_render_width() {
     let theme = Theme::dracula();
     let doc = HaddockDoc {

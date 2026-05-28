@@ -278,13 +278,14 @@ impl ResultListState {
             self.filtered_indices = None;
             return;
         };
-        if filter.is_empty() {
+        let query = filter.trim().to_lowercase();
+        if query.is_empty() {
             self.filtered_indices = None;
             self.selected = 0;
+            self.scroll_offset = 0;
             return;
         }
 
-        let query = filter.to_lowercase();
         self.filtered_indices = Some(
             self.items
                 .iter()
@@ -352,16 +353,18 @@ fn result_key(result: &SearchResult) -> String {
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme: &Theme) {
     let visible_count = state.visible_count();
-    let title = if let Some(ref filter) = state.fuzzy_filter {
+    let raw_title = if let Some(ref filter) = state.fuzzy_filter {
+        let display_filter = filter.trim();
         format!(
             " Results ({}/{}) Filter: {} ",
             visible_count,
             state.items.len(),
-            filter
+            display_filter
         )
     } else {
         format!(" Results ({}) ", state.items.len())
     };
+    let title = truncate_width(&raw_title, area.width.saturating_sub(2) as usize, "...");
 
     let block = Block::default()
         .borders(Borders::ALL)
@@ -794,6 +797,22 @@ mod tests {
 
         assert_eq!(state.visible_count(), 0);
         assert!(state.selected_result().is_none());
+    }
+
+    #[test]
+    fn fuzzy_filter_ignores_surrounding_whitespace() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![make_result("map"), make_result("filter")]);
+        state.start_fuzzy_filter();
+        for c in "  filter  ".chars() {
+            state.fuzzy_add_char(c);
+        }
+
+        assert_eq!(state.visible_count(), 1);
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            Some("filter")
+        );
     }
 
     #[test]
