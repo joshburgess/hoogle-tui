@@ -561,6 +561,28 @@ fn doc_viewer_table_wide_text_fits_render_width() {
 }
 
 #[test]
+fn doc_viewer_truncates_long_inline_words() {
+    let theme = Theme::dracula();
+    let doc = HaddockDoc {
+        module: "Demo.LongWords".to_string(),
+        package: "demo-0.1.0".to_string(),
+        description: vec![DocBlock::Paragraph(vec![Inline::Text(
+            "SupercalifragilisticexpialidociousIdentifierWithoutSpaces".to_string(),
+        )])],
+        declarations: Vec::new(),
+    };
+    let mut state = doc_viewer::DocViewState::new();
+    state.set_doc(doc, &theme, 24);
+
+    let output = render_to_text(24, 8, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 24, 8), &mut state, &theme);
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 24);
+}
+
+#[test]
 fn toc_popup_wide_signature_fits_render_width() {
     let theme = Theme::dracula();
     let state = toc_popup::TocState::new(vec![toc_popup::TocEntry {

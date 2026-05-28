@@ -891,6 +891,18 @@ fn wrap_inlines(
         // Word wrap
         for word in text.split_inclusive(|c: char| c.is_whitespace()) {
             let word_len = display_width(word);
+            if word_len > width {
+                if col > 0 {
+                    result_lines.push(vec![]);
+                }
+                let clipped = truncate_width(word, width, "\u{2026}");
+                col = display_width(&clipped);
+                if let Some(last) = result_lines.last_mut() {
+                    last.push(Span::styled(clipped, style));
+                }
+                continue;
+            }
+
             if col + word_len > width && col > 0 {
                 result_lines.push(vec![]);
                 col = 0;
