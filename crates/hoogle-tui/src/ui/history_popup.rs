@@ -128,9 +128,15 @@ pub fn render(
         } else {
             theme.style(SemanticToken::Comment)
         };
-        let count = format!("  ({} results)", entry.result_count);
-        let query_width =
-            (inner.width as usize).saturating_sub(display_width(marker) + display_width(&count));
+        let inner_width = inner.width as usize;
+        let content_width = inner_width.saturating_sub(display_width(marker));
+        let raw_count = format!("  ({} results)", entry.result_count);
+        let count_width = display_width(&raw_count);
+        let (query_width, count) = if count_width >= content_width {
+            (0, truncate_width(&raw_count, content_width, "..."))
+        } else {
+            (content_width - count_width, raw_count)
+        };
         let query = truncate_width(&entry.query, query_width, "...");
 
         lines.push(Line::from(vec![
@@ -141,8 +147,9 @@ pub fn render(
     }
 
     if state.filtered_indices.is_empty() {
+        let message = truncate_width("  No history.", inner.width as usize, "...");
         lines.push(Line::from(Span::styled(
-            "  No history.",
+            message,
             theme.style(SemanticToken::Comment),
         )));
     }

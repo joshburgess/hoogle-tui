@@ -681,6 +681,32 @@ fn history_popup_truncates_long_query_rows() {
 }
 
 #[test]
+fn history_popup_truncates_empty_state_and_large_counts() {
+    let theme = Theme::dracula();
+    let dir = tempfile::tempdir().expect("failed to create temp dir");
+    let empty_history = SearchHistory::load_with_status(dir.path().join("empty-history.json")).0;
+    let empty_state = history_popup::HistoryPopupState::new(empty_history.entries().len());
+
+    let empty_output = render_to_text(14, 8, |frame| {
+        history_popup::render(frame, &empty_state, &empty_history, &theme);
+    });
+
+    assert!(empty_output.contains("No ..."), "{empty_output}");
+    assert_lines_fit(&empty_output, 14);
+
+    let mut history = SearchHistory::load_with_status(dir.path().join("history.json")).0;
+    history.add("lookup with a deliberately long query", usize::MAX);
+    let state = history_popup::HistoryPopupState::new(history.entries().len());
+
+    let output = render_to_text(22, 8, |frame| {
+        history_popup::render(frame, &state, &history, &theme);
+    });
+
+    assert!(output.contains("..."), "{output}");
+    assert_lines_fit(&output, 22);
+}
+
+#[test]
 fn module_browser_long_filter_line_fits_render_width() {
     let theme = Theme::dracula();
     let results = vec![search_result("lookup", "Ord k => k -> Map k a -> Maybe a")];
