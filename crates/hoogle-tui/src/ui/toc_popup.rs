@@ -135,32 +135,44 @@ pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
             theme.style(SemanticToken::Comment)
         };
 
+        let inner_width = inner.width as usize;
         let indent = "  ".repeat(entry.level.saturating_sub(1) as usize);
-        let sig_text = entry
-            .signature
-            .as_ref()
-            .map(|s| {
-                let max_len = (inner.width as usize)
-                    .saturating_sub(display_width(&entry.name) + display_width(&indent) + 6);
-                if display_width(s) > max_len {
-                    format!(" :: {}", truncate_width(s, max_len, "..."))
-                } else {
-                    format!(" :: {s}")
-                }
-            })
-            .unwrap_or_default();
+        let prefix_width = display_width(marker) + display_width(&indent);
+        let content_width = inner_width.saturating_sub(prefix_width);
+        let has_signature = entry.signature.is_some();
+        let signature_reserve = if has_signature && content_width > 12 {
+            content_width / 3
+        } else {
+            0
+        };
+        let name_width = content_width.saturating_sub(signature_reserve);
+        let name = truncate_width(&entry.name, name_width, "...");
+
+        let sig_text = entry.signature.as_ref().map_or_else(String::new, |s| {
+            let used_width = display_width(&name);
+            let remaining_width = content_width.saturating_sub(used_width);
+            if remaining_width <= 4 {
+                String::new()
+            } else {
+                format!(
+                    " :: {}",
+                    truncate_width(s, remaining_width.saturating_sub(4), "...")
+                )
+            }
+        });
 
         lines.push(Line::from(vec![
             Span::styled(marker.to_string(), style),
             Span::styled(indent, style),
-            Span::styled(entry.name.clone(), style),
+            Span::styled(name, style),
             Span::styled(sig_text, sig_style),
         ]));
     }
 
     if total == 0 {
+        let message = truncate_width("  No declarations found.", inner.width as usize, "...");
         lines.push(Line::from(Span::styled(
-            "  No declarations found.",
+            message,
             theme.style(SemanticToken::Comment),
         )));
     }

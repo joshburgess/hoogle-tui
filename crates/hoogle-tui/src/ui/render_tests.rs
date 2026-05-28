@@ -528,6 +528,33 @@ fn toc_popup_long_filter_title_fits_render_width() {
 }
 
 #[test]
+fn toc_popup_truncates_empty_state_and_long_rows() {
+    let theme = Theme::dracula();
+    let empty = toc_popup::TocState::new(Vec::new());
+
+    let empty_output = render_to_text(18, 8, |frame| {
+        toc_popup::render(frame, &empty, &theme);
+    });
+
+    assert!(empty_output.contains("No dec..."), "{empty_output}");
+    assert_lines_fit(&empty_output, 18);
+
+    let state = toc_popup::TocState::new(vec![toc_popup::TocEntry {
+        name: "lookupWithAnIntentionallyLongDeclarationName".to_string(),
+        signature: Some("Ord k => k -> Map k a -> Maybe a".to_string()),
+        line_offset: 0,
+        level: 1,
+    }]);
+
+    let output = render_to_text(24, 8, |frame| {
+        toc_popup::render(frame, &state, &theme);
+    });
+
+    assert!(output.contains("lookupW..."), "{output}");
+    assert_lines_fit(&output, 24);
+}
+
+#[test]
 fn bookmarks_popup_wide_signature_fits_render_width() {
     let theme = Theme::dracula();
     let dir = tempfile::tempdir().expect("failed to create temp dir");
