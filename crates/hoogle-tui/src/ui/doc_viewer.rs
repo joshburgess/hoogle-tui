@@ -294,7 +294,7 @@ impl DocViewState {
 pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &Theme) {
     let block = Block::default()
         .borders(Borders::ALL)
-        .title(doc_title(state))
+        .title(doc_title(state, area.width.saturating_sub(2) as usize))
         .border_style(theme.style(SemanticToken::Border));
 
     // Reserve space for search bar at bottom if active
@@ -456,6 +456,10 @@ fn render_search_bar(frame: &mut Frame, area: Option<Rect>, state: &DocViewState
         let current = state.current_match.map(|i| i + 1).unwrap_or(0);
         format!(" ({}/{})", current, state.search_matches.len())
     };
+    let max_width = area.width as usize;
+    let match_width = display_width(&match_info);
+    let query_width = max_width.saturating_sub(3 + match_width);
+    let query = truncate_width(&state.search_query, query_width, "...");
 
     let bar = Paragraph::new(Line::from(vec![
         Span::styled(
@@ -464,10 +468,7 @@ fn render_search_bar(frame: &mut Frame, area: Option<Rect>, state: &DocViewState
                 .style(SemanticToken::ModuleName)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(
-            state.search_query.clone(),
-            theme.style(SemanticToken::SearchInput),
-        ),
+        Span::styled(query, theme.style(SemanticToken::SearchInput)),
         Span::styled("\u{2588}", theme.style(SemanticToken::SearchInput)),
         Span::styled(match_info, theme.style(SemanticToken::Comment)),
     ]))
@@ -475,12 +476,13 @@ fn render_search_bar(frame: &mut Frame, area: Option<Rect>, state: &DocViewState
     frame.render_widget(bar, area);
 }
 
-fn doc_title(state: &DocViewState) -> String {
-    if let Some(ref doc) = state.doc {
+fn doc_title(state: &DocViewState, width: usize) -> String {
+    let raw_title = if let Some(ref doc) = state.doc {
         format!(" {} ({}) ", doc.module, doc.package)
     } else {
         " Documentation ".to_string()
-    }
+    };
+    truncate_width(&raw_title, width, "...")
 }
 
 // --- Document rendering ---

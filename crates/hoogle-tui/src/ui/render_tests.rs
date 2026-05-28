@@ -797,6 +797,26 @@ fn search_bar_truncates_narrow_hints() {
 }
 
 #[test]
+fn doc_viewer_search_bar_truncates_long_query() {
+    let theme = Theme::dracula();
+    let mut state = doc_viewer::DocViewState::new();
+    state.search_active = true;
+    state.search_query = "lookup with an intentionally long in-document query".to_string();
+    state.search_matches = vec![0, 3, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610];
+    state.current_match = Some(8);
+
+    let output = render_to_text(38, 8, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 38, 8), &mut state, &theme);
+    });
+
+    assert!(
+        output.contains("/lookup with an intentiona...█ (9/12)"),
+        "{output}"
+    );
+    assert_lines_fit(&output, 38);
+}
+
+#[test]
 fn filter_popup_render_includes_all_options() {
     let theme = Theme::dracula();
     let state = filter_popup::FilterState::new();
