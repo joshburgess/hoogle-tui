@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use super::text::truncate_width;
+use super::text::{display_width, truncate_width};
 
 pub struct SourceViewState {
     pub source: Option<String>,
@@ -168,7 +168,10 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme:
     let total = state.rendered_lines.len();
     let start = state.scroll_offset.min(total);
     let end = (start + inner.height as usize).min(total);
-    let visible: Vec<Line> = state.rendered_lines[start..end].to_vec();
+    let visible: Vec<Line> = state.rendered_lines[start..end]
+        .iter()
+        .map(|line| truncate_line(line, inner.width as usize))
+        .collect();
 
     let range = truncate_width(
         &format!(" {}-{}/{} ", start + 1, end, total),
@@ -194,6 +197,31 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut SourceViewState, theme:
             &mut scrollbar_state,
         );
     }
+}
+
+fn truncate_line(line: &Line<'static>, width: usize) -> Line<'static> {
+    let mut remaining = width;
+    let mut spans = Vec::new();
+
+    for span in &line.spans {
+        if remaining == 0 {
+            break;
+        }
+
+        let text = span.content.as_ref();
+        let span_width = display_width(text);
+        if span_width <= remaining {
+            spans.push(span.clone());
+            remaining -= span_width;
+            continue;
+        }
+
+        let clipped = truncate_width(text, remaining, "\u{2026}");
+        spans.push(Span::styled(clipped, span.style));
+        break;
+    }
+
+    Line::from(spans)
 }
 
 #[cfg(test)]

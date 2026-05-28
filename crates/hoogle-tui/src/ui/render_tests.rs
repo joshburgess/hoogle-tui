@@ -1111,6 +1111,25 @@ fn source_viewer_truncates_narrow_title_and_error() {
 }
 
 #[test]
+fn source_viewer_truncates_wide_code_lines() {
+    let theme = Theme::dracula();
+    let mut state = source_viewer::SourceViewState::new();
+    state.set_source(
+        "module Demo where\nlookupWithAnIntentionallyLongImplementationName = mapMaybe lookup values\n"
+            .to_string(),
+        "lookupWithAnIntentionallyLongImplementationName",
+        &theme,
+    );
+
+    let output = render_to_text(34, 8, |frame| {
+        source_viewer::render(frame, Rect::new(0, 0, 34, 8), &mut state, &theme);
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 34);
+}
+
+#[test]
 fn pinned_panel_truncates_wide_rows() {
     let theme = Theme::dracula();
     let mut state = crate::ui::pinned_panel::PinnedState::new();
