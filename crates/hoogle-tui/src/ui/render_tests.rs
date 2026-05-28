@@ -360,6 +360,54 @@ fn result_list_long_filter_title_fits_render_width() {
 }
 
 #[test]
+fn result_list_truncates_narrow_state_messages() {
+    let theme = Theme::dracula();
+
+    let mut loading = result_list::ResultListState::new();
+    loading.loading = true;
+    let loading_output = render_to_text(12, 5, |frame| {
+        result_list::render(frame, Rect::new(0, 0, 12, 5), &mut loading, &theme);
+    });
+    assert!(loading_output.contains("Searc..."), "{loading_output}");
+    assert_lines_fit(&loading_output, 12);
+
+    let mut empty = result_list::ResultListState::new();
+    let empty_output = render_to_text(24, 8, |frame| {
+        result_list::render(frame, Rect::new(0, 0, 24, 8), &mut empty, &theme);
+    });
+    assert!(
+        empty_output.contains("Start typing to s..."),
+        "{empty_output}"
+    );
+    assert!(empty_output.contains("Try: map"), "{empty_output}");
+    assert!(empty_output.contains("Press ?"), "{empty_output}");
+    assert_lines_fit(&empty_output, 24);
+
+    let tiny_empty_output = render_to_text(8, 8, |frame| {
+        result_list::render(frame, Rect::new(0, 0, 8, 8), &mut empty, &theme);
+    });
+    assert_lines_fit(&tiny_empty_output, 8);
+
+    let mut filtered = result_list::ResultListState::new();
+    filtered.set_items(vec![search_result(
+        "map",
+        "Ord k => k -> Map k a -> Maybe a",
+    )]);
+    filtered.start_fuzzy_filter();
+    for c in "zipper".chars() {
+        filtered.fuzzy_add_char(c);
+    }
+    let no_match_output = render_to_text(24, 5, |frame| {
+        result_list::render(frame, Rect::new(0, 0, 24, 5), &mut filtered, &theme);
+    });
+    assert!(
+        no_match_output.contains("No matches. Press..."),
+        "{no_match_output}"
+    );
+    assert_lines_fit(&no_match_output, 24);
+}
+
+#[test]
 fn preview_pane_truncates_metadata_and_url() {
     let theme = Theme::dracula();
     let mut state = preview_pane::PreviewState::new();

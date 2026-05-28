@@ -332,6 +332,62 @@ impl ResultListState {
     }
 }
 
+fn truncate_empty_examples_line(
+    width: usize,
+    comment_style: Style,
+    key_style: Style,
+) -> Line<'static> {
+    let examples = [("map", 3), ("Maybe a -> a", 12), ("[a] -> Int", 10)];
+    let prefix = "  Try: ";
+    let prefix_width = display_width(prefix);
+    let mut spans = vec![Span::styled(prefix, comment_style)];
+    let mut used = prefix_width;
+
+    for (example, example_width) in examples {
+        let separator_width = if used == prefix_width { 0 } else { 2 };
+        let required = separator_width + example_width;
+        if used + required > width {
+            break;
+        }
+        if separator_width > 0 {
+            spans.push(Span::styled("  ", comment_style));
+            used += separator_width;
+        }
+        spans.push(Span::styled(example, key_style));
+        used += example_width;
+    }
+
+    if spans.len() == 1 {
+        spans[0] = Span::styled(truncate_width("  Try: map", width, "..."), comment_style);
+    }
+
+    Line::from(spans)
+}
+
+fn truncate_empty_bindings_line(
+    width: usize,
+    comment_style: Style,
+    key_style: Style,
+) -> Line<'static> {
+    let prefix = "  Press ?";
+    let prefix_width = display_width(prefix);
+    if width <= prefix_width {
+        return Line::from(Span::styled(
+            truncate_width(prefix, width, "..."),
+            comment_style,
+        ));
+    }
+
+    Line::from(vec![
+        Span::styled("  Press ", comment_style),
+        Span::styled("?", key_style),
+        Span::styled(
+            truncate_width(" for all keybindings", width - prefix_width, "..."),
+            comment_style,
+        ),
+    ])
+}
+
 fn result_key(result: &SearchResult) -> String {
     format!(
         "{}\u{1f}{}\u{1f}{}\u{1f}{}\u{1f}{:?}",
@@ -374,9 +430,12 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
+    let inner_width = inner.width as usize;
+
     if state.loading {
+        let message = truncate_width("  Searching...", inner_width, "...");
         let loading = Paragraph::new(Line::from(vec![Span::styled(
-            "  Searching...",
+            message,
             theme.style(SemanticToken::Spinner),
         )]));
         frame.render_widget(loading, inner);
@@ -389,35 +448,26 @@ pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme:
 
         let lines: Vec<Line> = if state.fuzzy_filter.is_some() {
             vec![Line::from(Span::styled(
-                "  No matches. Press Esc to clear filter.",
+                truncate_width(
+                    "  No matches. Press Esc to clear filter.",
+                    inner_width,
+                    "...",
+                ),
                 comment_style,
             ))]
         } else if state.items.is_empty() {
+            let prompt = truncate_width("  Start typing to search Hoogle", inner_width, "...");
             vec![
                 Line::from(""),
-                Line::from(Span::styled(
-                    "  Start typing to search Hoogle",
-                    comment_style,
-                )),
+                Line::from(Span::styled(prompt, comment_style)),
                 Line::from(""),
-                Line::from(vec![
-                    Span::styled("  Try: ", comment_style),
-                    Span::styled("map", key_style),
-                    Span::styled("  ", comment_style),
-                    Span::styled("Maybe a -> a", key_style),
-                    Span::styled("  ", comment_style),
-                    Span::styled("[a] -> Int", key_style),
-                ]),
+                truncate_empty_examples_line(inner_width, comment_style, key_style),
                 Line::from(""),
-                Line::from(vec![
-                    Span::styled("  Press ", comment_style),
-                    Span::styled("?", key_style),
-                    Span::styled(" for all keybindings", comment_style),
-                ]),
+                truncate_empty_bindings_line(inner_width, comment_style, key_style),
             ]
         } else {
             vec![Line::from(Span::styled(
-                "  No results found.",
+                truncate_width("  No results found.", inner_width, "..."),
                 comment_style,
             ))]
         };
