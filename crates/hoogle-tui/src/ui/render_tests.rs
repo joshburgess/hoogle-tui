@@ -13,8 +13,8 @@ use crate::bookmarks::{Bookmark, BookmarkStore};
 use crate::history::SearchHistory;
 use crate::ui::{
     bookmarks_popup, command_palette, doc_viewer, filter_popup, help_overlay, history_popup,
-    module_browser, package_popup, result_list, search_bar, sort_popup, source_viewer, status_bar,
-    theme_popup, toc_popup, yank_popup,
+    module_browser, package_popup, preview_pane, result_list, search_bar, sort_popup,
+    source_viewer, status_bar, theme_popup, toc_popup, yank_popup,
 };
 
 #[derive(Debug)]
@@ -335,6 +335,52 @@ fn result_list_long_filter_title_fits_render_width() {
     assert!(!output.contains("Filter:   map"), "{output}");
     assert!(output.contains("..."), "{output}");
     assert_lines_fit(&output, 36);
+}
+
+#[test]
+fn preview_pane_truncates_metadata_and_url() {
+    let theme = Theme::dracula();
+    let mut state = preview_pane::PreviewState::new();
+    let mut result = search_result_with_module(
+        "lookup",
+        "Ord k => k -> Map k a -> Maybe a",
+        ModulePath(vec![
+            "Data".to_string(),
+            "Map".to_string(),
+            "Strict".to_string(),
+            "VeryLongNestedModule".to_string(),
+        ]),
+    );
+    result.package = Some(PackageInfo {
+        name: "containers-with-a-long-package-name".to_string(),
+        version: None,
+    });
+    result.doc_url = Some(
+        url::Url::parse(
+            "https://hackage.haskell.org/package/containers/docs/Data-Map-Strict.html#v:lookup",
+        )
+        .expect("fixture URL should parse"),
+    );
+
+    let output = render_to_text(38, 14, |frame| {
+        preview_pane::render(
+            frame,
+            Rect::new(0, 0, 38, 14),
+            Some(&result),
+            &mut state,
+            &theme,
+        );
+    });
+
+    assert!(
+        output.contains("Data.Map.Strict.Ver...  container..."),
+        "{output}"
+    );
+    assert!(
+        output.contains("https://hackage.haskell.org/packa..."),
+        "{output}"
+    );
+    assert_lines_fit(&output, 38);
 }
 
 #[test]

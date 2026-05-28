@@ -8,7 +8,7 @@ use ratatui::{
     Frame,
 };
 
-use super::text::display_width;
+use super::text::{display_width, truncate_width};
 
 pub struct PreviewState {
     pub scroll_offset: usize,
@@ -71,6 +71,7 @@ pub fn render(
     state.reset_if_changed(&result.name);
 
     let inner = block.inner(area);
+    let inner_width = area.width.saturating_sub(2) as usize;
     state.viewport_height = inner.height as usize;
 
     let mut lines: Vec<Line> = Vec::new();
@@ -88,10 +89,14 @@ pub fn render(
         .unwrap_or_default();
 
     if !module_str.is_empty() || !pkg_str.is_empty() {
+        let pkg_str = truncate_width(&pkg_str, inner_width / 3, "...");
+        let module_width = inner_width.saturating_sub(display_width(&pkg_str) + 2);
+        let module_str = truncate_width(&module_str, module_width, "...");
+
         lines.push(Line::from(vec![
-            Span::styled(&module_str, theme.style(SemanticToken::ModuleName)),
+            Span::styled(module_str, theme.style(SemanticToken::ModuleName)),
             Span::styled("  ", theme.style(SemanticToken::DocText)),
-            Span::styled(&pkg_str, theme.style(SemanticToken::PackageName)),
+            Span::styled(pkg_str, theme.style(SemanticToken::PackageName)),
         ]));
         lines.push(Line::from(""));
     }
@@ -112,8 +117,6 @@ pub fn render(
         lines.push(Line::from(""));
     }
 
-    // Separator
-    let inner_width = area.width.saturating_sub(2) as usize;
     lines.push(Line::from(Span::styled(
         "\u{2500}".repeat(inner_width),
         theme.style(SemanticToken::Border),
@@ -181,8 +184,9 @@ pub fn render(
     // URL
     if let Some(ref url) = result.doc_url {
         lines.push(Line::from(""));
+        let url = truncate_width(url.as_str(), inner_width, "...");
         lines.push(Line::from(Span::styled(
-            url.as_str().to_string(),
+            url,
             theme.style(SemanticToken::DocLink),
         )));
     }
