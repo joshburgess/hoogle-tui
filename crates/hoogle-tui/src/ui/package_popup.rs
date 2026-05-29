@@ -119,8 +119,8 @@ mod tests {
     #[test]
     fn new_empty() {
         let state = PackageScopeState::new(&[]);
-        assert!(state.input.is_empty());
-        assert!(state.packages.is_empty());
+        assert_eq!(state.input, "");
+        assert_eq!(state.packages, Vec::<String>::new());
     }
 
     #[test]
@@ -161,7 +161,7 @@ mod tests {
     fn delete_char_on_empty_no_panic() {
         let mut state = PackageScopeState::new(&[]);
         state.delete_char();
-        assert!(state.input.is_empty());
+        assert_eq!(state.input, "");
     }
 
     #[test]
@@ -201,7 +201,7 @@ mod tests {
     fn confirm_empty_input_returns_empty() {
         let mut state = PackageScopeState::new(&[]);
         let result = state.confirm();
-        assert!(result.is_empty());
+        assert_eq!(result, Vec::<String>::new());
     }
 
     #[test]
@@ -209,15 +209,15 @@ mod tests {
         let mut state = PackageScopeState::new(&[]);
         state.input = ", , ,".to_string();
         let result = state.confirm();
-        assert!(result.is_empty());
+        assert_eq!(result, Vec::<String>::new());
     }
 
     #[test]
     fn clear_resets_everything() {
         let mut state = PackageScopeState::new(&["base".to_string(), "text".to_string()]);
-        assert!(!state.input.is_empty());
+        assert_eq!(state.input, "base, text");
         state.clear();
-        assert!(state.input.is_empty());
-        assert!(state.packages.is_empty());
+        assert_eq!(state.input, "");
+        assert_eq!(state.packages, Vec::<String>::new());
     }
 }
