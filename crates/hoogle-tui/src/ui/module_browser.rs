@@ -127,10 +127,7 @@ impl ModuleBrowserState {
                 return None;
             }
 
-            if !filter_lower.is_empty()
-                && !e.full_path.to_lowercase().contains(&filter_lower)
-                && !e.name.to_lowercase().contains(&filter_lower)
-            {
+            if !filter_lower.is_empty() && !module_entry_matches(e, &filter_lower) {
                 return None;
             }
             Some(i)
@@ -155,6 +152,10 @@ impl ModuleBrowserState {
         }
         true
     }
+}
+
+fn module_entry_matches(entry: &ModuleEntry, query: &str) -> bool {
+    entry.full_path.to_lowercase().contains(query) || entry.name.to_lowercase().contains(query)
 }
 
 fn flatten_tree(node: &ModuleNode, depth: usize, parent_path: &str, out: &mut Vec<ModuleEntry>) {
@@ -515,14 +516,24 @@ mod tests {
 
         let filtered_count = state.visible_indices().count();
         assert!(filtered_count < initial_count);
-        // All visible entries should contain "Data" in name or full_path
         for idx in state.visible_indices() {
-            let entry = &state.entries[idx];
-            assert!(
-                entry.full_path.to_lowercase().contains("data")
-                    || entry.name.to_lowercase().contains("data")
-            );
+            assert!(module_entry_matches(&state.entries[idx], "data"));
         }
+    }
+
+    #[test]
+    fn filter_matches_full_path_segments() {
+        let results = vec![
+            make_result(&["Data", "Map", "Strict"]),
+            make_result(&["Control", "Monad"]),
+        ];
+        let mut state = ModuleBrowserState::new(&results);
+
+        for c in "map.strict".chars() {
+            state.add_filter_char(c);
+        }
+
+        assert_eq!(state.selected_module(), Some("Data.Map.Strict"));
     }
 
     #[test]
