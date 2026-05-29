@@ -64,11 +64,10 @@ pub fn render(frame: &mut Frame, state: &FilterState, theme: &Theme) {
     let area = frame.area();
 
     let popup_width = 22u16;
-    let popup_height = (FILTER_OPTIONS.len() as u16) + 2; // +2 for border
+    let popup_height = (FILTER_OPTIONS.len() as u16) + 2;
 
     let popup = centered_popup(area, popup_width, popup_height);
 
-    // Clear background
     frame.render_widget(Clear, popup);
 
     let title = truncate_width(
@@ -162,7 +161,6 @@ mod tests {
     #[test]
     fn confirm_sets_active_filter_none_for_all() {
         let mut state = FilterState::new();
-        // selected=0 is "All" (None)
         let result = state.confirm();
         assert_eq!(result, None);
         assert_eq!(state.active_filter, None);
@@ -171,7 +169,7 @@ mod tests {
     #[test]
     fn confirm_sets_active_filter_function() {
         let mut state = FilterState::new();
-        state.move_down(); // now on Functions
+        state.selected = 1;
         let result = state.confirm();
         assert_eq!(result, Some(ResultKind::Function));
         assert_eq!(state.active_filter, Some(ResultKind::Function));
@@ -180,10 +178,7 @@ mod tests {
     #[test]
     fn confirm_sets_active_filter_class() {
         let mut state = FilterState::new();
-        // Navigate to Classes (index 5)
-        for _ in 0..5 {
-            state.move_down();
-        }
+        state.selected = 5;
         let result = state.confirm();
         assert_eq!(result, Some(ResultKind::Class));
         assert_eq!(state.active_filter, Some(ResultKind::Class));
@@ -194,7 +189,6 @@ mod tests {
         let mut state = FilterState::new();
         state.active_filter = Some(ResultKind::DataType);
         state.sync_selection();
-        // DataType is at index 2
         assert_eq!(state.selected, 2);
     }
 
@@ -210,7 +204,6 @@ mod tests {
     #[test]
     fn sync_selection_unknown_defaults_to_zero() {
         let mut state = FilterState::new();
-        // active_filter is None (All), which is at index 0
         state.selected = 3;
         state.sync_selection();
         assert_eq!(state.selected, 0);
@@ -219,13 +212,10 @@ mod tests {
     #[test]
     fn confirm_then_sync_roundtrip() {
         let mut state = FilterState::new();
-        state.move_down();
-        state.move_down();
-        state.move_down(); // index 3 = TypeAlias
+        state.selected = 3;
         state.confirm();
         assert_eq!(state.active_filter, Some(ResultKind::TypeAlias));
 
-        // Reset selected and sync
         state.selected = 0;
         state.sync_selection();
         assert_eq!(state.selected, 3);
