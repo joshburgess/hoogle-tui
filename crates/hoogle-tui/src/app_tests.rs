@@ -211,6 +211,8 @@ fn empty_search_clears_stale_status_message() {
     app.status.message = Some(StatusMessage::Loading("Searching...".to_string()));
     app.message_deadline = Some(tokio::time::Instant::now());
     app.results.loading = true;
+    app.completion_candidates = vec!["map".to_string(), "traverse".to_string()];
+    app.completion_index = 1;
 
     app.textarea = search_textarea_with_query("");
     app.trigger_search();
@@ -219,6 +221,8 @@ fn empty_search_clears_stale_status_message() {
     assert_eq!(app.message_deadline, None);
     assert!(!app.results.loading);
     assert!(app.last_searched.is_empty());
+    assert!(app.completion_candidates.is_empty());
+    assert_eq!(app.completion_index, 0);
 }
 
 #[test]

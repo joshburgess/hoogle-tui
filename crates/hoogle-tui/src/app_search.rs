@@ -34,6 +34,8 @@ impl App {
             self.has_more_results = false;
             self.loading_more = false;
             self.results.loading = false;
+            self.completion_candidates.clear();
+            self.completion_index = 0;
             self.clear_status_message();
             return;
         }
