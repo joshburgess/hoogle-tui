@@ -985,6 +985,13 @@ mod tests {
         state.rendered_lines = lines;
     }
 
+    fn test_url(text: &str) -> Url {
+        match Url::parse(text) {
+            Ok(url) => url,
+            Err(err) => panic!("invalid fixture URL {text}: {err}"),
+        }
+    }
+
     #[test]
     fn search_finds_matches() {
         let mut state = DocViewState::new();
@@ -1072,8 +1079,8 @@ mod tests {
             Line::from("line 3"),
         ];
         state.viewport_height = 10;
-        let url1 = Url::parse("https://example.com/1").unwrap();
-        let url2 = Url::parse("https://example.com/2").unwrap();
+        let url1 = test_url("https://example.com/1");
+        let url2 = test_url("https://example.com/2");
         state.links = vec![(1, url1), (3, url2)];
 
         assert!(state.focused_link.is_none());
