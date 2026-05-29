@@ -290,16 +290,7 @@ impl ResultListState {
             self.items
                 .iter()
                 .enumerate()
-                .filter(|(_, r)| {
-                    let haystack = format!(
-                        "{} {} {}",
-                        r.name,
-                        r.module.as_ref().map(|m| m.to_string()).unwrap_or_default(),
-                        r.package.as_ref().map(|p| p.name.as_str()).unwrap_or("")
-                    )
-                    .to_lowercase();
-                    haystack.contains(&query)
-                })
+                .filter(|(_, result)| result_matches_fuzzy_filter(result, &query))
                 .map(|(i, _)| i)
                 .collect(),
         );
@@ -405,6 +396,25 @@ fn result_key(result: &SearchResult) -> String {
         result.signature.as_deref().unwrap_or_default(),
         result.result_kind
     )
+}
+
+fn result_matches_fuzzy_filter(result: &SearchResult, query: &str) -> bool {
+    let haystack = format!(
+        "{} {} {}",
+        result.name,
+        result
+            .module
+            .as_ref()
+            .map(|module| module.to_string())
+            .unwrap_or_default(),
+        result
+            .package
+            .as_ref()
+            .map(|package| package.name.as_str())
+            .unwrap_or("")
+    )
+    .to_lowercase();
+    haystack.contains(query)
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut ResultListState, theme: &Theme) {
@@ -862,6 +872,41 @@ mod tests {
         assert_eq!(
             state.selected_result().map(|result| result.name.as_str()),
             Some("filter")
+        );
+    }
+
+    #[test]
+    fn fuzzy_filter_matches_module_and_package_metadata() {
+        let mut state = ResultListState::new();
+        state.set_items(vec![
+            make_module_result("lookup", &["Data", "Map"]),
+            make_result("decode"),
+        ]);
+        state.items[1].package = Some(hoogle_core::models::PackageInfo {
+            name: "aeson".to_string(),
+            version: None,
+        });
+        state.replace_items(state.items.clone());
+
+        state.start_fuzzy_filter();
+        for c in "data.map".chars() {
+            state.fuzzy_add_char(c);
+        }
+
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            Some("lookup")
+        );
+
+        state.clear_fuzzy_filter();
+        state.start_fuzzy_filter();
+        for c in "aeson".chars() {
+            state.fuzzy_add_char(c);
+        }
+
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            Some("decode")
         );
     }
 
