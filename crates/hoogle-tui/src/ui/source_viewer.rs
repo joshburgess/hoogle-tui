@@ -216,19 +216,18 @@ mod tests {
     #[test]
     fn new_defaults() {
         let state = SourceViewState::new();
-        assert!(state.source.is_none());
+        assert_eq!(state.source.as_deref(), None);
         assert!(state.rendered_lines.is_empty());
         assert_eq!(state.scroll_offset, 0);
         assert_eq!(state.viewport_height, 0);
         assert!(!state.loading);
-        assert!(state.error.is_none());
+        assert_eq!(state.error.as_deref(), None);
         assert!(state.title.is_empty());
     }
 
     #[test]
     fn scroll_down_basic() {
         let mut state = SourceViewState::new();
-        // Simulate having 20 rendered lines and viewport of 10
         state.rendered_lines = (0..20).map(|_| Line::from("x")).collect();
         state.viewport_height = 10;
 
@@ -243,7 +242,7 @@ mod tests {
         state.viewport_height = 10;
 
         state.scroll_down(100);
-        assert_eq!(state.scroll_offset, 10); // 20 - 10
+        assert_eq!(state.scroll_offset, 10);
     }
 
     #[test]
@@ -284,7 +283,7 @@ mod tests {
         state.rendered_lines = (0..30).map(|_| Line::from("x")).collect();
         state.viewport_height = 10;
         state.scroll_to_bottom();
-        assert_eq!(state.scroll_offset, 20); // 30 - 10
+        assert_eq!(state.scroll_offset, 20);
     }
 
     #[test]
@@ -308,7 +307,7 @@ mod tests {
         assert_eq!(state.title, "main");
         assert_eq!(state.scroll_offset, 0);
         assert!(!state.loading);
-        assert!(state.error.is_none());
+        assert_eq!(state.error.as_deref(), None);
     }
 
     #[test]
@@ -322,7 +321,7 @@ mod tests {
         state.set_source("x = 1".to_string(), "x", &theme);
         assert_eq!(state.scroll_offset, 0);
         assert!(!state.loading);
-        assert!(state.error.is_none());
+        assert_eq!(state.error.as_deref(), None);
     }
 
     #[test]
@@ -335,11 +334,11 @@ mod tests {
 
         state.start_loading("newDecl");
 
-        assert!(state.source.is_none());
+        assert_eq!(state.source.as_deref(), None);
         assert!(state.rendered_lines.is_empty());
         assert_eq!(state.scroll_offset, 0);
         assert!(state.loading);
-        assert!(state.error.is_none());
+        assert_eq!(state.error.as_deref(), None);
         assert_eq!(state.title, "newDecl");
     }
 
