@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn confirm_package() {
         let mut state = SortState::new();
-        state.move_down(); // Package
+        state.selected = 1;
         let mode = state.confirm();
         assert_eq!(mode, SortMode::Package);
         assert_eq!(state.active_sort, SortMode::Package);
@@ -178,8 +178,7 @@ mod tests {
     #[test]
     fn confirm_module() {
         let mut state = SortState::new();
-        state.move_down();
-        state.move_down(); // Module
+        state.selected = 2;
         let mode = state.confirm();
         assert_eq!(mode, SortMode::Module);
     }
@@ -187,9 +186,7 @@ mod tests {
     #[test]
     fn confirm_name() {
         let mut state = SortState::new();
-        for _ in 0..3 {
-            state.move_down();
-        }
+        state.selected = 3;
         let mode = state.confirm();
         assert_eq!(mode, SortMode::Name);
     }
@@ -214,7 +211,7 @@ mod tests {
     #[test]
     fn confirm_then_sync_roundtrip() {
         let mut state = SortState::new();
-        state.move_down(); // Package
+        state.selected = 1;
         state.confirm();
         assert_eq!(state.active_sort, SortMode::Package);
 
