@@ -204,6 +204,24 @@ async fn clear_search_state_ignores_in_flight_search_response() {
 }
 
 #[test]
+fn empty_search_clears_stale_status_message() {
+    let mut app = test_app();
+    app.textarea = search_textarea_with_query("map");
+    app.last_searched = "map".to_string();
+    app.status.message = Some(StatusMessage::Loading("Searching...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.results.loading = true;
+
+    app.textarea = search_textarea_with_query("");
+    app.trigger_search();
+
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
+    assert!(!app.results.loading);
+    assert!(app.last_searched.is_empty());
+}
+
+#[test]
 fn result_helpers_update_selection_state() {
     let mut app = test_app();
     app.mode = AppMode::Results;

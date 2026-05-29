@@ -34,6 +34,7 @@ impl App {
             self.has_more_results = false;
             self.loading_more = false;
             self.results.loading = false;
+            self.clear_status_message();
             return;
         }
 
