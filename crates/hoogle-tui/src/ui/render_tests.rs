@@ -528,6 +528,28 @@ fn preview_pane_truncates_long_doc_words() {
 }
 
 #[test]
+fn preview_pane_truncates_highlighted_doc_code() {
+    let theme = Theme::dracula();
+    let mut state = preview_pane::PreviewState::new();
+    let mut result = search_result("example", "a -> a");
+    result.short_doc =
+        Some(">>> veryLongIdentifierWithoutSpaces = veryLongIdentifierWithoutSpaces".to_string());
+
+    let output = render_to_text(28, 12, |frame| {
+        preview_pane::render(
+            frame,
+            Rect::new(0, 0, 28, 12),
+            Some(&result),
+            &mut state,
+            &theme,
+        );
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 28);
+}
+
+#[test]
 fn doc_viewer_table_wide_text_fits_render_width() {
     let theme = Theme::dracula();
     let doc = HaddockDoc {

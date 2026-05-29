@@ -159,7 +159,7 @@ pub fn render(
                         .into_iter()
                         .map(|s| Span::styled(s.content.to_string(), s.style)),
                 );
-                lines.push(Line::from(spans));
+                lines.push(truncate_line(Line::from(spans), inner_width));
             } else if trimmed.starts_with("@") || (line.starts_with("    ") && !trimmed.is_empty())
             {
                 // Indented code or @-block, syntax highlight.
@@ -171,7 +171,7 @@ pub fn render(
                         .into_iter()
                         .map(|s| Span::styled(s.content.to_string(), s.style)),
                 );
-                lines.push(Line::from(spans));
+                lines.push(truncate_line(Line::from(spans), inner_width));
             } else {
                 lines.push(Line::from(Span::styled(
                     line,
@@ -256,4 +256,29 @@ fn wrap_text(text: &str, width: usize) -> Vec<String> {
         lines.push(String::new());
     }
     lines
+}
+
+fn truncate_line(line: Line<'static>, width: usize) -> Line<'static> {
+    let mut remaining = width;
+    let mut spans = Vec::new();
+
+    for span in line.spans {
+        if remaining == 0 {
+            break;
+        }
+
+        let text = span.content.as_ref();
+        let span_width = display_width(text);
+        if span_width <= remaining {
+            spans.push(span);
+            remaining -= span_width;
+            continue;
+        }
+
+        let clipped = truncate_width(text, remaining, "\u{2026}");
+        spans.push(Span::styled(clipped, span.style));
+        break;
+    }
+
+    Line::from(spans)
 }
