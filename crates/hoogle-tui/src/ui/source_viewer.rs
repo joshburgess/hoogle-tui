@@ -302,10 +302,8 @@ mod tests {
         let source = "module Main where\n\nmain :: IO ()\nmain = putStrLn \"hello\"\n".to_string();
         state.set_source(source.clone(), "main", &theme);
 
-        assert!(state.source.is_some());
         assert_eq!(state.source.as_deref(), Some(source.as_str()));
         assert!(!state.rendered_lines.is_empty());
-        // Source has 4 non-empty lines + 1 empty line = lines from highlight_code
         assert!(state.rendered_lines.len() >= 4);
         assert_eq!(state.title, "main");
         assert_eq!(state.scroll_offset, 0);
