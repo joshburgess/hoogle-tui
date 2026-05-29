@@ -1098,6 +1098,16 @@ fn popups_render_on_tiny_terminal() {
 }
 
 #[test]
+fn app_truncates_tiny_terminal_message() {
+    let output = render_app_to_text(test_app(), 8, 5);
+
+    assert!(output.contains("Termi..."), "{output}");
+    assert!(output.contains("Need ..."), "{output}");
+    assert!(output.contains("Press..."), "{output}");
+    assert_lines_fit(&output, 8);
+}
+
+#[test]
 fn status_bar_render_includes_mode_backend_badges_and_message() {
     let theme = Theme::dracula();
     let mut state = status_bar::StatusState::new("local".to_string());

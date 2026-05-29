@@ -4,7 +4,8 @@ use crate::app::{App, AppMode, PopupMode};
 use crate::ui::{
     bookmarks_popup, command_palette, doc_viewer, filter_popup, help_overlay, history_popup,
     layout, module_browser, package_popup, pinned_panel, preview_pane, result_list, search_bar,
-    sort_popup, source_viewer, status_bar, theme_popup, toc_popup, yank_popup,
+    sort_popup, source_viewer, status_bar, text::truncate_width, theme_popup, toc_popup,
+    yank_popup,
 };
 
 impl App {
@@ -13,20 +14,22 @@ impl App {
         self.last_width = area.width;
 
         if area.width < 40 || area.height < 10 {
+            let width = area.width as usize;
+            let size_message = format!("Need at least 40x10, got {}x{}", area.width, area.height);
             let msg = ratatui::widgets::Paragraph::new(vec![
                 ratatui::text::Line::from(""),
                 ratatui::text::Line::from(ratatui::text::Span::styled(
-                    "Terminal too small",
+                    truncate_width("Terminal too small", width, "..."),
                     ratatui::style::Style::default()
                         .fg(ratatui::style::Color::Red)
                         .add_modifier(ratatui::style::Modifier::BOLD),
                 )),
                 ratatui::text::Line::from(ratatui::text::Span::styled(
-                    format!("Need at least 40x10, got {}x{}", area.width, area.height),
+                    truncate_width(&size_message, width, "..."),
                     ratatui::style::Style::default().fg(ratatui::style::Color::Gray),
                 )),
                 ratatui::text::Line::from(""),
-                ratatui::text::Line::from("Press q to quit."),
+                ratatui::text::Line::from(truncate_width("Press q to quit.", width, "...")),
             ])
             .alignment(ratatui::layout::Alignment::Center);
             frame.render_widget(msg, area);
