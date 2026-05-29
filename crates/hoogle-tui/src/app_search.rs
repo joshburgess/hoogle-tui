@@ -174,6 +174,8 @@ impl App {
     pub(crate) fn tab_complete(&mut self) {
         let partial = self.query_text();
         if partial.is_empty() {
+            self.completion_candidates.clear();
+            self.completion_index = 0;
             self.show_info("No query to complete");
             return;
         }

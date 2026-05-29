@@ -527,6 +527,8 @@ fn tab_complete_rebuilds_candidates_for_narrowed_query() {
 #[test]
 fn tab_complete_reports_unavailable_states() {
     let mut app = test_app();
+    app.completion_candidates = vec!["map".to_string()];
+    app.completion_index = 1;
 
     app.handle_action(Action::TabComplete);
 
@@ -534,6 +536,8 @@ fn tab_complete_reports_unavailable_states() {
         app.status.message,
         Some(StatusMessage::Info(ref msg)) if msg == "No query to complete"
     ));
+    assert!(app.completion_candidates.is_empty());
+    assert_eq!(app.completion_index, 0);
 
     app.status.message = None;
     app.textarea = search_textarea_with_query("zz");
