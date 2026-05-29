@@ -102,6 +102,13 @@ pub fn render(frame: &mut Frame, state: &ThemePopupState, theme: &Theme) {
 mod tests {
     use super::*;
 
+    fn theme_index(name: &str) -> usize {
+        match THEME_NAMES.iter().position(|theme| *theme == name) {
+            Some(index) => index,
+            None => panic!("missing theme {name}"),
+        }
+    }
+
     #[test]
     fn new_with_known_theme() {
         let state = ThemePopupState::new("dracula");
@@ -119,7 +126,7 @@ mod tests {
     #[test]
     fn new_with_nord() {
         let state = ThemePopupState::new("nord");
-        let expected = THEME_NAMES.iter().position(|&n| n == "nord").unwrap();
+        let expected = theme_index("nord");
         assert_eq!(state.selected, expected);
         assert_eq!(state.active, expected);
     }
@@ -173,7 +180,7 @@ mod tests {
     #[test]
     fn confirm_returns_selected_name() {
         let mut state = ThemePopupState::new("dracula");
-        state.move_down(); // catppuccin_mocha
+        state.move_down();
         let name = state.confirm();
         assert_eq!(name, "catppuccin_mocha");
         assert_eq!(state.active, 1);
