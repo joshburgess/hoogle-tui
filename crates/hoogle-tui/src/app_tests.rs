@@ -1038,6 +1038,28 @@ fn command_palette_includes_core_discovery_actions() {
 }
 
 #[test]
+fn theme_switch_preserves_doc_view_position_and_search() {
+    let mut app = app_with_doc();
+    app.doc_state.set_doc(doc(), &app.theme, 80);
+    app.doc_state.viewport_height = 5;
+    app.doc_state.start_search();
+    for c in "first".chars() {
+        app.doc_state.search_add_char(c);
+    }
+    app.doc_state.scroll_offset = 3;
+
+    app.toggle_theme_switcher();
+    app.handle_action(Action::MoveDown);
+    app.handle_action(Action::Select);
+
+    assert_eq!(app.popup, None);
+    assert_eq!(app.doc_state.scroll_offset, 3);
+    assert!(app.doc_state.search_active);
+    assert_eq!(app.doc_state.search_query, "first");
+    assert!(!app.doc_state.search_matches.is_empty());
+}
+
+#[test]
 fn clearing_empty_pins_reports_noop() {
     let mut app = test_app();
 

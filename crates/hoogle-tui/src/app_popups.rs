@@ -292,9 +292,8 @@ impl App {
                     if let Some(ref mut tp) = self.theme_popup {
                         let name = tp.confirm();
                         self.theme = hoogle_syntax::theme::Theme::by_name(name);
-                        if let Some(doc) = self.doc_state.doc.take() {
-                            self.doc_state.set_doc(doc, &self.theme, self.last_width);
-                        }
+                        self.doc_state
+                            .rerender_current_doc(&self.theme, self.last_width);
                     }
                     self.close_popup();
                 }

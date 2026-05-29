@@ -76,6 +76,42 @@ impl DocViewState {
         self.clear_search();
     }
 
+    pub fn rerender_current_doc(&mut self, theme: &Theme, width: u16) {
+        let Some(doc) = self.doc.clone() else {
+            return;
+        };
+
+        let scroll_offset = self.scroll_offset;
+        let focused_link = self.focused_link;
+        let search_active = self.search_active;
+        let search_query = self.search_query.clone();
+
+        let w = width.saturating_sub(4) as usize;
+        let (lines, decl_offsets, links) = render_doc(&doc, theme, w);
+        self.lowered_lines = lines
+            .iter()
+            .map(|line| {
+                let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+                text.to_lowercase()
+            })
+            .collect();
+        self.rendered_lines = lines;
+        self.declaration_offsets = decl_offsets;
+        self.links = links;
+        self.doc = Some(doc);
+        self.focused_link = focused_link.filter(|idx| *idx < self.links.len());
+        self.search_active = search_active;
+        self.search_query = search_query;
+        self.search_matches.clear();
+        self.current_match = None;
+        self.update_search_matches();
+        self.scroll_offset = scroll_offset.min(
+            self.rendered_lines
+                .len()
+                .saturating_sub(self.viewport_height),
+        );
+    }
+
     pub fn scroll_down(&mut self, n: usize) {
         let max = self
             .rendered_lines
