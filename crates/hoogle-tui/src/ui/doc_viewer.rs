@@ -494,16 +494,22 @@ fn render_doc(doc: &HaddockDoc, theme: &Theme, width: usize) -> RenderResult {
     let mut links: Vec<(usize, Url)> = Vec::new();
 
     // Module header
-    lines.push(Line::from(Span::styled(
-        doc.module.clone(),
-        theme
-            .style(SemanticToken::ModuleName)
-            .add_modifier(Modifier::BOLD),
-    )));
-    lines.push(Line::from(Span::styled(
-        doc.package.clone(),
-        theme.style(SemanticToken::PackageName),
-    )));
+    lines.push(truncate_line(
+        &Line::from(Span::styled(
+            doc.module.clone(),
+            theme
+                .style(SemanticToken::ModuleName)
+                .add_modifier(Modifier::BOLD),
+        )),
+        width,
+    ));
+    lines.push(truncate_line(
+        &Line::from(Span::styled(
+            doc.package.clone(),
+            theme.style(SemanticToken::PackageName),
+        )),
+        width,
+    ));
     lines.push(Line::from(""));
 
     // Description
@@ -526,22 +532,28 @@ fn render_doc(doc: &HaddockDoc, theme: &Theme, width: usize) -> RenderResult {
         // Signature
         if let Some(ref sig) = decl.signature {
             let highlighted = hoogle_syntax::highlight_signature(sig, theme);
-            lines.push(highlighted);
+            lines.push(truncate_line(&highlighted, width));
         } else {
-            lines.push(Line::from(Span::styled(
-                decl.name.clone(),
-                theme
-                    .style(SemanticToken::TypeConstructor)
-                    .add_modifier(Modifier::BOLD),
-            )));
+            lines.push(truncate_line(
+                &Line::from(Span::styled(
+                    decl.name.clone(),
+                    theme
+                        .style(SemanticToken::TypeConstructor)
+                        .add_modifier(Modifier::BOLD),
+                )),
+                width,
+            ));
         }
 
         // Since badge
         if let Some(ref since) = decl.since {
-            lines.push(Line::from(Span::styled(
-                format!("[{since}]"),
-                theme.style(SemanticToken::Comment),
-            )));
+            lines.push(truncate_line(
+                &Line::from(Span::styled(
+                    format!("[{since}]"),
+                    theme.style(SemanticToken::Comment),
+                )),
+                width,
+            ));
         }
 
         lines.push(Line::from(Span::styled(
@@ -649,7 +661,7 @@ fn render_blocks(
                             theme.style(SemanticToken::DocText),
                         )];
                         spans.extend(line.spans);
-                        lines.push(Line::from(spans));
+                        lines.push(truncate_line(&Line::from(spans), width));
                     }
                 }
                 lines.push(Line::from(""));
@@ -668,7 +680,7 @@ fn render_blocks(
                         let mut spans =
                             vec![Span::styled(prefix, theme.style(SemanticToken::DocText))];
                         spans.extend(line.spans);
-                        lines.push(Line::from(spans));
+                        lines.push(truncate_line(&Line::from(spans), width));
                     }
                 }
                 lines.push(Line::from(""));
@@ -680,11 +692,12 @@ fn render_blocks(
                 let style = theme
                     .style(SemanticToken::DocHeading)
                     .add_modifier(Modifier::BOLD);
-                lines.push(Line::from(Span::styled(text.clone(), style)));
+                let heading = truncate_width(&text, width, "\u{2026}");
+                lines.push(Line::from(Span::styled(heading.clone(), style)));
                 if *level <= 2 {
                     let underline_char = if *level == 1 { "\u{2501}" } else { "\u{2500}" };
                     lines.push(Line::from(Span::styled(
-                        underline_char.repeat(display_width(&text).min(width)),
+                        underline_char.repeat(display_width(&heading).min(width)),
                         style,
                     )));
                 }
@@ -708,7 +721,7 @@ fn render_blocks(
                         theme.style(SemanticToken::Keyword),
                     )];
                     spans.extend(line.spans);
-                    lines.push(Line::from(spans));
+                    lines.push(truncate_line(&Line::from(spans), width));
                 }
                 lines.push(Line::from(""));
             }

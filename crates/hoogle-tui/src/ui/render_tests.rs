@@ -628,6 +628,40 @@ fn doc_viewer_truncates_wide_code_blocks() {
 }
 
 #[test]
+fn doc_viewer_truncates_long_headers_and_declarations() {
+    let theme = Theme::dracula();
+    let doc = HaddockDoc {
+        module: "Demo.Really.Long.Module.Name.With.Many.Segments".to_string(),
+        package: "demo-package-with-a-very-long-version-0.1.0".to_string(),
+        description: vec![DocBlock::Header {
+            level: 1,
+            content: vec![Inline::Text(
+                "A very long documentation heading without useful breakpoints".to_string(),
+            )],
+        }],
+        declarations: vec![hoogle_core::haddock::types::Declaration {
+            name: "veryLongDeclarationName".to_string(),
+            signature: Some(
+                "veryLongDeclarationName :: VeryLongConstraintName a => a -> a".to_string(),
+            ),
+            doc: Vec::new(),
+            source_url: None,
+            anchor: None,
+            since: Some("since-a-deliberately-long-release-label".to_string()),
+        }],
+    };
+    let mut state = doc_viewer::DocViewState::new();
+    state.set_doc(doc, &theme, 30);
+
+    let output = render_to_text(30, 16, |frame| {
+        doc_viewer::render(frame, Rect::new(0, 0, 30, 16), &mut state, &theme);
+    });
+
+    assert!(output.contains("\u{2026}"), "{output}");
+    assert_lines_fit(&output, 30);
+}
+
+#[test]
 fn toc_popup_wide_signature_fits_render_width() {
     let theme = Theme::dracula();
     let state = toc_popup::TocState::new(vec![toc_popup::TocEntry {
