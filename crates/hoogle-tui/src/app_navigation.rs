@@ -27,11 +27,13 @@ impl App {
             AppMode::DocView => {
                 self.pending_doc_url = None;
                 self.doc_state.loading = false;
+                self.clear_status_message();
                 self.switch_mode(AppMode::Results);
             }
             AppMode::SourceView => {
                 self.pending_source_decl = None;
                 self.source_state.loading = false;
+                self.clear_status_message();
                 self.switch_mode(AppMode::DocView);
             }
             AppMode::Help => self.close_help(),

@@ -1399,12 +1399,16 @@ fn back_from_doc_view_cancels_pending_doc_response() {
         Url::parse("https://hackage.haskell.org/package/demo/docs/Pending.html").unwrap();
     app.pending_doc_url = Some(pending_url.clone());
     app.doc_state.loading = true;
+    app.status.message = Some(StatusMessage::Loading("Loading docs...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
 
     app.handle_back();
 
     assert_eq!(app.mode, AppMode::Results);
     assert_eq!(app.pending_doc_url, None);
     assert!(!app.doc_state.loading);
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
 
     app.doc_tx
         .send(DocResponse {
@@ -1424,12 +1428,16 @@ fn back_from_source_view_cancels_pending_source_response() {
     app.mode = AppMode::SourceView;
     app.pending_source_decl = Some("pendingDecl".to_string());
     app.source_state.loading = true;
+    app.status.message = Some(StatusMessage::Loading("Loading source...".to_string()));
+    app.message_deadline = Some(tokio::time::Instant::now());
 
     app.handle_back();
 
     assert_eq!(app.mode, AppMode::DocView);
     assert_eq!(app.pending_source_decl, None);
     assert!(!app.source_state.loading);
+    assert!(app.status.message.is_none());
+    assert_eq!(app.message_deadline, None);
 
     app.source_tx
         .send(SourceResponse {
