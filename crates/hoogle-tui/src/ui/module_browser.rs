@@ -144,7 +144,6 @@ impl ModuleBrowserState {
         if target_depth == 0 {
             return true;
         }
-        // Walk backwards to find parent
         for j in (0..idx).rev() {
             if self.entries[j].depth < target_depth {
                 return self.entries[j].expanded;
@@ -172,7 +171,7 @@ fn flatten_tree(node: &ModuleNode, depth: usize, parent_path: &str, out: &mut Ve
             full_path: full_path.clone(),
             result_count: total_count,
             has_children: !child.children.is_empty(),
-            expanded: depth < 1, // auto-expand top level
+            expanded: depth < 1,
         });
         flatten_tree(child, depth + 1, &full_path, out);
     }
@@ -209,10 +208,9 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
         .border_style(theme.style(SemanticToken::Border));
 
     let inner = block.inner(popup);
-    state.viewport_height = inner.height.saturating_sub(2) as usize; // -2 for filter line
+    state.viewport_height = inner.height.saturating_sub(2) as usize;
     frame.render_widget(block, popup);
 
-    // Filter line at top
     let filter_area = Rect {
         x: inner.x,
         y: inner.y,
@@ -245,7 +243,6 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
     ]);
     frame.render_widget(Paragraph::new(filter_line), filter_area);
 
-    // Collect visible entries
     let visible: Vec<(usize, &ModuleEntry)> = state
         .visible_indices()
         .map(|i| (i, &state.entries[i]))
@@ -257,7 +254,6 @@ pub fn render(frame: &mut Frame, state: &mut ModuleBrowserState, theme: &Theme) 
         state.selected = total - 1;
     }
 
-    // Adjust scroll
     let vh = state.viewport_height;
     if vh == 0 {
         return;
@@ -402,10 +398,8 @@ mod tests {
         ];
         let state = ModuleBrowserState::new(&results);
 
-        // Should have entries for: Control, Monad, Data, List, Map, Lazy, Strict
         assert!(!state.entries.is_empty());
 
-        // Top-level entries should be Control and Data
         let top_level: Vec<&str> = state
             .entries
             .iter()
@@ -425,11 +419,9 @@ mod tests {
         ];
         let state = ModuleBrowserState::new(&results);
 
-        // "Data" entry should have total count of 3
         let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
         assert_eq!(data_entry.result_count, 3);
 
-        // "Map" entry should have count of 2
         let map_entry = state.entries.iter().find(|e| e.name == "Map").unwrap();
         assert_eq!(map_entry.result_count, 2);
     }
@@ -451,11 +443,9 @@ mod tests {
     fn move_down_clamps_at_end() {
         let results = vec![make_result(&["Data"])];
         let mut state = ModuleBrowserState::new(&results);
-        // Only 1 visible entry (Data at depth 0)
         state.move_down();
         state.move_down();
         state.move_down();
-        // Should not exceed the number of visible entries - 1
         let visible_count = state.visible_indices().count();
         assert!(state.selected < visible_count);
     }
@@ -484,16 +474,13 @@ mod tests {
         let results = vec![make_result(&["Data", "Map"])];
         let mut state = ModuleBrowserState::new(&results);
 
-        // "Data" is at depth 0 and auto-expanded (depth < 1 => expanded)
         let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
         assert!(data_entry.expanded);
 
-        // Toggle should collapse it
         state.toggle_expand();
         let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
         assert!(!data_entry.expanded);
 
-        // Toggle again should expand
         state.toggle_expand();
         let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
         assert!(data_entry.expanded);
@@ -609,10 +596,8 @@ mod tests {
         ];
         let state = ModuleBrowserState::new(&results);
 
-        // First visible entry
         let selected = state.selected_module();
         assert!(selected.is_some());
-        // Should be one of the top-level entries
         let path = selected.unwrap();
         assert!(path == "Control" || path == "Data");
     }
