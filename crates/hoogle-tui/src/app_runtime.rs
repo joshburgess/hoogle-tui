@@ -60,7 +60,7 @@ impl App {
                         self.results.loading = false;
                         self.loading_more = false;
                         let err_str = format!("{e}");
-                        if err_str.contains("network") || err_str.contains("timeout") {
+                        if is_offline_error(&err_str) {
                             self.status.offline = true;
                         }
                         self.status.set_error(format!("Search failed: {e}"));
@@ -125,6 +125,7 @@ impl App {
                         .set_source(source, &response.decl_name, &self.theme);
                     self.source_state.scroll_to_first_match(&response.decl_name);
                     self.clear_status_message();
+                    self.status.offline = false;
                 }
                 Err(e) => {
                     tracing::warn!(
@@ -135,6 +136,10 @@ impl App {
                     );
                     self.source_state.loading = false;
                     self.source_state.error = Some(format!("{e}"));
+                    let err_str = format!("{e}");
+                    if is_offline_error(&err_str) {
+                        self.status.offline = true;
+                    }
                     self.status.set_error(format!("Source fetch failed: {e}"));
                     self.message_deadline =
                         Some(Instant::now() + std::time::Duration::from_secs(5));
@@ -164,4 +169,8 @@ impl App {
         self.status.set_error(msg);
         self.message_deadline = Some(Instant::now() + std::time::Duration::from_secs(3));
     }
+}
+
+fn is_offline_error(message: &str) -> bool {
+    message.contains("network") || message.contains("timeout")
 }

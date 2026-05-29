@@ -1622,6 +1622,7 @@ async fn open_source_for_current_decl_sets_source_loading_state() {
 #[test]
 fn source_response_scrolls_to_declaration_name() {
     let mut app = app_with_doc();
+    app.status.offline = true;
     app.pending_source_decl = Some("targetDecl".to_string());
     app.source_tx
         .send(SourceResponse {
@@ -1634,6 +1635,27 @@ fn source_response_scrolls_to_declaration_name() {
     app.on_tick();
 
     assert_eq!(app.source_state.scroll_offset, 2);
+    assert!(!app.status.offline);
+}
+
+#[test]
+fn source_timeout_marks_status_offline() {
+    let mut app = app_with_doc();
+    app.pending_source_decl = Some("targetDecl".to_string());
+    app.source_state.loading = true;
+    app.source_tx
+        .send(SourceResponse {
+            decl_name: "targetDecl".to_string(),
+            started_at: tokio::time::Instant::now(),
+            result: Err(BackendError::Timeout { seconds: 5 }),
+        })
+        .unwrap();
+
+    app.on_tick();
+
+    assert!(!app.source_state.loading);
+    assert!(app.status.offline);
+    assert!(matches!(app.status.message, Some(StatusMessage::Error(_))));
 }
 
 #[test]
