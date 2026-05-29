@@ -592,6 +592,7 @@ fn successful_async_responses_clear_status_deadline() {
     assert_eq!(app.message_deadline, None);
 
     app.pending_doc_url = Some(doc_url.clone());
+    app.status.offline = true;
     app.status.message = Some(StatusMessage::Loading("Loading docs...".to_string()));
     app.message_deadline = Some(tokio::time::Instant::now());
     app.doc_tx
@@ -604,6 +605,7 @@ fn successful_async_responses_clear_status_deadline() {
     app.on_tick();
     assert!(app.status.message.is_none());
     assert_eq!(app.message_deadline, None);
+    assert!(!app.status.offline);
 
     app.pending_source_decl = Some("targetDecl".to_string());
     app.status.message = Some(StatusMessage::Loading("Loading source...".to_string()));
@@ -1472,6 +1474,27 @@ fn doc_response_records_current_url() {
     app.on_tick();
 
     assert_eq!(app.doc_state.current_url, Some(url));
+}
+
+#[test]
+fn doc_timeout_marks_status_offline() {
+    let mut app = app_with_doc();
+    let url = Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap();
+    app.pending_doc_url = Some(url.clone());
+    app.doc_state.loading = true;
+
+    app.doc_tx
+        .send(DocResponse {
+            url,
+            started_at: tokio::time::Instant::now(),
+            result: Err(BackendError::Timeout { seconds: 5 }),
+        })
+        .unwrap();
+    app.on_tick();
+
+    assert!(!app.doc_state.loading);
+    assert!(app.status.offline);
+    assert!(matches!(app.status.message, Some(StatusMessage::Error(_))));
 }
 
 #[test]

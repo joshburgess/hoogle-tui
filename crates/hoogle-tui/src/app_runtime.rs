@@ -100,6 +100,10 @@ impl App {
                     );
                     self.doc_state.loading = false;
                     self.doc_state.error = Some(format!("{e}"));
+                    let err_str = format!("{e}");
+                    if is_offline_error(&err_str) {
+                        self.status.offline = true;
+                    }
                     self.status.set_error(format!("Doc fetch failed: {e}"));
                     self.message_deadline =
                         Some(Instant::now() + std::time::Duration::from_secs(5));
