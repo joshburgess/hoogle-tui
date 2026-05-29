@@ -374,6 +374,13 @@ mod tests {
         }
     }
 
+    fn entry_named<'a>(state: &'a ModuleBrowserState, name: &str) -> &'a ModuleEntry {
+        match state.entries.iter().find(|entry| entry.name == name) {
+            Some(entry) => entry,
+            None => panic!("missing module entry {name}"),
+        }
+    }
+
     #[test]
     fn build_from_empty_results() {
         let state = ModuleBrowserState::new(&[]);
@@ -419,10 +426,10 @@ mod tests {
         ];
         let state = ModuleBrowserState::new(&results);
 
-        let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
+        let data_entry = entry_named(&state, "Data");
         assert_eq!(data_entry.result_count, 3);
 
-        let map_entry = state.entries.iter().find(|e| e.name == "Map").unwrap();
+        let map_entry = entry_named(&state, "Map");
         assert_eq!(map_entry.result_count, 2);
     }
 
@@ -474,15 +481,15 @@ mod tests {
         let results = vec![make_result(&["Data", "Map"])];
         let mut state = ModuleBrowserState::new(&results);
 
-        let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
+        let data_entry = entry_named(&state, "Data");
         assert!(data_entry.expanded);
 
         state.toggle_expand();
-        let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
+        let data_entry = entry_named(&state, "Data");
         assert!(!data_entry.expanded);
 
         state.toggle_expand();
-        let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
+        let data_entry = entry_named(&state, "Data");
         assert!(data_entry.expanded);
     }
 
@@ -596,10 +603,7 @@ mod tests {
         ];
         let state = ModuleBrowserState::new(&results);
 
-        let selected = state.selected_module();
-        assert!(selected.is_some());
-        let path = selected.unwrap();
-        assert!(path == "Control" || path == "Data");
+        assert!(matches!(state.selected_module(), Some("Control" | "Data")));
     }
 
     #[test]
@@ -613,7 +617,7 @@ mod tests {
         let results = vec![make_result(&["Data", "Map", "Strict"])];
         let state = ModuleBrowserState::new(&results);
 
-        let strict_entry = state.entries.iter().find(|e| e.name == "Strict").unwrap();
+        let strict_entry = entry_named(&state, "Strict");
         assert_eq!(strict_entry.full_path, "Data.Map.Strict");
     }
 
@@ -622,10 +626,10 @@ mod tests {
         let results = vec![make_result(&["Data", "Map"])];
         let state = ModuleBrowserState::new(&results);
 
-        let data_entry = state.entries.iter().find(|e| e.name == "Data").unwrap();
+        let data_entry = entry_named(&state, "Data");
         assert!(data_entry.has_children);
 
-        let map_entry = state.entries.iter().find(|e| e.name == "Map").unwrap();
+        let map_entry = entry_named(&state, "Map");
         assert!(!map_entry.has_children);
     }
 }
