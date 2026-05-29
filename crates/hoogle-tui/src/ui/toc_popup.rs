@@ -66,11 +66,15 @@ impl TocState {
             .items
             .iter()
             .enumerate()
-            .filter(|(_, entry)| query.is_empty() || entry.name.to_lowercase().contains(&query))
+            .filter(|(_, entry)| query.is_empty() || toc_entry_matches(entry, &query))
             .map(|(i, _)| i)
             .collect();
         self.selected = 0;
     }
+}
+
+fn toc_entry_matches(entry: &TocEntry, query: &str) -> bool {
+    entry.name.to_lowercase().contains(query)
 }
 
 pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
@@ -286,6 +290,15 @@ mod tests {
         let mut state = TocState::new(make_entries(&["Lookup", "insert"]));
         state.add_filter_char('l');
         assert_eq!(state.filtered_indices, vec![0]);
+    }
+
+    #[test]
+    fn filter_matches_names_not_signatures() {
+        let mut state = TocState::new(make_entries(&["lookup", "insert"]));
+        for c in "int".chars() {
+            state.add_filter_char(c);
+        }
+        assert!(state.filtered_indices.is_empty());
     }
 
     #[test]
