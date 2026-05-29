@@ -837,9 +837,15 @@ mod tests {
     fn selected_result_returns_correct_item() {
         let mut state = ResultListState::new();
         state.set_items(vec![make_result("a"), make_result("b")]);
-        assert_eq!(state.selected_result().unwrap().name, "a");
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            Some("a")
+        );
         state.move_down();
-        assert_eq!(state.selected_result().unwrap().name, "b");
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            Some("b")
+        );
     }
 
     #[test]
