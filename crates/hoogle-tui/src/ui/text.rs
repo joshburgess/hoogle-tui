@@ -13,6 +13,17 @@ pub fn spans_width<'a>(spans: impl IntoIterator<Item = &'a ratatui::text::Span<'
         .sum()
 }
 
+pub fn line_plain_text(line: &Line<'_>) -> String {
+    line.spans
+        .iter()
+        .map(|span| span.content.as_ref())
+        .collect()
+}
+
+pub fn lower_line_text(line: &Line<'_>) -> String {
+    line_plain_text(line).to_lowercase()
+}
+
 pub fn pad_to_width(text: &str, width: usize) -> String {
     let current = display_width(text);
     if current >= width {
@@ -126,6 +137,26 @@ mod tests {
             ratatui::text::Span::raw("ab"),
         ];
         assert_eq!(spans_width(spans.iter()), 4);
+    }
+
+    #[test]
+    fn line_plain_text_flattens_spans() {
+        let line = ratatui::text::Line::from(vec![
+            ratatui::text::Span::raw("Data."),
+            ratatui::text::Span::raw("Map"),
+        ]);
+
+        assert_eq!(line_plain_text(&line), "Data.Map");
+    }
+
+    #[test]
+    fn lower_line_text_flattens_and_lowers_spans() {
+        let line = ratatui::text::Line::from(vec![
+            ratatui::text::Span::raw("Functor"),
+            ratatui::text::Span::raw(" MAP"),
+        ]);
+
+        assert_eq!(lower_line_text(&line), "functor map");
     }
 
     #[test]

@@ -2,7 +2,7 @@ use hoogle_core::haddock::types::{Declaration, DocBlock, HaddockDoc, Inline};
 use url::Url;
 
 use crate::app::{App, AppMode, DocResponse, PopupMode, SourceResponse};
-use crate::ui::toc_popup;
+use crate::ui::{text::lower_line_text, toc_popup};
 
 impl App {
     pub(crate) fn open_doc_for_selected(&mut self) {
@@ -220,13 +220,6 @@ fn rendered_line_offset(
         .iter()
         .enumerate()
         .skip(start)
-        .find(|(_, line)| {
-            let text: String = line
-                .spans
-                .iter()
-                .map(|span| span.content.as_ref())
-                .collect();
-            text.to_lowercase().contains(&needle)
-        })
+        .find(|(_, line)| lower_line_text(line).contains(&needle))
         .map(|(index, _)| index)
 }

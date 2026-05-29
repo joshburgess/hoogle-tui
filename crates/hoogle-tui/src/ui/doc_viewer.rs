@@ -9,7 +9,7 @@ use ratatui::{
 };
 use url::Url;
 
-use super::text::{display_width, pad_to_width, truncate_line, truncate_width};
+use super::text::{display_width, lower_line_text, pad_to_width, truncate_line, truncate_width};
 
 pub struct DocViewState {
     pub doc: Option<HaddockDoc>,
@@ -316,13 +316,7 @@ impl DocViewState {
 }
 
 fn lower_lines(lines: &[Line<'static>]) -> Vec<String> {
-    lines
-        .iter()
-        .map(|line| {
-            let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-            text.to_lowercase()
-        })
-        .collect()
+    lines.iter().map(lower_line_text).collect()
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &Theme) {
