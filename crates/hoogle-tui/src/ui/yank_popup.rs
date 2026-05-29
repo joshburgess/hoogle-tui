@@ -146,16 +146,13 @@ mod tests {
             assert_eq!(state.selected, i);
             state.move_down();
         }
-        // Should be clamped at last
         assert_eq!(state.selected, YANK_OPTIONS.len() - 1);
-        // Move down again should not exceed
         state.move_down();
         assert_eq!(state.selected, YANK_OPTIONS.len() - 1);
     }
 
     #[test]
     fn option_count_is_seven() {
-        // Verify the constant matches expectations
         assert_eq!(YANK_OPTIONS.len(), 7);
     }
 }

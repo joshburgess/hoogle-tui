@@ -327,10 +327,8 @@ mod tests {
         state.add_filter_char('o');
         assert_eq!(state.filtered_indices.len(), 2);
         state.delete_filter_char();
-        // filter is now "l"
         assert_eq!(state.filtered_indices, vec![0, 2]);
         state.delete_filter_char();
-        // filter is empty, all items shown
         assert_eq!(state.filtered_indices, vec![0, 1, 2]);
     }
 
@@ -347,10 +345,8 @@ mod tests {
         let mut state = TocState::new(make_entries(&["lookup", "insert", "lookupGE"]));
         state.add_filter_char('l');
         state.add_filter_char('o');
-        // "lookup" (index 0) and "lookupGE" (index 2) match "lo"
         assert_eq!(state.filtered_indices, vec![0, 2]);
         state.move_down();
-        // selected=1, which maps to original index 2, line_offset=20
         assert_eq!(state.selected_offset(), Some(20));
     }
 }
