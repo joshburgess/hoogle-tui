@@ -2,7 +2,7 @@ use hoogle_core::models::SearchResult;
 use std::collections::HashSet;
 
 use crate::app::{App, SearchResponse};
-use crate::ui::{sort_popup, status_bar};
+use crate::ui::sort_popup;
 
 use super::app_input::{search_textarea, search_textarea_with_query};
 impl App {
@@ -48,7 +48,7 @@ impl App {
         self.results.loading = true;
         self.has_more_results = false;
         self.loading_more = false;
-        self.status.message = Some(status_bar::StatusMessage::Loading("Searching...".into()));
+        self.show_loading("Searching...");
 
         let backend = self.backend.clone();
         let max_results = self.config.ui.max_results;
@@ -134,9 +134,7 @@ impl App {
         }
 
         self.loading_more = true;
-        self.status.message = Some(status_bar::StatusMessage::Loading(
-            "Loading more results...".into(),
-        ));
+        self.show_loading("Loading more results...");
 
         let offset = self.all_results.len();
         let backend = self.backend.clone();

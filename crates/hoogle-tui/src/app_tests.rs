@@ -622,6 +622,40 @@ fn successful_async_responses_clear_status_deadline() {
     assert_eq!(app.message_deadline, None);
 }
 
+#[tokio::test]
+async fn starting_loading_actions_clear_stale_status_deadline() {
+    let mut app = app_with_doc();
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.textarea = search_textarea_with_query("map");
+
+    app.trigger_search();
+
+    assert_eq!(app.message_deadline, None);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Loading(ref msg)) if msg == "Searching..."
+    ));
+
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.fetch_doc(Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap());
+
+    assert_eq!(app.message_deadline, None);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Loading(ref msg)) if msg == "Loading docs..."
+    ));
+
+    app.message_deadline = Some(tokio::time::Instant::now());
+    app.doc_state.scroll_offset = 7;
+    app.open_source_for_current_decl();
+
+    assert_eq!(app.message_deadline, None);
+    assert!(matches!(
+        app.status.message,
+        Some(StatusMessage::Loading(ref msg)) if msg == "Loading source..."
+    ));
+}
+
 #[test]
 fn popup_helpers_open_expected_popup_state() {
     let mut app = test_app();

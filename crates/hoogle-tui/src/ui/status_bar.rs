@@ -57,6 +57,10 @@ impl StatusState {
         self.message = Some(StatusMessage::Error(msg.into()));
     }
 
+    pub fn set_loading(&mut self, msg: impl Into<String>) {
+        self.message = Some(StatusMessage::Loading(msg.into()));
+    }
+
     pub fn clear_message(&mut self) {
         self.message = None;
     }

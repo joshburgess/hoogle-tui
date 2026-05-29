@@ -169,6 +169,11 @@ impl App {
         self.message_deadline = Some(Instant::now() + std::time::Duration::from_secs(2));
     }
 
+    pub(crate) fn show_loading(&mut self, msg: &str) {
+        self.status.set_loading(msg);
+        self.message_deadline = None;
+    }
+
     pub(crate) fn show_error(&mut self, msg: &str) {
         self.status.set_error(msg);
         self.message_deadline = Some(Instant::now() + std::time::Duration::from_secs(3));

@@ -2,7 +2,7 @@ use hoogle_core::haddock::types::{Declaration, DocBlock, HaddockDoc, Inline};
 use url::Url;
 
 use crate::app::{App, AppMode, DocResponse, PopupMode, SourceResponse};
-use crate::ui::{status_bar, toc_popup};
+use crate::ui::toc_popup;
 
 impl App {
     pub(crate) fn open_doc_for_selected(&mut self) {
@@ -19,7 +19,6 @@ impl App {
         self.doc_state.error = None;
         self.doc_state.current_url = None;
         self.doc_state.nav_stack.clear();
-        self.status.message = Some(status_bar::StatusMessage::Loading("Loading docs...".into()));
         self.fetch_doc(url.clone());
     }
 
@@ -28,6 +27,7 @@ impl App {
         self.doc_state.loading = true;
         self.doc_state.error = None;
         self.pending_doc_url = Some(url.clone());
+        self.show_loading("Loading docs...");
 
         let fetcher = self.fetcher.clone();
         let tx = self.doc_tx.clone();
@@ -60,9 +60,7 @@ impl App {
         self.source_state.loading = true;
         self.source_state.error = None;
         self.pending_source_decl = Some(decl_name.clone());
-        self.status.message = Some(status_bar::StatusMessage::Loading(
-            "Loading source...".into(),
-        ));
+        self.show_loading("Loading source...");
 
         let fetcher = self.fetcher.clone();
         let tx = self.source_tx.clone();
