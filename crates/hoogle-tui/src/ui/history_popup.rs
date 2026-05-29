@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
-use super::text::{display_width, truncate_width};
+use super::text::{display_width, normalized_filter, truncate_width};
 use crate::history::SearchHistory;
 
 pub struct HistoryPopupState {
@@ -55,7 +55,7 @@ impl HistoryPopupState {
     }
 
     fn update_filter_indices(&mut self, history: &SearchHistory) {
-        let query = self.filter.trim().to_lowercase();
+        let query = normalized_filter(&self.filter);
         self.filtered_indices = history
             .entries()
             .iter()

@@ -7,7 +7,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
-use super::text::{display_width, truncate_width};
+use super::text::{display_width, normalized_filter, truncate_width};
 use crate::bookmarks::BookmarkStore;
 
 pub struct BookmarksPopupState {
@@ -65,7 +65,7 @@ impl BookmarksPopupState {
     }
 
     fn update_filter_indices(&mut self, store: &BookmarkStore) {
-        let query = self.filter.trim().to_lowercase();
+        let query = normalized_filter(&self.filter);
         self.filtered_indices = store
             .bookmarks()
             .iter()

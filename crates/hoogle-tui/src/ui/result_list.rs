@@ -9,7 +9,7 @@ use ratatui::{
 };
 use std::collections::HashSet;
 
-use super::text::{display_width, spans_width, truncate_width};
+use super::text::{display_width, normalized_filter, spans_width, truncate_width};
 
 const LINES_PER_RESULT_EXPANDED: usize = 3;
 const LINES_PER_RESULT_COMPACT: usize = 1;
@@ -278,7 +278,7 @@ impl ResultListState {
             self.filtered_indices = None;
             return;
         };
-        let query = filter.trim().to_lowercase();
+        let query = normalized_filter(filter);
         if query.is_empty() {
             self.filtered_indices = None;
             self.selected = 0;

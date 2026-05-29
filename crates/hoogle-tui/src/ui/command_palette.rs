@@ -8,7 +8,7 @@ use ratatui::{
 };
 
 use super::popup_layout::centered_popup;
-use super::text::{display_width, truncate_width};
+use super::text::{display_width, normalized_filter, truncate_width};
 
 #[derive(Debug, Clone)]
 pub struct CommandEntry {
@@ -67,7 +67,7 @@ impl CommandPaletteState {
     }
 
     fn apply_filter(&mut self) {
-        let query = self.filter.trim().to_lowercase();
+        let query = normalized_filter(&self.filter);
         let mut scored: Vec<(usize, usize)> = self
             .entries
             .iter()

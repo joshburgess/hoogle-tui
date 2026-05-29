@@ -10,7 +10,7 @@ use ratatui::{
 use std::collections::BTreeMap;
 
 use super::popup_layout::centered_popup;
-use super::text::{display_width, truncate_width};
+use super::text::{display_width, normalized_filter, truncate_width};
 
 /// A tree node in the module hierarchy.
 #[derive(Debug)]
@@ -121,7 +121,7 @@ impl ModuleBrowserState {
     }
 
     fn visible_indices(&self) -> impl Iterator<Item = usize> + '_ {
-        let filter_lower = self.filter.trim().to_lowercase();
+        let filter_lower = normalized_filter(&self.filter);
         self.entries.iter().enumerate().filter_map(move |(i, e)| {
             if filter_lower.is_empty() && e.depth != 0 && !self.is_parent_expanded(i) {
                 return None;

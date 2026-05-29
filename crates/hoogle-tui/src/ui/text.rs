@@ -24,6 +24,10 @@ pub fn lower_line_text(line: &Line<'_>) -> String {
     line_plain_text(line).to_lowercase()
 }
 
+pub fn normalized_filter(text: &str) -> String {
+    text.trim().to_lowercase()
+}
+
 pub fn pad_to_width(text: &str, width: usize) -> String {
     let current = display_width(text);
     if current >= width {
@@ -157,6 +161,11 @@ mod tests {
         ]);
 
         assert_eq!(lower_line_text(&line), "functor map");
+    }
+
+    #[test]
+    fn normalized_filter_trims_and_lowers() {
+        assert_eq!(normalized_filter("  Data.Map  "), "data.map");
     }
 
     #[test]
