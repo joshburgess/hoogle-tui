@@ -31,6 +31,15 @@ impl SourceViewState {
         }
     }
 
+    pub fn start_loading(&mut self, title: impl Into<String>) {
+        self.source = None;
+        self.rendered_lines.clear();
+        self.scroll_offset = 0;
+        self.loading = true;
+        self.error = None;
+        self.title = title.into();
+    }
+
     pub fn set_source(&mut self, source: String, decl_name: &str, theme: &Theme) {
         self.title = decl_name.to_string();
         let highlighted = hoogle_syntax::highlight_code(&source, theme);
@@ -316,6 +325,24 @@ mod tests {
         assert_eq!(state.scroll_offset, 0);
         assert!(!state.loading);
         assert!(state.error.is_none());
+    }
+
+    #[test]
+    fn start_loading_clears_stale_source() {
+        let mut state = SourceViewState::new();
+        state.source = Some("old = 1".to_string());
+        state.rendered_lines = vec![Line::from("old = 1")];
+        state.scroll_offset = 9;
+        state.error = Some("old error".to_string());
+
+        state.start_loading("newDecl");
+
+        assert!(state.source.is_none());
+        assert!(state.rendered_lines.is_empty());
+        assert_eq!(state.scroll_offset, 0);
+        assert!(state.loading);
+        assert!(state.error.is_none());
+        assert_eq!(state.title, "newDecl");
     }
 
     #[test]

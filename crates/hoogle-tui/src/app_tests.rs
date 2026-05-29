@@ -1712,12 +1712,19 @@ fn bookmarks_popup_filter_methods_update_visible_entries() {
 async fn open_source_for_current_decl_sets_source_loading_state() {
     let mut app = app_with_doc();
     app.doc_state.scroll_offset = 7;
+    app.source_state.source = Some("oldDecl = 1".to_string());
+    app.source_state.rendered_lines = vec![ratatui::text::Line::from("oldDecl = 1")];
+    app.source_state.scroll_offset = 4;
 
     app.open_source_for_current_decl();
 
     assert_eq!(app.mode, AppMode::SourceView);
     assert!(app.source_state.loading);
     assert_eq!(app.source_state.error, None);
+    assert_eq!(app.source_state.title, "Second");
+    assert!(app.source_state.source.is_none());
+    assert!(app.source_state.rendered_lines.is_empty());
+    assert_eq!(app.source_state.scroll_offset, 0);
 }
 
 #[test]

@@ -58,8 +58,7 @@ impl App {
         let decl_name = decl.name.clone();
 
         self.switch_mode(AppMode::SourceView);
-        self.source_state.loading = true;
-        self.source_state.error = None;
+        self.source_state.start_loading(decl_name.clone());
         self.pending_source_decl = Some(decl_name.clone());
         self.show_loading("Loading source...");
 
