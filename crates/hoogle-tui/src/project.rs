@@ -73,11 +73,9 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
     for line in contents.lines() {
         let trimmed = line.trim();
 
-        if trimmed.to_lowercase().starts_with("build-depends:") {
+        if let Some(after_colon) = build_depends_value(trimmed) {
             in_build_depends = true;
-            // Parse deps on the same line after the colon
-            let after_colon = trimmed.split_once(':').map(|x| x.1).unwrap_or("").trim();
-            parse_dep_list(strip_cabal_comment(after_colon), &mut deps);
+            parse_dep_list(strip_cabal_comment(after_colon.trim()), &mut deps);
             continue;
         }
 
@@ -104,6 +102,14 @@ fn extract_cabal_deps(contents: &str) -> Vec<String> {
     deps.sort();
     deps.dedup();
     deps
+}
+
+fn build_depends_value(line: &str) -> Option<&str> {
+    let (field, value) = line.split_once(':')?;
+    field
+        .trim()
+        .eq_ignore_ascii_case("build-depends")
+        .then_some(value)
 }
 
 fn strip_cabal_comment(text: &str) -> &str {
@@ -160,6 +166,13 @@ library
         let cabal = "  build-depends: base, containers, text\n";
         let deps = extract_cabal_deps(cabal);
         assert_eq!(deps.len(), 3);
+    }
+
+    #[test]
+    fn parse_mixed_case_build_depends_field() {
+        let cabal = "  Build-Depends: base, containers\n";
+        let deps = extract_cabal_deps(cabal);
+        assert_eq!(deps, vec!["base", "containers"]);
     }
 
     #[test]
