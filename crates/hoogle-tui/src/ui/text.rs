@@ -1,5 +1,7 @@
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
+use ratatui::text::{Line, Span};
+
 pub fn display_width(text: &str) -> usize {
     UnicodeWidthStr::width(text)
 }
@@ -45,6 +47,31 @@ pub fn truncate_width(text: &str, max_width: usize, suffix: &str) -> String {
 
     truncated.push_str(suffix);
     truncated
+}
+
+pub fn truncate_line(line: &Line<'static>, width: usize) -> Line<'static> {
+    let mut remaining = width;
+    let mut spans = Vec::new();
+
+    for span in &line.spans {
+        if remaining == 0 {
+            break;
+        }
+
+        let text = span.content.as_ref();
+        let span_width = display_width(text);
+        if span_width <= remaining {
+            spans.push(span.clone());
+            remaining -= span_width;
+            continue;
+        }
+
+        let clipped = truncate_width(text, remaining, "\u{2026}");
+        spans.push(Span::styled(clipped, span.style));
+        break;
+    }
+
+    Line::from(spans)
 }
 
 fn truncate_suffix_to_width(suffix: &str, max_width: usize) -> String {
@@ -99,6 +126,22 @@ mod tests {
             ratatui::text::Span::raw("ab"),
         ];
         assert_eq!(spans_width(spans.iter()), 4);
+    }
+
+    #[test]
+    fn truncate_line_preserves_styles_across_spans() {
+        let style = ratatui::style::Style::default().fg(ratatui::style::Color::Red);
+        let line = ratatui::text::Line::from(vec![
+            ratatui::text::Span::raw("abc"),
+            ratatui::text::Span::styled("defgh", style),
+        ]);
+
+        let truncated = truncate_line(&line, 6);
+
+        assert_eq!(truncated.spans.len(), 2);
+        assert_eq!(truncated.spans[0].content.as_ref(), "abc");
+        assert_eq!(truncated.spans[1].content.as_ref(), "de\u{2026}");
+        assert_eq!(truncated.spans[1].style, style);
     }
 
     #[test]
