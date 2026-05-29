@@ -289,4 +289,26 @@ mod tests {
         state.clear();
         assert!(state.is_empty());
     }
+
+    #[test]
+    fn scroll_down_clamps_to_visible_content() {
+        let mut state = PinnedState::new();
+        state.pin(&make_result("a", "M.A"));
+        state.pin(&make_result("b", "M.B"));
+        state.viewport_height = 4;
+
+        state.scroll_down(10);
+
+        assert_eq!(state.scroll_offset, 2);
+    }
+
+    #[test]
+    fn scroll_up_saturates_at_top() {
+        let mut state = PinnedState::new();
+        state.scroll_offset = 3;
+
+        state.scroll_up(10);
+
+        assert_eq!(state.scroll_offset, 0);
+    }
 }
