@@ -9,7 +9,9 @@ use ratatui::{
 };
 use url::Url;
 
-use super::text::{display_width, lower_line_text, pad_to_width, truncate_line, truncate_width};
+use super::text::{
+    display_width, line_plain_text, lower_line_text, pad_to_width, truncate_line, truncate_width,
+};
 
 pub struct DocViewState {
     pub doc: Option<HaddockDoc>,
@@ -633,8 +635,7 @@ fn render_blocks(
                     )];
 
                     // Check if it's a GHCi prompt line
-                    let line_text: String =
-                        code_line.spans.iter().map(|s| s.content.as_ref()).collect();
+                    let line_text = line_plain_text(&code_line);
                     if line_text.trim_start().starts_with(">>>") {
                         let trimmed = line_text.trim_start();
                         let prefix_ws = line_text.len() - trimmed.len();
@@ -980,13 +981,7 @@ mod tests {
 
     /// Set rendered lines and pre-compute lowered lines for search tests.
     fn set_test_lines(state: &mut DocViewState, lines: Vec<Line<'static>>) {
-        state.lowered_lines = lines
-            .iter()
-            .map(|line| {
-                let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-                text.to_lowercase()
-            })
-            .collect();
+        state.lowered_lines = lower_lines(&lines);
         state.rendered_lines = lines;
     }
 
