@@ -181,20 +181,7 @@ impl App {
         }
         let partial_lower = partial.to_lowercase();
 
-        let mut seen = HashSet::new();
-        let candidates: Vec<String> = self
-            .results
-            .items
-            .iter()
-            .filter_map(|r| {
-                if r.name.to_lowercase().starts_with(&partial_lower) && seen.insert(r.name.clone())
-                {
-                    Some(r.name.clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let candidates = completion_candidates(&self.results.items, &partial_lower);
         if candidates != self.completion_candidates {
             self.completion_candidates = candidates;
             self.completion_index = 0;
@@ -213,4 +200,20 @@ impl App {
         self.textarea = search_textarea_with_query(candidate);
         self.completion_index = (self.completion_index + 1) % self.completion_candidates.len();
     }
+}
+
+fn completion_candidates(items: &[SearchResult], partial_lower: &str) -> Vec<String> {
+    let mut seen = HashSet::new();
+    items
+        .iter()
+        .filter_map(|result| {
+            if result.name.to_lowercase().starts_with(partial_lower)
+                && seen.insert(result.name.clone())
+            {
+                Some(result.name.clone())
+            } else {
+                None
+            }
+        })
+        .collect()
 }

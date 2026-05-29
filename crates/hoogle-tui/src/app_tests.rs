@@ -543,6 +543,23 @@ fn tab_complete_rebuilds_candidates_for_narrowed_query() {
 }
 
 #[test]
+fn tab_complete_candidates_are_case_insensitive_and_deduped() {
+    let mut app = test_app();
+    app.results.set_items(vec![
+        result("Map"),
+        result("mapMaybe"),
+        result("Map"),
+        result("foldMap"),
+    ]);
+    app.textarea = search_textarea_with_query("ma");
+
+    app.tab_complete();
+
+    assert_eq!(app.query_text(), "Map");
+    assert_eq!(app.completion_candidates, vec!["Map", "mapMaybe"]);
+}
+
+#[test]
 fn tab_complete_reports_unavailable_states() {
     let mut app = test_app();
     app.completion_candidates = vec!["map".to_string()];
