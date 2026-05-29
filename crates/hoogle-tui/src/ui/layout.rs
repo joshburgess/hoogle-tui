@@ -110,7 +110,8 @@ mod tests {
     #[test]
     fn layout_preview_appears_at_80_width() {
         let layout = compute_layout(rect(80, 40), true, LayoutMode::Auto);
-        assert!(layout.preview_pane.is_some());
+        let preview = preview_rect(&layout);
+        assert_eq!(preview.width, 40);
     }
 
     #[test]
