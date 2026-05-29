@@ -475,6 +475,24 @@ fn doc_search_reports_when_document_is_missing() {
     ));
 }
 
+#[tokio::test]
+async fn doc_fetch_clears_active_doc_search() {
+    let mut app = app_with_doc();
+    app.doc_state.start_search();
+    app.doc_state.search_add_char('f');
+    app.doc_state.search_add_char('i');
+    app.doc_state.search_add_char('r');
+    app.doc_state.search_add_char('s');
+    app.doc_state.search_add_char('t');
+
+    app.fetch_doc(Url::parse("https://hackage.haskell.org/package/demo/docs/Demo.html").unwrap());
+
+    assert!(!app.doc_state.search_active);
+    assert!(app.doc_state.search_query.is_empty());
+    assert!(app.doc_state.search_matches.is_empty());
+    assert_eq!(app.doc_state.current_match, None);
+}
+
 #[test]
 fn load_more_reports_unavailable_states() {
     let mut app = test_app();

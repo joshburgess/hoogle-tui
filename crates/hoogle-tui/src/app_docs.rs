@@ -26,6 +26,7 @@ impl App {
         tracing::info!("fetching doc: {url}");
         self.doc_state.loading = true;
         self.doc_state.error = None;
+        self.doc_state.clear_search();
         self.pending_doc_url = Some(url.clone());
         self.show_loading("Loading docs...");
 
