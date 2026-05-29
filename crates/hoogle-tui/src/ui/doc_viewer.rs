@@ -58,13 +58,7 @@ impl DocViewState {
         let w = width.saturating_sub(4) as usize;
         let (lines, decl_offsets, links) = render_doc(&doc, theme, w);
         // Pre-compute lowercased line text for search
-        self.lowered_lines = lines
-            .iter()
-            .map(|line| {
-                let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-                text.to_lowercase()
-            })
-            .collect();
+        self.lowered_lines = lower_lines(&lines);
         self.rendered_lines = lines;
         self.declaration_offsets = decl_offsets;
         self.links = links;
@@ -88,13 +82,7 @@ impl DocViewState {
 
         let w = width.saturating_sub(4) as usize;
         let (lines, decl_offsets, links) = render_doc(&doc, theme, w);
-        self.lowered_lines = lines
-            .iter()
-            .map(|line| {
-                let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
-                text.to_lowercase()
-            })
-            .collect();
+        self.lowered_lines = lower_lines(&lines);
         self.rendered_lines = lines;
         self.declaration_offsets = decl_offsets;
         self.links = links;
@@ -325,6 +313,16 @@ impl DocViewState {
             self.scroll_offset = self.search_matches[first_visible].saturating_sub(3);
         }
     }
+}
+
+fn lower_lines(lines: &[Line<'static>]) -> Vec<String> {
+    lines
+        .iter()
+        .map(|line| {
+            let text: String = line.spans.iter().map(|s| s.content.as_ref()).collect();
+            text.to_lowercase()
+        })
+        .collect()
 }
 
 pub fn render(frame: &mut Frame, area: Rect, state: &mut DocViewState, theme: &Theme) {
