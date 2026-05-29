@@ -77,19 +77,23 @@ impl BookmarksPopupState {
 }
 
 fn bookmark_matches(bookmark: &crate::bookmarks::Bookmark, query: &str) -> bool {
-    bookmark.name.to_lowercase().contains(query)
+    field_matches(&bookmark.name, query)
         || bookmark
             .module
             .as_deref()
-            .is_some_and(|module| module.to_lowercase().contains(query))
+            .is_some_and(|module| field_matches(module, query))
         || bookmark
             .package
             .as_deref()
-            .is_some_and(|package| package.to_lowercase().contains(query))
+            .is_some_and(|package| field_matches(package, query))
         || bookmark
             .signature
             .as_deref()
-            .is_some_and(|signature| signature.to_lowercase().contains(query))
+            .is_some_and(|signature| field_matches(signature, query))
+}
+
+fn field_matches(field: &str, query: &str) -> bool {
+    field.to_lowercase().contains(query)
 }
 
 pub fn render(
@@ -263,6 +267,18 @@ mod tests {
         let mut state = BookmarksPopupState::new(store.bookmarks().len());
 
         for c in "  containers  ".chars() {
+            state.add_filter_char(c, &store);
+        }
+
+        assert_eq!(state.filtered_indices, vec![1]);
+    }
+
+    #[test]
+    fn filter_matches_case_insensitively() {
+        let (_dir, store) = store_with_bookmarks();
+        let mut state = BookmarksPopupState::new(store.bookmarks().len());
+
+        for c in "DATA.MAP".chars() {
             state.add_filter_char(c, &store);
         }
 
