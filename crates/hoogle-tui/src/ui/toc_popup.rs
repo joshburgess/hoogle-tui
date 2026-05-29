@@ -105,7 +105,6 @@ pub fn render(frame: &mut Frame, state: &TocState, theme: &Theme) {
     let max_visible = inner.height as usize;
     let total = state.filtered_indices.len();
 
-    // Compute scroll offset to keep selected visible
     let scroll = if state.selected >= max_visible {
         state.selected - max_visible + 1
     } else {
@@ -206,8 +205,8 @@ mod tests {
     fn new_empty() {
         let state = TocState::new(vec![]);
         assert_eq!(state.selected, 0);
-        assert!(state.filter.is_empty());
-        assert!(state.filtered_indices.is_empty());
+        assert_eq!(state.filter, "");
+        assert_eq!(state.filtered_indices, Vec::<usize>::new());
         assert_eq!(state.selected_offset(), None);
     }
 
@@ -298,7 +297,7 @@ mod tests {
         for c in "int".chars() {
             state.add_filter_char(c);
         }
-        assert!(state.filtered_indices.is_empty());
+        assert_eq!(state.filtered_indices, Vec::<usize>::new());
     }
 
     #[test]
@@ -336,7 +335,7 @@ mod tests {
     fn filter_no_match() {
         let mut state = TocState::new(make_entries(&["lookup", "insert"]));
         state.add_filter_char('z');
-        assert!(state.filtered_indices.is_empty());
+        assert_eq!(state.filtered_indices, Vec::<usize>::new());
         assert_eq!(state.selected_offset(), None);
     }
 
