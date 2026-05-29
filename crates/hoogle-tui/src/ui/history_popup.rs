@@ -60,10 +60,14 @@ impl HistoryPopupState {
             .entries()
             .iter()
             .enumerate()
-            .filter(|(_, e)| query.is_empty() || e.query.to_lowercase().contains(&query))
+            .filter(|(_, entry)| query.is_empty() || history_entry_matches(entry, &query))
             .map(|(i, _)| i)
             .collect();
     }
+}
+
+fn history_entry_matches(entry: &crate::history::HistoryEntry, query: &str) -> bool {
+    entry.query.to_lowercase().contains(query)
 }
 
 pub fn render(
@@ -156,4 +160,42 @@ pub fn render(
 
     let paragraph = Paragraph::new(lines);
     frame.render_widget(paragraph, inner);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn history_with_queries() -> (tempfile::TempDir, SearchHistory) {
+        let dir = tempfile::tempdir().expect("failed to create temp dir");
+        let path = dir.path().join("history.json");
+        let mut history = SearchHistory::load_with_status(path).0;
+        history.add("mapMaybe", 2);
+        history.add("foldMap", 3);
+        history.add("filter", 1);
+        (dir, history)
+    }
+
+    #[test]
+    fn filter_matches_queries_case_insensitively() {
+        let (_dir, history) = history_with_queries();
+        let mut state = HistoryPopupState::new(history.entries().len());
+        state.filter = "MAP".to_string();
+
+        state.update_filter(&history);
+
+        assert_eq!(state.filtered_indices, vec![1, 2]);
+        assert_eq!(state.selected, 0);
+    }
+
+    #[test]
+    fn filter_ignores_surrounding_whitespace() {
+        let (_dir, history) = history_with_queries();
+        let mut state = HistoryPopupState::new(history.entries().len());
+        state.filter = "  filter  ".to_string();
+
+        state.update_filter(&history);
+
+        assert_eq!(state.filtered_indices, vec![0]);
+    }
 }
