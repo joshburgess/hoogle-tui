@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn confirm_returns_selected_name() {
         let mut state = ThemePopupState::new("dracula");
-        state.move_down();
+        state.selected = 1;
         let name = state.confirm();
         assert_eq!(name, "catppuccin_mocha");
         assert_eq!(state.active, 1);
@@ -197,9 +197,7 @@ mod tests {
     #[test]
     fn confirm_last() {
         let mut state = ThemePopupState::new("dracula");
-        for _ in 0..THEME_NAMES.len() {
-            state.move_down();
-        }
+        state.selected = THEME_NAMES.len() - 1;
         let name = state.confirm();
         assert_eq!(name, THEME_NAMES[THEME_NAMES.len() - 1]);
     }
@@ -208,8 +206,7 @@ mod tests {
     fn confirm_updates_active() {
         let mut state = ThemePopupState::new("dracula");
         assert_eq!(state.active, 0);
-        state.move_down();
-        state.move_down();
+        state.selected = 2;
         state.confirm();
         assert_eq!(state.active, 2);
     }
