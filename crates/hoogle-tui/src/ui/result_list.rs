@@ -701,7 +701,7 @@ mod tests {
     #[test]
     fn new_state_is_empty() {
         let state = ResultListState::new();
-        assert!(state.items.is_empty());
+        assert_eq!(state.items.len(), 0);
         assert_eq!(state.selected, 0);
     }
 
@@ -713,7 +713,7 @@ mod tests {
         assert_eq!(state.selected, 1);
         state.move_down();
         assert_eq!(state.selected, 2);
-        state.move_down(); // should clamp
+        state.move_down();
         assert_eq!(state.selected, 2);
     }
 
@@ -721,7 +721,7 @@ mod tests {
     fn move_up_clamps() {
         let mut state = ResultListState::new();
         state.set_items(vec![make_result("a")]);
-        state.move_up(); // already at 0
+        state.move_up();
         assert_eq!(state.selected, 0);
     }
 
@@ -751,12 +751,12 @@ mod tests {
         state.set_items(vec![make_result("a"), make_result("b")]);
         state.multi_select_mode = true;
         state.toggle_select_current();
-        assert!(!state.multi_selected.is_empty());
+        assert_eq!(state.multi_selected, HashSet::from([0]));
 
         state.set_items(vec![make_result("x")]);
 
         assert!(!state.multi_select_mode);
-        assert!(state.multi_selected.is_empty());
+        assert_eq!(state.multi_selected, HashSet::new());
     }
 
     #[test]
@@ -851,7 +851,10 @@ mod tests {
     #[test]
     fn selected_result_on_empty() {
         let state = ResultListState::new();
-        assert!(state.selected_result().is_none());
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            None
+        );
     }
 
     #[test]
@@ -862,7 +865,10 @@ mod tests {
         state.fuzzy_add_char('z');
 
         assert_eq!(state.visible_count(), 0);
-        assert!(state.selected_result().is_none());
+        assert_eq!(
+            state.selected_result().map(|result| result.name.as_str()),
+            None
+        );
     }
 
     #[test]
@@ -925,7 +931,7 @@ mod tests {
 
         state.toggle_select_current();
 
-        assert!(state.multi_selected.is_empty());
+        assert_eq!(state.multi_selected, HashSet::new());
     }
 
     #[test]
